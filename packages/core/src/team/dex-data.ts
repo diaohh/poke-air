@@ -12,7 +12,7 @@ import { getChampionsDex } from '../battle/showdown.js';
 import { learnableMoves, legalItems, legalSpecies } from './legality.js';
 
 /** Bump when the shape or the selection logic of the generated data changes. */
-export const TEAM_BUILDER_DATA_VERSION = 4;
+export const TEAM_BUILDER_DATA_VERSION = 5;
 
 /**
  * Builds the phone's team builder data from the Champions dex and the Casual ruleset
@@ -26,7 +26,12 @@ export function buildTeamBuilderData(stamp: string): TeamBuilderData {
   const abilities: Record<string, string> = {};
 
   const items: DexItem[] = legalItems()
-    .map((item) => ({ id: item.id, name: item.name, desc: item.shortDesc || item.desc }))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      desc: item.shortDesc || item.desc,
+      icon: item.spritenum ?? 0,
+    }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const itemNames = new Set(items.map((item) => item.name));
 

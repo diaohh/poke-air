@@ -11,6 +11,16 @@ import type { StatId, StatTable } from './team.js';
 /** Where the web app serves the generated file. */
 export const TEAM_BUILDER_DATA_URL = '/data/teambuilder.json';
 
+/**
+ * Showdown's item icon sheet (decision D-42): one image of 24 px icons, 16 per row, downloaded by
+ * `pnpm fetch:sprites`. An item's dex `spritenum` is its index in the sheet.
+ */
+export const ITEM_ICON_SHEET = {
+  url: '/sprites/itemicons-sheet.png',
+  size: 24,
+  columns: 16,
+} as const;
+
 export interface DexSpecies {
   /** Showdown id, e.g. "rotomwash". */
   id: string;
@@ -54,6 +64,8 @@ export interface DexItem {
   id: string;
   name: string;
   desc: string;
+  /** Index in the item icon sheet (`ITEM_ICON_SHEET`). */
+  icon: number;
 }
 
 export interface DexNature {

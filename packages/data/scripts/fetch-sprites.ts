@@ -6,6 +6,7 @@
  * and go sequentially to be gentle with their server.
  *
  * - Trainer avatars: `sprites/trainers/<id>.png`.
+ * - Item icons: `sprites/itemicons-sheet.png` (one sheet; the dex `spritenum` is each item's index).
  * - Pokémon: front + back sprites for every species a battle can show (`battleRoster()` from core:
  *   every legal species of the team builder and the randomizer's, plus their Mega / Primal /
  *   battle-only formes; decision D-40). For each one we try
@@ -17,7 +18,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Sprites } from '@pkmn/img';
 import { battleRoster } from '@poke-air/core';
-import { toId, TRAINER_AVATARS } from '@poke-air/shared';
+import { ITEM_ICON_SHEET, toId, TRAINER_AVATARS } from '@poke-air/shared';
 import { download, PUBLIC_DIR, report, SHOWDOWN_HOST as HOST, stats } from './lib/download.js';
 
 const SOURCE = `https://${HOST}/sprites`;
@@ -37,6 +38,13 @@ export interface SpriteEntry {
   pixelated: boolean;
 }
 export type SpriteManifest = Record<string, Partial<Record<Facing, SpriteEntry>>>;
+
+/** Showdown's item icon sheet: one image for every item icon (decision D-42). */
+async function fetchItemIcons(): Promise<void> {
+  const file = ITEM_ICON_SHEET.url.replace(/^\/sprites\//, '');
+  const url = `${SOURCE}/${file}`;
+  if (!(await download(url, join(OUTPUT, file)))) stats.failed.push(`${url} (missing)`);
+}
 
 async function fetchTrainers(): Promise<void> {
   for (const id of TRAINER_AVATARS) {
@@ -102,6 +110,7 @@ async function fetchPokemon(): Promise<void> {
 }
 
 await fetchTrainers();
+await fetchItemIcons();
 await fetchPokemon();
 
 report('Sprites');

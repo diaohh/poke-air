@@ -5,6 +5,7 @@ import {
   playerReadySchema,
   playerSwitchTeamSchema,
   playerUpdateSchema,
+  teamImportSchema,
   teamRandomizeSchema,
   teamSetSlotSchema,
   type PlayerSession,
@@ -134,11 +135,23 @@ export function registerPlayerHandlers(rt: Realtime): void {
 
     socket.on(
       'team:setSlot',
-      on(teamSetSlotSchema, ({ slot }) => {
+      on(teamSetSlotSchema, ({ slot, set }) => {
         const { room, playerId } = currentSeat();
-        socket.emit('team:state', room.clearSlot(playerId, slot));
+        socket.emit('team:state', room.setSlot(playerId, slot, set));
         rt.match(room).sync();
         rt.broadcast(room);
+      }),
+    );
+
+    socket.on(
+      'team:import',
+      on(teamImportSchema, ({ text }) => {
+        const { room, playerId } = currentSeat();
+        const { state, count, skipped } = room.importTeam(playerId, text);
+        socket.emit('team:state', state);
+        rt.match(room).sync();
+        rt.broadcast(room);
+        return { count, skipped };
       }),
     );
 

@@ -1,0 +1,342 @@
+@use '../abstracts' as *;
+
+// Host battle scene (1920×1080 stage). Positions/sizes are set with Tailwind at the call site; this
+// file owns the field look and the generic move animations (docs/11-phase-1-plan.md WP5). Own
+// animations only: nothing is taken from pokemon-showdown-client.
+
+.battle-field {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(ellipse 70% 60% at 30% 0%, #{alpha(paper, 70%)}, transparent 70%),
+    linear-gradient(
+      180deg,
+      color(wine-tint) 0%,
+      color(gold-soft) 46%,
+      color-mix(in srgb, var(--color-type-grass) 38%, var(--color-paper)) 46%,
+      color-mix(in srgb, var(--color-type-grass) 62%, var(--color-paper)) 100%
+    );
+  box-shadow:
+    inset 0 0 0 5px #{alpha(ink, 8%)},
+    var(--shadow-lift);
+
+  &::before {
+    @include deco-ball(620px, 0.08);
+
+    top: -180px;
+    left: 38%;
+  }
+}
+
+// Elliptical platform in the side's team tint (needs a team scope).
+.field-platform {
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 38%, var(--tint), var(--soft) 72%);
+  box-shadow:
+    inset 0 -10px 0 color-mix(in srgb, var(--c) 30%, transparent),
+    0 14px 30px #{alpha(ink, 12%)};
+}
+
+// Side card: trainer + active Pokémon + HP. Needs a team scope.
+.side-card {
+  background: color(paper);
+  box-shadow:
+    inset 0 0 0 4px var(--c),
+    0 8px 0 var(--deep),
+    var(--shadow-float);
+}
+
+.battle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  border-radius: 999px;
+  background: color(paper);
+  box-shadow: var(--shadow-lift);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+
+  &--timer::before {
+    content: '';
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    background: color(warn);
+    animation: blink 1s infinite;
+  }
+}
+
+.narration {
+  background: color(paper);
+  box-shadow:
+    0 8px 0 #{alpha(ink, 10%)},
+    var(--shadow-float);
+
+  &__line {
+    animation: narration-in 0.25s ease-out;
+  }
+}
+
+@keyframes narration-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+// ── Active Pokémon + animations ────────────────────────────────────
+
+.mon {
+  transform-origin: 50% 100%;
+
+  // Mega Evolved: permanent aura (also marks Megas that fall back to their base sprite).
+  &--is-mega img {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--color-mega) 65%, transparent));
+  }
+
+  &--enter {
+    animation: mon-enter 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  }
+
+  &--lunge-p1 {
+    animation: mon-lunge-p1 0.45s ease-in-out;
+  }
+
+  &--lunge-p2 {
+    animation: mon-lunge-p2 0.45s ease-in-out;
+  }
+
+  &--cast {
+    animation: mon-cast 0.6s ease-in-out;
+  }
+
+  &--hit {
+    animation: mon-hit 0.6s steps(1, end);
+  }
+
+  &--heal {
+    animation: mon-glow 0.7s ease-in-out;
+
+    --glow: var(--color-ok);
+  }
+
+  &--status {
+    animation: mon-glow 0.7s ease-in-out;
+
+    --glow: var(--color-warn);
+  }
+
+  &--boost {
+    animation: mon-boost 0.6s ease-out;
+  }
+
+  &--unboost {
+    animation: mon-unboost 0.6s ease-out;
+  }
+
+  &--mega {
+    animation: mon-mega 1.3s ease-in-out;
+  }
+
+  &--faint {
+    animation: mon-faint 0.8s ease-in forwards;
+  }
+
+  &--fainted {
+    opacity: 0;
+  }
+}
+
+@keyframes mon-enter {
+  0% {
+    transform: scale(0);
+    filter: brightness(3);
+  }
+
+  60% {
+    filter: brightness(1.8);
+  }
+}
+
+@keyframes mon-lunge-p1 {
+  50% {
+    transform: translate(90px, -60px) scale(1.05);
+  }
+}
+
+@keyframes mon-lunge-p2 {
+  50% {
+    transform: translate(-90px, 50px) scale(1.05);
+  }
+}
+
+@keyframes mon-cast {
+  50% {
+    transform: scale(1.08);
+    filter: brightness(1.5) drop-shadow(0 0 22px var(--color-gold));
+  }
+}
+
+@keyframes mon-hit {
+  0%,
+  40%,
+  80% {
+    opacity: 0.15;
+  }
+
+  20%,
+  60%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes mon-glow {
+  50% {
+    filter: brightness(1.3) drop-shadow(0 0 26px var(--glow));
+  }
+}
+
+@keyframes mon-boost {
+  40% {
+    transform: translateY(-26px);
+    filter: brightness(1.4);
+  }
+}
+
+@keyframes mon-unboost {
+  20%,
+  60% {
+    transform: translateX(-12px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(12px);
+  }
+}
+
+@keyframes mon-mega {
+  0% {
+    filter: brightness(1);
+  }
+
+  45% {
+    transform: scale(1.12);
+    filter: brightness(3.2) drop-shadow(0 0 40px var(--color-mega));
+  }
+
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes mon-faint {
+  to {
+    transform: translateY(80px) scaleY(0.4);
+    opacity: 0;
+  }
+}
+
+// Special moves: an orb in the move's type color flies from the attacker to the target. The path
+// (`--x1/--y1` → `--x2/--y2`, field px) is set inline because it depends on the scene layout.
+.projectile {
+  --tc: #{color(type-normal)};
+
+  position: absolute;
+  z-index: 3;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #{color(paper)} 0 18%,
+    var(--tc) 42%,
+    color-mix(in srgb, var(--tc) 30%, transparent) 70%,
+    transparent 72%
+  );
+  pointer-events: none;
+  animation: projectile 0.55s ease-in forwards;
+}
+
+@keyframes projectile {
+  from {
+    top: var(--y1);
+    left: var(--x1);
+    transform: scale(0.6);
+  }
+
+  to {
+    top: var(--y2);
+    left: var(--x2);
+    transform: scale(1.3);
+    opacity: 0.2;
+  }
+}
+
+// Battle log panel (Showdown-style history by turn), right of the field.
+.battle-log {
+  background: color(paper);
+  box-shadow:
+    0 8px 0 #{alpha(ink, 10%)},
+    var(--shadow-float);
+
+  // "Turn N" divider: label + hairline.
+  &__turn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: color(wine);
+    font-family: var(--font-display);
+
+    &::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: color(line);
+    }
+  }
+
+  // Acting side's team color (needs a team scope on the line).
+  &__dot {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    margin-top: 0.55em;
+    border-radius: 50%;
+    background: var(--c);
+  }
+
+  &__line {
+    animation: narration-in 0.25s ease-out;
+  }
+}
+
+// Big "3, 2, 1" before the battle and the results burst.
+.countdown-number {
+  color: color(wine);
+  font-family: var(--font-display);
+  line-height: 1;
+  text-shadow: 0 10px 0 color('gold');
+  animation: countdown-pop 1s ease-out infinite;
+}
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+
+  25% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.results-banner {
+  color: var(--deep);
+  font-family: var(--font-display);
+  line-height: 1;
+  text-shadow: 0 8px 0 var(--soft);
+}

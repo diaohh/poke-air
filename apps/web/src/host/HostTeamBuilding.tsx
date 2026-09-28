@@ -3,37 +3,49 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/Button';
 import { PokeBall } from '../components/ui/PokeBall';
 import { StatusPill, type PlayerStatus } from '../components/ui/StatusPill';
+import { useCountdown } from '../lib/use-countdown';
 import { useHostStore } from './host-store';
 import { TeamPanel } from './TeamPanel';
 
-/**
- * Phase 0 has no ready state yet: connected players are "Building", disconnected ones "Pending".
- * Phase 1 (WP2) replaces this with the real per-player ready flag and adds the "Battle!" button
- * (see open item O-11 in docs/08-decisions.md).
- */
 function statusOf(player: PublicPlayer): PlayerStatus {
+  if (player.ready) return 'ready';
   return player.connected ? 'building' : 'pending';
 }
 
-/** Host during TEAM_BUILDING: red panel · spinning brand ball + ready count · blue panel. */
+/**
+ * Host during TEAM_BUILDING: red panel · brand ball + ready count · blue panel. Teams stay secret:
+ * only "N / quota Pokémon" and the ready state are shown. When everyone is ready the server runs a
+ * 3 s countdown (decision D-21) and the battle starts by itself.
+ */
 export function HostTeamBuilding({ room }: { room: PublicRoomState }) {
   const { t } = useTranslation();
   const backToLobby = useHostStore((s) => s.backToLobby);
   const error = useHostStore((s) => s.error);
-  const statuses = room.players.map(statusOf);
-  const ready = statuses.filter((s) => s === 'ready').length;
+  const roomAt = useHostStore((s) => s.roomAt);
+  const seconds = useCountdown(room.battleCountdownMs, roomAt);
+  const ready = room.players.filter((p) => p.ready).length;
   const total = room.players.length;
   const everyoneReady = total > 0 && ready === total;
 
   const panel = (team: TeamId) => {
     const players = room.players.filter((p) => p.team === team);
-    const teamReady = players.filter((p) => statusOf(p) === 'ready').length;
+    const teamReady = players.filter((p) => p.ready).length;
     return (
       <TeamPanel
         team={team}
         players={players}
         count={t('host.teamBuilding.readyCount', { ready: teamReady, total: players.length })}
-        renderStatus={(player) => <StatusPill status={statusOf(player)} className="text-[22px]" />}
+        renderStatus={(player) => (
+          <span className="flex flex-wrap items-center gap-3">
+            <StatusPill status={statusOf(player)} className="text-[22px]" />
+            <span className="text-[22px] font-bold text-ink-2">
+              {t('host.teamBuilding.pokemonCount', {
+                count: player.teamCount,
+                quota: player.quota,
+              })}
+            </span>
+          </span>
+        )}
       />
     );
   };
@@ -48,21 +60,36 @@ export function HostTeamBuilding({ room }: { room: PublicRoomState }) {
       <div className="grid min-h-0 grid-cols-[1fr_420px_1fr] gap-9">
         {panel('red')}
         <div className="flex flex-col items-center justify-center gap-9">
-          <div className="grid place-items-center">
-            <PokeBall size={230} tone="brand" animation={everyoneReady ? 'wobble' : 'spin'} />
-            <span className="loader-shadow mt-2.5 h-6 w-[170px]" />
-          </div>
-          <div className="text-center">
-            <p className="font-display text-[52px] text-wine">
-              {t('host.teamBuilding.readyCount', { ready, total })}
-            </p>
-            <p className="text-2xl font-semibold text-ink-2">{t('host.teamBuilding.waiting')}</p>
-            <div className="mt-4 flex justify-center gap-3">
-              {statuses.map((status, i) => (
-                <PokeBall key={i} size={40} tone={status === 'ready' ? 'ok' : 'empty'} />
-              ))}
+          {seconds !== null ? (
+            <div role="timer" className="flex flex-col items-center gap-4 text-center">
+              <p className="text-[30px] font-extrabold text-ink-2">
+                {t('host.teamBuilding.countdown')}
+              </p>
+              <span key={seconds} className="countdown-number text-[220px]">
+                {Math.max(1, seconds)}
+              </span>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid place-items-center">
+                <PokeBall size={230} tone="brand" animation={everyoneReady ? 'wobble' : 'spin'} />
+                <span className="loader-shadow mt-2.5 h-6 w-[170px]" />
+              </div>
+              <div className="text-center">
+                <p className="font-display text-[52px] text-wine">
+                  {t('host.teamBuilding.readyCount', { ready, total })}
+                </p>
+                <p className="text-2xl font-semibold text-ink-2">
+                  {everyoneReady ? t('host.teamBuilding.allReady') : t('host.teamBuilding.waiting')}
+                </p>
+                <div className="mt-4 flex justify-center gap-3">
+                  {room.players.map((player) => (
+                    <PokeBall key={player.id} size={40} tone={player.ready ? 'ok' : 'empty'} />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
         {panel('blue')}
       </div>

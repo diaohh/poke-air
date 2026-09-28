@@ -4,9 +4,11 @@ import { Stage } from '../components/Stage';
 import { Logo } from '../components/ui/Logo';
 import { PokeBall } from '../components/ui/PokeBall';
 import { useRoomLocale } from '../lib/use-room-locale';
+import { HostBattle } from './battle-scene/HostBattle';
 import { useHostStore } from './host-store';
 import { HostHeader } from './HostHeader';
 import { HostLobby } from './HostLobby';
+import { HostResults } from './HostResults';
 import { HostTeamBuilding } from './HostTeamBuilding';
 
 /** `/host` — the shared big screen. Owns the room; renders one view per room phase. */
@@ -36,13 +38,18 @@ export function HostScreen() {
     );
   }
 
-  const lobby = room.phase === 'LOBBY';
+  const views = {
+    LOBBY: HostLobby,
+    TEAM_BUILDING: HostTeamBuilding,
+    BATTLE: HostBattle,
+    RESULTS: HostResults,
+  } as const;
+  const View = views[room.phase];
   return (
     <Stage>
       <div className="grid h-full grid-rows-[104px_minmax(0,1fr)]">
-        <HostHeader room={room} showCode={!lobby} />
-        {/* Phase 1 adds the battle scene and results; until then later phases reuse team building. */}
-        {lobby ? <HostLobby room={room} /> : <HostTeamBuilding room={room} />}
+        <HostHeader room={room} showCode={room.phase !== 'LOBBY'} />
+        <View room={room} />
       </div>
     </Stage>
   );

@@ -22,4 +22,5 @@
   @include meta.load-css('screens/home');
   @include meta.load-css('screens/host');
   @include meta.load-css('screens/controller');
+  @include meta.load-css('screens/battle');
 }

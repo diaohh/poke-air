@@ -5,8 +5,16 @@ Visual source of truth for `apps/web`. The interactive reference is
 **This file wins over the mockup** when they disagree. The mockup is ~70 KB: read this file first and open
 the mockup only for a specific screen.
 
-Status: approved direction (2026-09-27), not implemented yet. The current `index.css` still has the Phase 0
-dark theme.
+Status: approved (2026-09-27) and **implemented for the Phase 0 screens** (Home, Host lobby, Host team
+building, phone Join and Teams). Team builder and battle screens arrive with Phase 1. Code layout (tokens in
+`index.css`, SCSS partials in `styles/`, primitives in `components/ui/`): see `10-development.md` § Styles.
+
+Known gaps vs. the mockup:
+
+- **Host "close room" button** is not shown: the protocol has no `host:closeRoom` event yet (the
+  `player:removed` reason `roomClosed` already exists for it).
+- **Team-building Ready/Building/Pending** is placeholder data until Phase 1 WP2 adds the ready flag:
+  connected players show "Building", disconnected ones "Disconnected"; the "Battle!" button waits for O-11.
 
 ## Principles
 
@@ -23,7 +31,9 @@ dark theme.
 
 ## Tokens
 
-Proposed Tailwind 4 `@theme` for `apps/web/src/index.css` (replaces the Phase 0 dark tokens):
+Tailwind 4 `@theme static` in `apps/web/src/index.css` (the implemented file also adds `--color-line`,
+`--color-qr`, `--color-warn-deep`, `--color-hp-mid`, the `--color-type-*` palette and the `lift`/`float`
+shadows):
 
 ```css
 @theme {
@@ -170,7 +180,10 @@ Primary action pinned to the bottom.
 
 - Keep the architecture rules: all strings are i18n keys, sprites self-hosted, no CSS copied from
   `pokemon-showdown-client`.
-- Build shared primitives first (`Button`, `IconButton`, `PokeBall`, `StatusPill`, `TeamChip`, `Sheet`,
-  `HpBar`) in `apps/web/src/components/ui/` and reuse them on Host and Controller.
+- Shared primitives live in `apps/web/src/components/ui/` (`Button`, `IconButton`, `Icon`, `PokeBall`,
+  `StatusPill`, `TeamChip`, `HpBar`, `Logo`, `CodeChip`); reuse them on Host and Controller. `Sheet` is
+  still to build (Phase 1 battle UI).
+- Fonts are self-hosted with Fontsource (`@fontsource/lilita-one`, `@fontsource/rubik`, imported in
+  `main.tsx`).
 - Pokémon icons: `@pkmn/img` icon sheet, self-hosted (the mockup uses letter placeholders).
 - The mockup's QR and battle data are fake; real QR stays `qrcode.react`.

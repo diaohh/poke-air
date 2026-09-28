@@ -51,7 +51,8 @@ nvm use 22.22.0        # Node ≥ 22.22 required (.nvmrc)
 pnpm install
 pnpm fetch:sprites     # trainer sprites → apps/web/public/sprites (git-ignored, never commit)
 pnpm dev               # server :3001 + web :5173 → open http://localhost:5173/host
-pnpm check             # typecheck + lint + test — run before handing work back
+pnpm check             # typecheck + lint (ESLint + Stylelint) + format:check + test — run before handing work back
+pnpm lint:fix          # ESLint + Stylelint autofix; `pnpm format` for Prettier
 pnpm build             # web → apps/web/dist, server → apps/server/dist
 pnpm --filter @poke-air/core sim:smoke   # simulator benchmark
 ```
@@ -95,8 +96,10 @@ pnpm --filter @poke-air/core sim:smoke   # simulator benchmark
 
 TypeScript 6.0 (strict; TS 7 blocked by typescript-eslint) · pnpm workspaces · Node ≥ 22.22 ·
 **Server:** Fastify 5, Socket.IO 4, zod 4, pino, tsup, tsx · **Web:** Vite 8, React 19, React Router 8,
-Zustand 5, Tailwind CSS 4, i18next/react-i18next, qrcode.react · **Battle (planned):** `@pkmn/protocol` +
-own reducer on the Host, `@pkmn/img` for sprite URLs · **Tests:** Vitest 5 (Playwright E2E planned).
+Zustand 5, Tailwind CSS 4 + Sass (SCSS), Fontsource fonts, i18next/react-i18next, qrcode.react ·
+**Battle (planned):** `@pkmn/protocol` + own reducer on the Host, `@pkmn/img` for sprite URLs ·
+**Tooling:** ESLint 10 + eslint-config-prettier, Stylelint (standard-scss), Prettier + tailwind plugin ·
+**Tests:** Vitest 5 (Playwright E2E planned).
 
 ## Conventions
 
@@ -105,7 +108,10 @@ own reducer on the Host, `@pkmn/img` for sprite URLs · **Tests:** Vitest 5 (Pla
 - ESM everywhere; relative imports use `.js` in `packages/*` and `apps/server`, extensionless in `apps/web`.
 - Host UI is laid out on a fixed 1920×1080 `Stage` (scaled); controller UI is mobile-first (portrait only).
 - Visual style follows `docs/12-design-system.md` ("Stadium Wine": light warm theme, wine brand, red/blue
-  only for teams). Use the theme tokens, never raw hex values in components.
+  only for teams). Use the theme tokens, never raw hex values in components (enforced by ESLint/Stylelint).
+- Styles: tokens in `apps/web/src/index.css` (`@theme static`), design-system components in SCSS partials
+  under `apps/web/src/styles/` (BEM, inside Tailwind's `components` layer), layout with Tailwind utilities.
+  Reuse the primitives in `apps/web/src/components/ui/`. Details: `docs/10-development.md` § Styles.
 - Room phases are an explicit state machine in `Room`: `LOBBY → TEAM_BUILDING → BATTLE → RESULTS → LOBBY`.
 - Read the **Pitfalls** section of `docs/10-development.md` before touching sockets or the simulator.
 - Git is managed manually by the user: don't commit unless asked.

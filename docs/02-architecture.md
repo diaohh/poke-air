@@ -168,7 +168,7 @@ Full dex data (species, learnsets, items, abilities) weighs several MB. Strategy
 | Validation           | **zod**                                    | Shared event schemas                                                                                                                                             |
 | Frontend             | **Vite + React + TS**                      | One SPA with `/host` and `/j/:code` routes                                                                                                                       |
 | UI state             | **Zustand**                                | Simple, sufficient                                                                                                                                               |
-| Styling              | **Tailwind CSS**                           | Fast mobile-first UI and Host stage                                                                                                                              |
+| Styling              | **Tailwind CSS 4 + Sass (SCSS)**           | Tailwind for layout/typography; SCSS partials for design-system components (see `10-development.md` § Styles)                                                    |
 | Animation            | **CSS / Web Animations API + Motion**      | Showdown sprites are animated GIFs → DOM is the natural fit. PixiJS only if particle effects are needed                                                          |
 | Battle model on Host | **@pkmn/protocol** + own reducer           | Parse the spectator log; `@pkmn/client` not used (its dex lacks the Champions mod)                                                                               |
 | Sprite URLs          | **@pkmn/img** (with our own `domain`)      | Resolves sprite paths/fallbacks; files are self-hosted by `pnpm fetch:sprites`                                                                                   |
@@ -197,15 +197,20 @@ poke-air/
 │  │     └─ battle-handlers.ts    🔜 Phase 1
 │  └─ web/src/
 │     ├─ main.tsx                 ✅ router, lazy routes per face
-│     ├─ home/                    ✅ landing (host / join by code)
-│     ├─ host/                    ✅ HostScreen, HostLobby, TeamColumn, host-store
+│     ├─ index.css                ✅ Tailwind entry + design tokens (@theme static)
+│     ├─ styles/                  ✅ SCSS: abstracts, base, components, screens (main.scss entry)
+│     ├─ home/                    ✅ landing (host / join by code) + HeroScene illustration
+│     ├─ host/                    ✅ HostScreen, HostHeader, HostLobby, JoinPanel, TeamPanel, PlayerCard,
+│     │                              HostTeamBuilding, host-store
 │     │  └─ battle-scene/         🔜 Phase 1: stage, sprites, HP bars, animation queue, HostBattleModel
 │     ├─ controller/              ✅ ControllerScreen, JoinForm, ControllerLobby, controller-store
 │     │  ├─ team-builder/         🔜 Phase 1
 │     │  └─ battle/               🔜 Phase 1
-│     ├─ components/              ✅ Stage (1920×1080), TrainerSprite
+│     ├─ components/              ✅ Stage (1920×1080), TrainerSprite, LanguageSelect
+│     │  └─ ui/                   ✅ design-system primitives: Button, IconButton, Icon, PokeBall,
+│     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip
 │     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en/ui.json
-│     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale
+│     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale, cn, team
 ├─ packages/
 │  ├─ shared/src/                 ✅ constants, avatars, errors, room-state, schemas (zod), events
 │  ├─ core/src/

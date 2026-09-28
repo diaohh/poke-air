@@ -36,9 +36,10 @@ LAN notes:
 | `pnpm dev`                                   | Server (`tsx watch`) + web (Vite) in parallel                                             |
 | `pnpm test` / `pnpm test:watch`              | Vitest over every `*.test.ts(x)` in `apps/*/src` and `packages/*/src`                     |
 | `pnpm typecheck`                             | `tsc --noEmit` in every package                                                           |
-| `pnpm lint`                                  | ESLint (flat config, typescript-eslint, react-hooks)                                      |
-| `pnpm format` / `pnpm format:check`          | Prettier                                                                                  |
-| `pnpm check`                                 | typecheck + lint + test (run before handing work back)                                    |
+| `pnpm lint`                                  | `lint:js` (ESLint) + `lint:styles` (Stylelint on `apps/web/src/**/*.scss`)                |
+| `pnpm lint:fix`                              | ESLint + Stylelint with `--fix`                                                           |
+| `pnpm format` / `pnpm format:check`          | Prettier (+ Tailwind class sorting)                                                       |
+| `pnpm check`                                 | typecheck + lint + format:check + test (run before handing work back)                     |
 | `pnpm build`                                 | Web → `apps/web/dist`; server → `apps/server/dist` (tsup bundle incl. workspace packages) |
 | `pnpm fetch:sprites`                         | Download missing sprites (idempotent, sequential, polite)                                 |
 | `pnpm --filter @poke-air/core sim:smoke [n]` | Simulator benchmark: load time, RAM, ms/turn (spike S1)                                   |
@@ -75,6 +76,40 @@ See the tree in `docs/02-architecture.md` (✅/🔜 markers). Key rules:
   packages. Vite and tsx consume them directly; the server's tsup build bundles them (`noExternal`).
 - Relative imports inside `packages/*` and `apps/server` use the `.js` extension (ESM); the web app uses
   extensionless imports (Vite).
+
+## Styles (web)
+
+Visual rules live in `docs/12-design-system.md`. How the code is split:
+
+- **`apps/web/src/index.css`** — Tailwind entry + all design tokens in `@theme static` (colors, fonts,
+  radii, shadows). The only place with raw color values. Plain CSS: Tailwind 4 is not run through Sass.
+- **`apps/web/src/styles/`** — SCSS for design-system pieces, loaded by `main.scss` **inside Tailwind's
+  `components` layer**, so utilities on an element always win:
+  - `abstracts/` — `color(name)` / `alpha(name, %)` token helpers and mixins (`pressable`, `deco-ball`,
+    `team-palette`). No CSS output.
+  - `base/` — decoration assets (`--deco-*`), keyframes, reduced motion, team scopes
+    (`.team-scope--red|blue|neutral` set `--c/--deep/--soft/--tint`).
+  - `components/` — one partial per primitive (`_button`, `_poke-ball`, `_status-pill`, …).
+  - `screens/` — screen-level decoration (`_home`, `_host`, `_controller`).
+- **React primitives** in `apps/web/src/components/ui/` (`Button`, `IconButton`, `Icon`, `PokeBall`,
+  `StatusPill`, `TeamChip`, `HpBar`, `Logo`, `CodeChip`) wrap those classes.
+- **Rule of thumb:** SCSS for 3D states, pseudo-element decoration, multi-layer backgrounds and animations;
+  Tailwind utilities for layout, spacing, sizing and typography at the call site. Join conditional classes
+  with `cn()` (`lib/cn.ts`).
+- Class names in SCSS are BEM (`block__element--modifier`). Colors only via tokens: Stylelint rejects hex,
+  named colors and `rgb()/hsl()` in SCSS; ESLint rejects hex literals in `apps/web` TS/TSX. Quote token names
+  that collide with CSS color keywords: `color('gold')`.
+
+## Lint and format rules
+
+- **Prettier** (`.prettierrc.json`): 100 cols, single quotes, semicolons, trailing commas, LF,
+  `prettier-plugin-tailwindcss` (sorts classes in `className` and `cn(...)`).
+- **ESLint** (`eslint.config.js`): `js` + `typescript-eslint` recommended, `eqeqeq`, `no-console` (warn;
+  off in `**/scripts/**`), `prefer-const`, `prefer-template`, `object-shorthand`, `no-param-reassign`,
+  `no-non-null-assertion`, `consistent-type-imports`, `consistent-type-definitions: interface`; web adds
+  `react-hooks`, `react-refresh` and the no-raw-hex rule. `eslint-config-prettier` goes last.
+- **Stylelint** (`stylelint.config.js`): `stylelint-config-standard-scss` + token-only colors, BEM class
+  pattern, no IDs, no `!important`, nesting depth ≤ 3, `@use` only (no `@import`).
 
 ## Recipe: adding a realtime feature
 
@@ -120,6 +155,12 @@ Example: a new player action `player:foo`.
   tears down the socket; keep that pattern.
 - **Champions custom games enable Team Preview**; append `@@@!Team Preview` to the format id unless a
   preview phase is implemented.
+- **Tailwind 4 drops unused theme variables.** Tokens read only from SCSS (`var(--color-*)`) would vanish;
+  that's why `index.css` uses `@theme static`. Keep it.
+- **`**/*` inside a CSS block comment closes it** (`*/`) and breaks the Tailwind build. Don't write globs in
+  CSS comments.
+- **PowerShell `Get-Content`/`Set-Content` default to ANSI** on Windows PowerShell 5.1 and corrupt UTF-8
+  (`—` → `â€”`). Edit files with the editor/Node, or pass `-Encoding utf8`.
 - **TypeScript is pinned to 6.0.x**: TS 7 (native) is not supported by typescript-eslint yet (`<6.1.0`).
 - **`pokemon-showdown` npm lags GitHub master** (e.g. no Champions Random Doubles in 0.11.11). Pin the exact
   version; when upgrading run `pnpm check` + `sim:smoke` and re-verify the facts table in `docs/05`.

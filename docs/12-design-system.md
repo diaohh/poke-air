@@ -5,16 +5,20 @@ Visual source of truth for `apps/web`. The interactive reference is
 **This file wins over the mockup** when they disagree. The mockup is ~70 KB: read this file first and open
 the mockup only for a specific screen.
 
-Status: approved (2026-09-27) and **implemented for the Phase 0 screens** (Home, Host lobby, Host team
-building, phone Join and Teams). Team builder and battle screens arrive with Phase 1. Code layout (tokens in
-`index.css`, SCSS partials in `styles/`, primitives in `components/ui/`): see `10-development.md` § Styles.
+Status: approved (2026-09-27) and **implemented for every Phase 0 + Phase 1 screen** (Home, Host lobby,
+team building, battle scene and results; phone Join, Teams, team builder, battle and results). Code layout
+(tokens in `index.css`, SCSS partials in `styles/`, primitives in `components/ui/`): see
+`10-development.md` § Styles.
 
 Known gaps vs. the mockup:
 
 - **Host "close room" button** is not shown: the protocol has no `host:closeRoom` event yet (the
   `player:removed` reason `roomClosed` already exists for it).
-- **Team-building Ready/Building/Pending** is placeholder data until Phase 1 WP2 adds the ready flag:
-  connected players show "Building", disconnected ones "Disconnected"; the "Battle!" button waits for O-11.
+- **No "Battle!" button** on the Host team-building screen: O-11 was closed in favor of the automatic 3 s
+  countdown (D-25), shown in place of the center ball.
+- **Team builder ✏️ edit** is replaced by 🎲 reroll until the Phase 2 editor exists; dashed empty slots add
+  a random Pokémon.
+- **Host battle scene** is not in the mockup; it follows these rules (see below).
 
 ## Principles
 
@@ -87,6 +91,9 @@ ground `#e2bf65`, flying `#a98ff3`, psychic `#f95587`, bug `#a6b91a`, rock `#b6a
 dragon `#6f35fc`, dark `#705746`, steel `#b7b7ce`, fairy `#d685ad`. Use ink text on the light ones
 (normal, electric, ground, ice, steel, rock, bug, grass, fairy, flying), white text on the rest.
 
+**Mega Evolution** (toggle, tags, glow; not a team color): `mega` `#b04fd3`, `mega-deep` `#6a1f8a`,
+`mega-soft` `#f3e4ff`, `mega-tint` `#ffe7f1`. `line` = `rgb(43 23 34 / .14)` (hairlines, HP bar track).
+
 **Depth:** `lift` = `0 6px 0 rgb(43 23 34 / .12)`; `float` = `0 18px 40px rgb(79 15 38 / .18)`.
 3D button = `box-shadow: 0 6px 0 <deep color>` → on `:active` `translateY(5px)` + `0 1px 0`.
 
@@ -149,6 +156,33 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
   Ready / Building / Pending · footer: **Cancel** (ghost, back to lobby); **Battle!** (primary) appears when
   everyone is ready (see open item O-11 in `08-decisions.md`).
 
+### Host battle scene (1920×1080 stage)
+
+- **Field:** rounded panel, sky (wine-tint → gold-soft) over grass (type-grass tints), light Poké Ball
+  outline. Red (p1) is near: back sprite bottom-left on a red-tint platform, trainer sprite in the corner;
+  blue (p2) is far: front sprite top-right on a blue-tint platform, trainer top-right.
+- **Side cards:** paper with a team ring + deep bottom edge: trainer name, Mega stone mark (available /
+  used, greyed), Poké Ball row (fainted = grey), Pokémon name + Lv, HP bar with **percent only** (the
+  public value), status tag (type-colored), Mega tag, stat stages, side conditions, "● Choosing" pill.
+- **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects.
+- **Narration box:** paper strip under the field, previous line muted (26 px) + current line (40 px Rubik
+  800); "Space: skip animations" hint.
+- **Generic animations (own CSS, nothing from pokemon-showdown-client):** switch-in pop with flash,
+  physical lunge, special orb in the move's type color, status/effect glow, hit blink, heal/boost/unboost,
+  faint drop + fade, Mega flash + a permanent Mega aura. Durations 0.3–1.5 s per event.
+- **Countdown / results:** big Lilita number with a gold shadow; results banner in the winner's deep team
+  color, both team panels (loser dimmed) with KOs and remaining Poké Balls, **Rematch** (primary) and
+  **Back to lobby** (ghost).
+- **Battle log panel (D-33):** right column of ~420 px on the stage, full height
+  of field + narration; the field shrinks to ~1390 px (slots, cards and projectile paths re-positioned).
+  Paper card with its own scroll, auto-scrolled to the bottom. Turn dividers "Turn N" (Lilita 26 px, wine);
+  lines in Rubik 600 22 px (readable from 3 m), each prefixed with a dot in the acting side's team color;
+  move names bold; the newest line in ink, older ones ink-2. Shows only what the playback has already
+  shown. `L` toggles it (remembered in localStorage); hidden → the field uses the full width.
+- **Audio (D-32):** Host only. Sound toggle (🔊 / 🔇 icon button) next to fullscreen in the header, plus a
+  volume setting; unlocked by the first click. Defaults: music 40 %, effects 80 %. Phones: silent,
+  vibration only.
+
 ### Controller (phone, portrait only)
 
 The phone is themed with the player's **team** colors; before joining it uses the neutral wine/blush theme.
@@ -186,9 +220,9 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
 - Keep the architecture rules: all strings are i18n keys, sprites self-hosted, no CSS copied from
   `pokemon-showdown-client`.
 - Shared primitives live in `apps/web/src/components/ui/` (`Button`, `IconButton`, `Icon`, `PokeBall`,
-  `StatusPill`, `TeamChip`, `HpBar`, `Logo`, `CodeChip`); reuse them on Host and Controller. `Sheet` is
-  still to build (Phase 1 battle UI).
+  `StatusPill`, `TeamChip`, `HpBar`, `Logo`, `CodeChip`, `Sheet`); reuse them on Host and Controller.
+  Pokémon sprites go through `components/PokemonSprite` (manifest-based, see `10-development.md`).
 - Fonts are self-hosted with Fontsource (`@fontsource/lilita-one`, `@fontsource/rubik`, imported in
   `main.tsx`).
-- Pokémon icons: `@pkmn/img` icon sheet, self-hosted (the mockup uses letter placeholders).
+- Pokémon icons: the self-hosted front sprite shrunk into the tile (the icon sheet is not used yet).
 - The mockup's QR and battle data are fake; real QR stays `qrcode.react`.

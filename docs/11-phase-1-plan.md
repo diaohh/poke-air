@@ -3,6 +3,34 @@
 Self-contained plan for the next development session. Read `CLAUDE.md`, `docs/10-development.md` and the
 "Verified simulator facts" table in `docs/05-game-rules-and-mechanics.md` first.
 
+## Status (2026-09-27): implemented, pending manual validation
+
+WP1–WP8 are implemented: 71 unit/integration tests plus a Playwright E2E (`pnpm test:e2e`) that plays a
+whole battle on 1 Host + 2 phone contexts and starts a rematch. Where the code differs from the plan
+below, **the code and these notes win** (decisions D-25…D-31 in `08-decisions.md`):
+
+| Plan                                                   | Implemented                                                                                                                     | Why                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `BattleSession` on `BattleStream` + `getPlayerStreams` | Wraps Showdown's `Battle` directly with a synchronous `send` callback (what `BattleStream` wraps)                               | `choose()` knows at once if the sim accepted the choice (ack with `INVALID_CHOICE`), and log/request ordering is guaranteed |
+| (not planned)                                          | Instance patch after `>start`: `reportExactHP = false`, `debugMode = false`                                                     | Champions custom games are `debug` formats: spectators (the Host) got **exact HP** and `\|debug\|` damage rolls             |
+| `host:turnAnimated { turn }`                           | `host:animated { upTo }` (spectator log lines shown)                                                                            | Forced switches (faint, U-turn, Volt Switch) happen mid-turn; a line index covers every decision point                      |
+| `battle:choiceRejected`, `battle:end`                  | Rejections are the `battle:choose` ack (`INVALID_CHOICE`, `STALE_REQUEST`…); the result is `room:state.result` (RESULTS phase)  | Simpler; results survive refreshes. RESULTS starts only once the Host has animated the final blow (or 15 s)                 |
+| `battle:request { request }`                           | `battle:request { request \| null, choice }`; `null` = "look at the big screen" while the Host animates                         | Phones rebuild the waiting view after a refresh; `rqid` (own counter, the sim has none) rejects stale taps                  |
+| `battle:waiting { deadline }`, countdown deadline      | `timerMs` / `battleCountdownMs`: remaining time when sent                                                                       | Clock-skew safe                                                                                                             |
+| Rules in the server (countdown, gating)                | `MatchController` in `packages/core` (injectable scheduler); the server only forwards its events                                | Keeps "no game rules in `apps/server`"; unit-tested with a fake clock                                                       |
+| Host move animations need move data                    | `battle:log` carries `moves: { [name]: { type, category } }` for the moves used in those lines                                  | Public info only; the Host needs no dex (D-22 style)                                                                        |
+| `@pkmn/img` at runtime                                 | `@pkmn/img` only in `fetch-sprites`, which writes `sprites/pokemon-manifest.json`; the web reads the manifest                   | Fallbacks (`gen5ani` → `ani` → `gen5`) are resolved once by HTTP; no URL guessing in the browser                            |
+| Team builder: per-card 🎲 and ✕, "Randomize team"      | Per-card reroll + remove, dashed empty slots add a random Pokémon, gold button fills the empty slots (or rerolls all when full) | Matches the approved mockup (`12-design-system.md`)                                                                         |
+
+Added to the scope after the first playtest (roadmap § Quick wins, D-32/D-33): the **battle log panel**
+(`battle-scene/BattleLog.tsx`, history kept by `BattlePlayback`) and **Host audio** (`host/audio/`: ZzFX
+effects mapped from scene events, music per phase, cries, sound menu, `pnpm fetch:audio`).
+
+Known limitations (accepted for Phase 1): 12 new Champions Megas have no sprite on Showdown yet (the
+base forme is shown with the Mega aura); weather/terrain/side-condition names on the Host come from the
+protocol in English (Phase 4 localizes them); the Host narration covers the common protocol lines only; the ZzFX sounds are first drafts (tune them in
+`host/audio/sounds.ts`); no music ships until CC0 tracks are chosen.
+
 ## Goal and definition of done
 
 Two people, each with a phone, play a **complete singles 1v1 battle** on the local network:

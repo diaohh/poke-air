@@ -3,7 +3,8 @@
 > Showdown-style Pokémon battles for **playing in the same room**: the big screen shows the battle,
 > phones are the controllers. Inspired by Pokémon Showdown + AirConsole.
 
-**Status:** Phase 0 done — the lobby works end-to-end (room + QR, phones join, teams). Next: playable singles MVP.
+**Status:** Phase 1 — playable singles MVP: random teams on the phones, battles on the big screen,
+private controls, results and rematch. Next: the full team builder.
 
 ## Quick start
 
@@ -11,7 +12,8 @@ Requires Node ≥ 22.22 and pnpm 10.
 
 ```bash
 pnpm install
-pnpm fetch:sprites   # downloads trainer sprites (self-hosted, git-ignored)
+pnpm fetch:sprites   # downloads trainer + Pokémon sprites (self-hosted, git-ignored)
+pnpm fetch:audio     # optional: Pokémon cries (self-hosted, git-ignored)
 pnpm dev             # open http://localhost:5173/host on the PC; scan the QR with phones on the same Wi-Fi
 ```
 

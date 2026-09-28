@@ -84,7 +84,25 @@ PokeAPI**, so for names the two sources agree.
 - Styles: `gen5ani` + `gen5ani-back` (classic Showdown BW animated look) recommended for consistency and
   weight. Need to verify coverage of the newest Megas (Legends Z-A / Champions); fallback to `home`/static.
 - **Mandatory in-app credits:** Smogon Sprite Project, Showdown trainer sprite artists, PokeAPI, Pokémon Showdown.
-- Audio (cries/music): same rights as sprites. Optional and off by default; CC0 music is an alternative.
+- Audio: see the next section.
+
+## Audio
+
+Sound plays on the **Host only** (everyone is in the same room; phones only vibrate). Verified 2026-09-27:
+Showdown serves cries at `https://play.pokemonshowdown.com/audio/cries/<sprite-id>.mp3` (Megas included,
+e.g. `garchomp-mega.mp3`) and battle themes such as `/audio/bw-trainer.mp3`, `/audio/xy-trainer.mp3`.
+
+| Kind                   | Source                                                                                                                      | License / rights                                            | How we get it                                                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| UI + battle SFX        | **[ZzFX](https://github.com/KilledByAPixel/ZzFX)** (tiny synth, sounds defined as parameter arrays in code)                 | MIT; generated sounds are ours                              | npm dependency, no audio files at all. Retro "blip" style that matches the pixel sprites                                              |
+| UI + battle SFX (alt.) | **[Kenney](https://kenney.nl/assets)** packs: _Interface Sounds_, _UI Audio_, _Impact Sounds_, _RPG Audio_, _Music Jingles_ | **CC0** (no attribution required; credit anyway)            | Downloaded manually once; CC0 files **may be committed** (`apps/web/public/audio/sfx/`) + `CREDITS.md`                                |
+| SFX (alt.)             | [Freesound](https://freesound.org) (filter by license) · [jsfxr](https://sfxr.me) (generate and export)                     | CC0 only, or CC-BY with attribution · jsfxr: ours           | Manual download / export                                                                                                              |
+| Music loops            | [OpenGameArt](https://opengameart.org) (filter **CC0**, e.g. chiptune battle loops) · Kenney _Music Jingles_ (victory)      | Check each asset: prefer CC0; CC-BY → credits               | Chosen by the team (taste), downloaded manually, committed with credits                                                               |
+| Pokémon cries          | Pokémon Showdown `/audio/cries/`                                                                                            | **Nintendo / TPC** (same as sprites)                        | Optional: only if downloaded with `pnpm fetch:audio` (then on, can be turned off in the sound menu); **never committed or hotlinked** |
+| Official battle music  | Pokémon Showdown `/audio/*.mp3`                                                                                             | **Nintendo / TPC** — music is the most takedown-prone asset | **Not used.** Revisit only for a private instance                                                                                     |
+
+Rules: audio files must be small (mono, ~64–96 kbps OGG/MP3, loops < 1 MB); every non-generated file is
+listed in `apps/web/public/audio/CREDITS.md`; the credits screen (Phase 5) shows them.
 
 ## Pokémon intellectual property
 

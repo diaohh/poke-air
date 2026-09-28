@@ -18,7 +18,17 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 | $0 hosting                                        | Low–Medium                                      | Render cold start handled by UX; memory limits to be measured                              |
 | Legal                                             | Low risk without monetization or mass promotion | See `03`                                                                                   |
 
-## Current status (2026-09-25)
+## Current status (2026-09-27)
+
+- ✅ **Phase 1 implemented** (pending manual validation by the team): randomizer team building with Ready,
+  automatic battle start (3 s countdown), singles battles on the Champions mod with moves / switches /
+  forced switches / Mega Evolution / 60 s timer / undo / forfeit, Host battle scene animated from the
+  spectator log, private phone controls, results + rematch, refresh/rejoin in every phase, rate limits.
+  71 unit/integration tests + Playwright E2E. Details and deviations: `docs/11-phase-1-plan.md` § Status.
+- ✅ UI design system "Stadium Wine" applied to every screen (D-24).
+- 👉 **Next: Phase 2** (full team builder) — spike S3 first (roster & validation rules), then S4 (data & i18n).
+
+### Earlier status (2026-09-25)
 
 - ✅ **Phase 0 done** (without deploy/CI, by decision): monorepo, tooling, lobby vertical slice working
   end-to-end (Host creates room + QR with LAN IP, phones join/switch team/rejoin, Host kicks/resumes,
@@ -56,16 +66,51 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 pnpm monorepo, TS strict, lint/format, Vitest, i18n scaffolding (English only), lobby vertical slice.
 Deferred by decision: CI and the first deploy (Render + Vercel) — do them whenever convenient.
 
-### Phase 1 — Playable MVP (singles 1v1) 👉 next — see `docs/11-phase-1-plan.md`
+### Phase 1 — Playable MVP (singles 1v1) ✅ — see `docs/11-phase-1-plan.md`
 
 - ✅ (done in Phase 0) Create room, QR, join with name + avatar, lobby with 2 teams and team switching,
   room locale selector (English only enabled), reconnection in the lobby.
-- Team building **randomizer only** (+ remove Pokémon), Ready button.
-- Singles battle with Champions Casual rules: moves, switches, Mega Evolution, timer, forfeit.
-- Basic Host scene: sprites, HP, English narration, generic animations.
-- Results + rematch. Reconnection.
+- ✅ Team building **randomizer only** (+ remove Pokémon), Ready button.
+- ✅ Singles battle with Champions Casual rules: moves, switches, Mega Evolution, timer, forfeit.
+- ✅ Basic Host scene: sprites, HP, English narration, generic animations.
+- ✅ Results + rematch. Reconnection. Rate limits. E2E.
 
-### Phase 2 — Full team builder
+### Quick wins — battle feedback ✅ (added to the Phase 1 scope)
+
+Requested after the Phase 1 playtest. UI specs in `12-design-system.md` (§ Host battle scene), audio sources
+and rules in `03-data-sources-and-licensing.md` (§ Audio), open choices O-06 / O-12 in `08-decisions.md`.
+
+- [x] **Battle log panel on the Host:** Showdown-style history grouped by turn ("Turn 3 · Garchomp used
+      Earthquake! · It's super effective!…") in a side column. It follows the animation (never ahead of it,
+      so it can't spoil the turn) and is rebuilt from the whole log after a Host refresh. Reuses the
+      narration the scene already produces (`HostBattleModel` events + `battle.log.*` keys).
+- [x] **Audio foundation (Host only):** small audio manager on the Web Audio API, unlocked by the Host's
+      first click ("Host a battle"), mute + volume in the header (remembered in localStorage). UI SFX
+      (join, ready, countdown, results) and generic battle SFX (switch-in, hit ×3 effectiveness, crit, faint,
+      stat up/down, status, heal, Mega), CC0 music loops (lobby / battle / victory jingle), optional
+      official cries fetched like sprites (`pnpm fetch:audio`, never committed). Phones stay silent (same
+      room) and keep the vibration. **Still manual:** pick and add CC0 music files
+      (`apps/web/public/audio/README.md`); until then the music is silent.
+
+### Next iteration — battle information (requested 2026-09-28)
+
+- [ ] **Stats in the phone's Pokémon details sheet** (switch menu and forced switch): HP, Atk, Def, SpA,
+      SpD, Spe of each own Pokémon, with the stat raised by its nature in **green (▲)** and the lowered
+      one in **red (▼)** (state = icon + color, principle 6 of `12-design-system.md`). Data: the request
+      already carries the computed `stats` of every own Pokémon (`atk…spe`; HP = max HP from
+      `condition`); the **nature is not in the request**, so the server adds it (and its ±stats) from the
+      player's own set when enriching the request — owner-only data, never sent to the Host. Show the
+      active Pokémon's current stat stages there too (e.g. `Atk +2`).
+- [ ] **Field effects with their remaining duration on the Host:** weather, terrain, Trick Room / Gravity,
+      screens (Reflect, Light Screen, Aurora Veil), Tailwind, Safeguard, Mist… with **turns left**, and
+      entry hazards (Spikes ×1–3, Toxic Spikes ×1–2, Stealth Rock, Sticky Web) with their **layers**. The
+      spectator protocol carries no durations: `HostBattleModel` counts turns from `-weather` /
+      `-fieldstart` / `-sidestart` using the standard durations (5 turns; 8 with Light Clay / weather
+      rocks, which spectators can't see → show "5–8" until it ends) and counts repeated `-sidestart`
+      lines as hazard layers. Chips per side next to each side card, field-wide ones in the top bar;
+      consider mirroring them on the phones' battle menu.
+
+### Phase 2 — Full team builder 👉 next
 
 Per-Pokémon editor (species, item, ability, moves, nature, Stat Points), `TeamValidator` validation,
 Showdown text import/export, saved teams on the phone.
@@ -80,7 +125,8 @@ Locale tables from Showdown + our overrides, localized UI and battle narration, 
 
 ### Phase 5 — Polish
 
-Type-based and iconic move animations, weather/terrain effects, audio, spectators, replays, PWA, credits screen.
+Type-based and iconic move animations, weather/terrain effects, richer audio (per-type move SFX, more
+themes), spectators, replays, PWA, credits screen.
 
 ### Future extensions (backlog)
 

@@ -12,13 +12,18 @@ Everything needed to run, test and extend the codebase. Read `CLAUDE.md` first f
 
 ```bash
 pnpm install          # installs every workspace package
-pnpm fetch:sprites    # downloads trainer sprites into apps/web/public/sprites (git-ignored)
+pnpm fetch:sprites    # trainer + Pokémon sprites into apps/web/public/sprites (git-ignored, ~24 MB)
 cp .env.example .env  # optional: defaults work for local development
 pnpm dev              # server on :3001 + web on :5173 (both watch mode)
 ```
 
 Open `http://localhost:5173/host` on the PC. The QR automatically points to the PC's **LAN IP**
 (the Host asks the backend's `/api/info` for it), so phones on the same Wi-Fi can scan and join.
+
+Sprites: trainers and Pokémon (front + back for every species the randomizer can produce, plus their
+Mega / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
+`gen5ani`, then `ani`, then static `gen5`, and writes `apps/web/public/sprites/pokemon-manifest.json`; the
+web app falls back to the base forme (new Champions Megas without sprites) and then to a letter badge.
 
 LAN notes:
 
@@ -41,7 +46,9 @@ LAN notes:
 | `pnpm format` / `pnpm format:check`          | Prettier (+ Tailwind class sorting)                                                       |
 | `pnpm check`                                 | typecheck + lint + format:check + test (run before handing work back)                     |
 | `pnpm build`                                 | Web → `apps/web/dist`; server → `apps/server/dist` (tsup bundle incl. workspace packages) |
-| `pnpm fetch:sprites`                         | Download missing sprites (idempotent, sequential, polite)                                 |
+| `pnpm fetch:sprites`                         | Download missing sprites + write `pokemon-manifest.json` (idempotent, sequential, polite) |
+| `pnpm fetch:audio`                           | Optional: Pokémon cries + `audio/cries-manifest.json` (git-ignored, ~4 MB)                |
+| `pnpm test:e2e`                              | Playwright: 1 Host + 2 phones play a battle (reuses `pnpm dev`, system Edge)              |
 | `pnpm --filter @poke-air/core sim:smoke [n]` | Simulator benchmark: load time, RAM, ms/turn (spike S1)                                   |
 | `pnpm --filter @poke-air/server start`       | Run the built server (`node dist/index.js`)                                               |
 
@@ -136,9 +143,14 @@ Example: a new player action `player:foo`.
 - **Integration (server):** `buildApp()` + `listen({ port: 0 })` + real Socket.IO clients.
 - **Simulator (core):** `battle/showdown.test.ts` plays real battles with `default` choices. Use these as
   the template for BattleSession/OwnershipLayer tests (scripted choices instead of `default`).
-- **E2E (planned, Phase 1 hardening):** Playwright with 1 Host context + N mobile contexts. During Phase 0
-  this was done ad hoc with `playwright-core` and the system Edge (`chromium.launch({ channel: 'msedge' })`),
-  which avoids downloading browsers.
+- **Battles (core):** `battle-session.test.ts` / `match-controller.test.ts` play scripted battles with fixed
+  sets and a fixed seed (`testing/fixtures.ts`) and a fake scheduler (`testing/fake-scheduler.ts`): no waiting.
+- **Host scene (web):** `battle-scene/model.test.ts` runs the reducer over a recorded spectator log;
+  `playback.test.ts` drives the animation queue with manual timers.
+- **E2E:** `pnpm test:e2e` (`e2e/battle.spec.ts`, `@playwright/test`) opens `/host?speed=8` + two phone
+  contexts and plays a whole battle, then a rematch. Uses the system Edge (`E2E_CHANNEL=chrome` for Chrome),
+  so no browser download. `E2E_SCREENSHOTS=<dir>` saves a screenshot of every screen. Not part of
+  `pnpm check` (needs the dev servers; Playwright starts `pnpm dev` if nothing is running).
 
 ## Pitfalls (learned the hard way)
 
@@ -166,6 +178,18 @@ Example: a new player action `player:foo`.
   version; when upgrading run `pnpm check` + `sim:smoke` and re-verify the facts table in `docs/05`.
 - The package pulls `sqlite3`/`better-sqlite3` (Showdown chat server features); their build scripts are
   intentionally ignored in `pnpm-workspace.yaml`.
+- **Champions custom games are debug formats:** spectators would see exact HP and `|debug|` damage rolls.
+  `BattleSession` patches the instance after `>start` (`reportExactHP = false`, `debugMode = false`). Never
+  send the Host anything but the spectator channel.
+- **The server bundle keeps `pokemon-showdown` external** (tsup `external`): it is CommonJS with dynamic
+  requires esbuild can't bundle, so it is a runtime dependency of `apps/server`.
+- **Battle timings in tests:** `buildApp({ realtime: { matchTimings } })` shortens the countdown; core tests
+  use `createFakeScheduler()` instead of real timers.
+- **Host animation speed:** `/host?speed=4` plays the scene faster; Space / Enter / → skip queued animations;
+  `L` shows/hides the battle log.
+- **Audio only starts after a user gesture** (browser autoplay policy): the Home "Host a battle" click counts;
+  after a Host refresh the first click/key unlocks it. `zzfx` creates its `AudioContext` on import, so keep
+  it inside `host/audio/engine.ts` (never import it from tested modules).
 
 ## Simulator baseline (spike S1, measured 2026-09-25, Node 22.22, pokemon-showdown 0.11.11)
 

@@ -59,14 +59,21 @@ Sim ──|request| p1──► OwnershipLayer ──battle:request (filtered)�
                                      └─battle:request (filtered)──► Phone B (same side)
 Phone A ──battle:choose {pos:0, "move 2 1 mega"}──► Server validates owner/option
 Phone B ──battle:choose {pos:1, "switch 5"}───────► Server merges ──► `>p1 move 2 1 mega, switch 5` ──► Sim
-Sim ──spectator log──► Host ──(animates)──► host:turnAnimated ──► Server releases next request to phones
+Sim ──spectator log──► Host ──(animates)──► host:animated {upTo} ──► Server releases next request to phones
 ```
 
-- Start: `>start {"formatid": "<ruleset format>"}` + `>player p1 {"name": "...", "team": "<packed>"}`.
-- **Animation sync:** the sim resolves a turn instantly, but phones shouldn't show the next menu while the
-  Host is still animating. The Host sends `host:turnAnimated`; the server waits for it with a **timeout**
-  (e.g. 15 s) so a slow/disconnected Host never blocks the game.
-- **Turn timer** (configurable); on expiry, the missing part of the choice is auto-completed (`default`).
+- Start (implemented in `core/battle/battle-session.ts`): Poke-Air drives Showdown's `Battle` class directly
+  (what `BattleStream` wraps) with a synchronous `send` callback, so every call returns with its log chunk and
+  requests already delivered and `choose()` knows at once if the sim accepted the choice. Right after
+  `>start` the instance is patched (`reportExactHP = false`, `debugMode = false`): Champions custom games
+  are debug formats that would show spectators exact HP and damage rolls. Then both players are added.
+- **Animation sync** (core `MatchController`): the sim resolves a turn instantly, but phones shouldn't
+  show the next menu while the Host is still animating. Each request remembers the spectator log length
+  when it arrived; it is released to the phone once the Host reports `host:animated { upTo }` past that
+  point, after **15 s** anyway, or at once if the Host is offline. Meanwhile phones get
+  `battle:request { request: null }` ("look at the big screen"). The move to RESULTS waits the same way.
+- **Turn timer** (60 s per decision, from the moment the menu is released); on expiry the missing choices
+  are auto-completed with `default` (never Mega Evolves).
 - On the Host, `@pkmn/protocol` parses the log and **our own lightweight reducer** (`HostBattleModel`)
   keeps the displayed state (HP, status, boosts, field, Mega) and produces an **event queue** to animate
   (`|move|`, `|-damage|`, `|switch|`, `|-mega|`, `|faint|`…). We don't use `@pkmn/client`: it needs a
@@ -90,48 +97,54 @@ Conventions:
 - After every successful mutation the server broadcasts the full public snapshot `room:state` to the room
   (Host + phones). Private data goes through dedicated events to one socket only.
 
-### Implemented (Phase 0)
+### Implemented (Phase 0 + Phase 1)
 
-| Namespace | Event (client → server)  | Payload                                              | Ack data                             |
-| --------- | ------------------------ | ---------------------------------------------------- | ------------------------------------ |
-| `/host`   | `host:createRoom`        | `{ locale? }`                                        | `{ code, hostToken, room }`          |
-| `/host`   | `host:resumeRoom`        | `{ code, hostToken }`                                | `{ code, hostToken, room }`          |
-| `/host`   | `host:setFormat`         | `{ gameType: 'singles' \| 'doubles' }`               | —                                    |
-| `/host`   | `host:setLocale`         | `{ locale }`                                         | —                                    |
-| `/host`   | `host:kick`              | `{ playerId }`                                       | —                                    |
-| `/host`   | `host:startTeamBuilding` | `{}`                                                 | —                                    |
-| `/host`   | `host:backToLobby`       | `{}`                                                 | —                                    |
-| `/player` | `player:join`            | `{ code, name, avatar, playerId?, reconnectToken? }` | `{ playerId, reconnectToken, room }` |
-| `/player` | `player:update`          | `{ name?, avatar? }`                                 | —                                    |
-| `/player` | `player:switchTeam`      | `{ team: 'red' \| 'blue' }`                          | —                                    |
-| `/player` | `player:leave`           | `{}`                                                 | —                                    |
+| Namespace | Event (client → server)  | Payload                                                        | Ack data                             |
+| --------- | ------------------------ | -------------------------------------------------------------- | ------------------------------------ |
+| `/host`   | `host:createRoom`        | `{ locale? }`                                                  | `{ code, hostToken, room }`          |
+| `/host`   | `host:resumeRoom`        | `{ code, hostToken }`                                          | `{ code, hostToken, room }`          |
+| `/host`   | `host:setFormat`         | `{ gameType: 'singles' \| 'doubles' }`                         | —                                    |
+| `/host`   | `host:setLocale`         | `{ locale }`                                                   | —                                    |
+| `/host`   | `host:kick`              | `{ playerId }`                                                 | —                                    |
+| `/host`   | `host:startTeamBuilding` | `{}`                                                           | —                                    |
+| `/host`   | `host:backToLobby`       | `{}` (TEAM_BUILDING or RESULTS)                                | —                                    |
+| `/host`   | `host:animated`          | `{ upTo }` — log lines the scene has shown                     | —                                    |
+| `/host`   | `host:rematch`           | `{}` (RESULTS → TEAM_BUILDING, teams kept)                     | —                                    |
+| `/player` | `player:join`            | `{ code, name, avatar, playerId?, reconnectToken? }`           | `{ playerId, reconnectToken, room }` |
+| `/player` | `player:update`          | `{ name?, avatar? }`                                           | —                                    |
+| `/player` | `player:switchTeam`      | `{ team: 'red' \| 'blue' }`                                    | —                                    |
+| `/player` | `player:leave`           | `{}`                                                           | —                                    |
+| `/player` | `player:ready`           | `{ ready }` (needs ≥ 1 Pokémon)                                | —                                    |
+| `/player` | `team:randomize`         | `{ slots? }` — no slots = whole team                           | —                                    |
+| `/player` | `team:setSlot`           | `{ slot, set: null }` (Phase 1: remove only)                   | —                                    |
+| `/player` | `battle:choose`          | `{ choice, rqid? }` — `move N [mega]` · `switch N` · `default` | —                                    |
+| `/player` | `battle:undo`            | `{}`                                                           | —                                    |
+| `/player` | `battle:forfeit`         | `{}`                                                           | —                                    |
 
-| Namespace | Event (server → client) | Payload                                  |
-| --------- | ----------------------- | ---------------------------------------- |
-| both      | `room:state`            | `PublicRoomState` (see `room-state.ts`)  |
-| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'` |
+| Namespace | Event (server → client) | Payload                                                                              |
+| --------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| both      | `room:state`            | `PublicRoomState` (ready flags, team counts, countdown, result — no species)         |
+| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'`                                             |
+| `/player` | `team:state`            | Owner only: `{ quota, slots }`                                                       |
+| `/player` | `battle:request`        | Owner only: `{ request: BattleRequest \| null, choice }` (`null` = watch the screen) |
+| `/host`   | `battle:log`            | `{ from, lines, moves, resync? }` — public spectator lines, append-only              |
+| both      | `battle:waiting`        | `{ waitingFor: playerId[], timerMs }`                                                |
 
 `player:join` with a valid `playerId` + `reconnectToken` **rejoins** the existing seat (any phase);
 otherwise it creates a new player (LOBBY only). A newer socket for the same seat replaces the older one
-(`player:removed: 'replaced'`).
+(`player:removed: 'replaced'`). After (re)attaching, a phone gets its `team:state` and, mid-battle, its
+current `battle:request`; a Host gets the whole log with `resync: true` and rebuilds the scene without
+animating the past. Battle choices are rejected through the ack (`INVALID_CHOICE`, `STALE_REQUEST`,
+`ALREADY_CHOSEN`, `NO_PENDING_REQUEST`…); the result lives in `room:state.result` (no `battle:end` event).
 
-### Planned (Phase 1+) — see `docs/11-phase-1-plan.md` for exact payloads
+### Planned (Phase 2+)
 
-| Namespace | Event                            | Direction | Purpose                                                        |
-| --------- | -------------------------------- | --------- | -------------------------------------------------------------- |
-| `/player` | `team:randomize`                 | c → s     | Fill/reroll slots with random Champions sets                   |
-| `/player` | `team:setSlot`                   | c → s     | Set or remove (`null`) one slot (editor in Phase 2)            |
-| `/player` | `team:import`                    | c → s     | Showdown text paste (Phase 2)                                  |
-| `/player` | `player:ready`                   | c → s     | Toggle ready                                                   |
-| `/player` | `team:state`                     | s → c     | Owner-only: own slots, quota, validation errors                |
-| `/player` | `battle:request`                 | s → c     | Owner-only: filtered Showdown request                          |
-| `/player` | `battle:choose`                  | c → s     | Choice for the player's position(s)                            |
-| `/player` | `battle:undo` / `battle:forfeit` | c → s     | Undo current choice / forfeit                                  |
-| `/host`   | `battle:log`                     | s → c     | Spectator protocol lines, append-only with index (resume-safe) |
-| `/host`   | `host:turnAnimated`              | c → s     | Host finished animating turn N (releases next requests)        |
-| both      | `battle:waiting`                 | s → c     | Who still has to choose + timer deadline                       |
-| both      | `battle:end`                     | s → c     | Winner + summary                                               |
-| `/host`   | `host:rematch`                   | c → s     | RESULTS → TEAM_BUILDING keeping teams                          |
+| Namespace | Event           | Direction | Purpose                                                        |
+| --------- | --------------- | --------- | -------------------------------------------------------------- |
+| `/player` | `team:setSlot`  | c → s     | Full sets from the editor, validated with `TeamValidator`      |
+| `/player` | `team:import`   | c → s     | Showdown text paste (Phase 2)                                  |
+| `/player` | `team:state`    | s → c     | + validation errors (Phase 2)                                  |
+| `/player` | `battle:choose` | c → s     | Targets (`move 1 2`) and per-position parts (Phase 3, doubles) |
 
 ## Identity, sessions and reconnection
 
@@ -171,7 +184,7 @@ Full dex data (species, learnsets, items, abilities) weighs several MB. Strategy
 | Styling              | **Tailwind CSS 4 + Sass (SCSS)**           | Tailwind for layout/typography; SCSS partials for design-system components (see `10-development.md` § Styles)                                                    |
 | Animation            | **CSS / Web Animations API + Motion**      | Showdown sprites are animated GIFs → DOM is the natural fit. PixiJS only if particle effects are needed                                                          |
 | Battle model on Host | **@pkmn/protocol** + own reducer           | Parse the spectator log; `@pkmn/client` not used (its dex lacks the Champions mod)                                                                               |
-| Sprite URLs          | **@pkmn/img** (with our own `domain`)      | Resolves sprite paths/fallbacks; files are self-hosted by `pnpm fetch:sprites`                                                                                   |
+| Sprite URLs          | **@pkmn/img** (download time only)         | `pnpm fetch:sprites` resolves paths/fallbacks and writes `sprites/pokemon-manifest.json`; the web reads the manifest (files self-hosted)                         |
 | i18n                 | **i18next + react-i18next**                | Namespaces, interpolation, lazy-loaded locales                                                                                                                   |
 | QR                   | **qrcode.react**                           |                                                                                                                                                                  |
 | Tests                | **Vitest**, **Playwright**                 | Playwright with several contexts simulates 1 Host + N phones                                                                                                     |
@@ -194,39 +207,46 @@ poke-air/
 │  │     ├─ with-validation.ts    ✅ zod validation + Result ack + RoomError mapping
 │  │     ├─ host-handlers.ts      ✅ /host events
 │  │     ├─ player-handlers.ts    ✅ /player events
-│  │     └─ battle-handlers.ts    🔜 Phase 1
+│  │     ├─ battle-handlers.ts    ✅ battle events → core MatchController
+│  │     └─ rate-limit.ts         ✅ token bucket (joins, rooms per IP)
 │  └─ web/src/
 │     ├─ main.tsx                 ✅ router, lazy routes per face
 │     ├─ index.css                ✅ Tailwind entry + design tokens (@theme static)
 │     ├─ styles/                  ✅ SCSS: abstracts, base, components, screens (main.scss entry)
 │     ├─ home/                    ✅ landing (host / join by code) + HeroScene illustration
 │     ├─ host/                    ✅ HostScreen, HostHeader, HostLobby, JoinPanel, TeamPanel, PlayerCard,
-│     │                              HostTeamBuilding, host-store
-│     │  └─ battle-scene/         🔜 Phase 1: stage, sprites, HP bars, animation queue, HostBattleModel
-│     ├─ controller/              ✅ ControllerScreen, JoinForm, ControllerLobby, controller-store
-│     │  ├─ team-builder/         🔜 Phase 1
-│     │  └─ battle/               🔜 Phase 1
-│     ├─ components/              ✅ Stage (1920×1080), TrainerSprite, LanguageSelect
+│     │                              HostTeamBuilding (countdown), HostResults, SoundMenu, host-store
+│     │  ├─ audio/                ✅ ZzFX sounds + event mapping, music, cries, settings store
+│     │  └─ battle-scene/         ✅ model (HostBattleModel reducer), playback (animation queue), HostBattle,
+│     │                              SideCard, ActiveSlot, BattleLog, NarrationText
+│     ├─ controller/              ✅ ControllerScreen, JoinForm, ControllerLobby, ControllerResults, store
+│     │  ├─ team-builder/         ✅ TeamBuilder (randomizer, remove, ready)
+│     │  └─ battle/               ✅ ControllerBattle (menu/fight/party/waiting), sheets, TurnTimerChip
+│     ├─ components/              ✅ Stage (1920×1080), TrainerSprite, PokemonSprite, LanguageSelect
 │     │  └─ ui/                   ✅ design-system primitives: Button, IconButton, Icon, PokeBall,
-│     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip
+│     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip, Sheet
 │     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en/ui.json
-│     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale, cn, team
+│     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale, cn, team,
+│                                    pokemon-sprites (manifest), pokemon-types, use-countdown
 ├─ packages/
-│  ├─ shared/src/                 ✅ constants, avatars, errors, room-state, schemas (zod), events
+│  ├─ shared/src/                 ✅ constants, avatars, errors, team, battle, room-state, schemas (zod), events
 │  ├─ core/src/
 │  │  ├─ rooms/                   ✅ Room, RoomManager, composition, room codes, RoomError (+ tests)
 │  │  ├─ battle/showdown.ts       ✅ the ONLY import point for pokemon-showdown (+ smoke tests)
-│  │  ├─ team/                    🔜 Phase 1: TeamService (randomizer, quotas, validation)
-│  │  └─ battle/                  🔜 Phase 1: BattleSession, OwnershipLayer, TurnTimer
-│  └─ data/scripts/               ✅ fetch-sprites.ts (trainers) · 🔜 Pokémon sprites, compact dex, locales
+│  │  ├─ team/                    ✅ TeamService (random sets, Species Clause), battleRoster · 🔜 validation
+│  │  ├─ battle/                  ✅ BattleSession, MatchController, OwnershipLayer (identity), TurnTimer,
+│  │  │                              request enrichment
+│  │  └─ time.ts                  ✅ injectable Scheduler (fake one in testing/)
+│  └─ data/scripts/               ✅ fetch-sprites.ts (trainers + Pokémon + manifest), fetch-audio.ts (cries) · 🔜 compact dex, locales
+├─ e2e/                          ✅ Playwright: 1 Host + 2 phones play a battle (`pnpm test:e2e`)
 └─ docs/
 ```
 
 ## Basic security
 
-- 4-letter room codes (24-letter alphabet without I/O → ~331k combinations). 🔜 Rate limiting on
-  `player:join` per IP (Phase 1 hardening).
-- Max 4 players per room in v1 (2 per team). 🔜 Max rooms per IP.
+- 4-letter room codes (24-letter alphabet without I/O → ~331k combinations). ✅ Rate limiting on
+  `player:join` per IP (token bucket).
+- Max 4 players per room in v1 (2 per team). ✅ Max 5 open rooms per IP (`x-forwarded-for` in production).
 - The server never trusts clients: validates ownership of every position, choices against the current
   `request`, and teams with `TeamValidator`.
 - No passwords or accounts (AirConsole-style): the room code is the only key. Rooms are ephemeral and

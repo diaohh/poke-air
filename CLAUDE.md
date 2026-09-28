@@ -19,11 +19,13 @@ phones are the controllers).
 
 ## Current status
 
-- ✅ **Phase 0 done**: monorepo + tooling + **lobby vertical slice working end-to-end** (create room, QR with
-  LAN IP, join/rejoin, switch team, kick, Host resume, composition validation, LOBBY ↔ TEAM_BUILDING).
-  Simulator smoke-tested with the Champions mod. `pnpm check` green.
-- 👉 **Next: Phase 1 (playable singles MVP)** — follow **`docs/11-phase-1-plan.md`** (work packages WP1–WP8,
-  decisions already taken, definition of done).
+- ✅ **Phase 0 done**: monorepo + tooling + lobby vertical slice + "Stadium Wine" design system.
+- ✅ **Phase 1 implemented** (pending manual validation): randomizer team building + Ready, automatic battle
+  start, singles battles (moves, switches, Mega, timer, undo, forfeit) with the Host scene animated from the
+  spectator log and private phone controls, battle log panel, Host audio (ZzFX + optional music/cries),
+  results + rematch, refresh/rejoin in every phase, rate limits.
+  `pnpm check` green (76 tests) + `pnpm test:e2e`. What changed vs. the plan: `docs/11-phase-1-plan.md` § Status.
+- 👉 **Next: Phase 2 (full team builder)** — spike S3 (roster & validation) first; see `docs/09-roadmap.md`.
 - Not done on purpose: CI/CD and deployment (decision D-23).
 
 ## Documents
@@ -37,10 +39,10 @@ phones are the controllers).
 | `docs/05-game-rules-and-mechanics.md`   | Champions format, ruleset presets, randomizer, **verified simulator facts**        |
 | `docs/06-i18n.md`                       | i18n: language availability in sources, per-room locale                            |
 | `docs/07-hosting-and-deployment.md`     | $0 hosting strategy and alternatives                                               |
-| `docs/08-decisions.md`                  | Decision log (D-01…D-23) + open questions                                          |
+| `docs/08-decisions.md`                  | Decision log (D-01…D-33) + open questions                                          |
 | `docs/09-roadmap.md`                    | Status, spikes, phases, risks                                                      |
 | `docs/10-development.md`                | **Setup, commands, env vars, feature recipe, testing, pitfalls**                   |
-| `docs/11-phase-1-plan.md`               | **Next session's implementation plan**                                             |
+| `docs/11-phase-1-plan.md`               | Phase 1 plan + **what was actually built** (§ Status)                              |
 | `docs/12-design-system.md`              | **UI design system** (tokens, components, screen specs) — read before any UI work  |
 | `docs/design/ui-mockup.html`            | Interactive HTML mockup (~70 KB; open only for a specific screen, the .md wins)    |
 
@@ -49,9 +51,11 @@ phones are the controllers).
 ```bash
 nvm use 22.22.0        # Node ≥ 22.22 required (.nvmrc)
 pnpm install
-pnpm fetch:sprites     # trainer sprites → apps/web/public/sprites (git-ignored, never commit)
+pnpm fetch:sprites     # trainer + Pokémon sprites → apps/web/public/sprites (git-ignored, never commit)
+pnpm fetch:audio       # optional Pokémon cries → apps/web/public/audio/cries (git-ignored, never commit)
 pnpm dev               # server :3001 + web :5173 → open http://localhost:5173/host
 pnpm check             # typecheck + lint (ESLint + Stylelint) + format:check + test — run before handing work back
+pnpm test:e2e          # Playwright: 1 Host + 2 phones play a battle (system Edge; reuses pnpm dev)
 pnpm lint:fix          # ESLint + Stylelint autofix; `pnpm format` for Prettier
 pnpm build             # web → apps/web/dist, server → apps/server/dist
 pnpm --filter @poke-air/core sim:smoke   # simulator benchmark
@@ -97,9 +101,10 @@ pnpm --filter @poke-air/core sim:smoke   # simulator benchmark
 TypeScript 6.0 (strict; TS 7 blocked by typescript-eslint) · pnpm workspaces · Node ≥ 22.22 ·
 **Server:** Fastify 5, Socket.IO 4, zod 4, pino, tsup, tsx · **Web:** Vite 8, React 19, React Router 8,
 Zustand 5, Tailwind CSS 4 + Sass (SCSS), Fontsource fonts, i18next/react-i18next, qrcode.react ·
-**Battle (planned):** `@pkmn/protocol` + own reducer on the Host, `@pkmn/img` for sprite URLs ·
+**Battle:** Showdown `Battle` driven by core `BattleSession`/`MatchController`; `@pkmn/protocol` + own
+reducer (`HostBattleModel`) on the Host; `@pkmn/img` at sprite-download time (manifest) ·
 **Tooling:** ESLint 10 + eslint-config-prettier, Stylelint (standard-scss), Prettier + tailwind plugin ·
-**Tests:** Vitest 5 (Playwright E2E planned).
+**Tests:** Vitest 5, Playwright (`@playwright/test`, system Edge).
 
 ## Conventions
 

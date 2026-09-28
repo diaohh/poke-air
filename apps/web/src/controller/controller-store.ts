@@ -3,9 +3,12 @@ import {
   type BattleRequestPayload,
   type BattleWaiting,
   type ErrorCode,
+  type ErrorPayload,
   type PlayerRemovedReason,
+  type PokemonSetData,
   type PublicRoomState,
   type TeamId,
+  type TeamImportResult,
   type TeamState,
   type TrainerAvatar,
 } from '@poke-air/shared';
@@ -42,6 +45,8 @@ interface ControllerStore {
   /** A team/battle action is waiting for its ack. */
   busy: boolean;
   error?: ErrorCode | 'CONNECTION';
+  /** Params of the last error (e.g. the validator's details for `INVALID_SET`). */
+  errorParams?: ErrorPayload['params'];
   removedReason?: PlayerRemovedReason;
   /** Opens the socket for a room code; auto-rejoins a saved seat. Returns a cleanup function. */
   open: (code: string) => () => void;
@@ -51,6 +56,10 @@ interface ControllerStore {
   leave: () => Promise<void>;
   randomize: (slots?: number[]) => Promise<void>;
   clearSlot: (slot: number) => Promise<void>;
+  /** Saves an edited set; `true` when the server accepted it. */
+  saveSlot: (slot: number, set: PokemonSetData) => Promise<boolean>;
+  /** Replaces the team with Showdown text; the ack's counts, or `null` on error. */
+  importTeam: (text: string) => Promise<TeamImportResult | null>;
   setReady: (ready: boolean) => Promise<void>;
   choose: (choice: string) => Promise<void>;
   undo: () => Promise<void>;
@@ -110,13 +119,14 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
   };
 
   /** Sends a team/battle action; stores the error code on failure. Returns success. */
-  const act = async (
-    send: (s: PlayerSocket) => Promise<{ ok: boolean; error?: { code: ErrorCode } }>,
-  ) => {
+  const act = async (send: (s: PlayerSocket) => Promise<{ ok: boolean; error?: ErrorPayload }>) => {
     if (!socket) return false;
-    set({ busy: true, error: undefined });
+    set({ busy: true, error: undefined, errorParams: undefined });
     const result = await send(socket);
-    set({ busy: false, ...(result.ok ? {} : { error: result.error?.code }) });
+    set({
+      busy: false,
+      ...(result.ok ? {} : { error: result.error?.code, errorParams: result.error?.params }),
+    });
     return result.ok;
   };
 
@@ -198,6 +208,17 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
     clearSlot: async (slot) => {
       await act((s) => s.emitWithAck('team:setSlot', { slot, set: null }));
     },
+    saveSlot: async (slot, pokemon) =>
+      act((s) => s.emitWithAck('team:setSlot', { slot, set: pokemon })),
+    importTeam: async (text) => {
+      let counts: TeamImportResult | null = null;
+      await act(async (s) => {
+        const result = await s.emitWithAck('team:import', { text });
+        if (result.ok) counts = { count: result.count, skipped: result.skipped };
+        return result;
+      });
+      return counts;
+    },
     setReady: async (ready) => {
       await act((s) => s.emitWithAck('player:ready', { ready }));
     },
@@ -223,6 +244,6 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
     forfeit: async () => {
       await act((s) => s.emitWithAck('battle:forfeit', {}));
     },
-    clearError: () => set({ error: undefined }),
+    clearError: () => set({ error: undefined, errorParams: undefined }),
   };
 });

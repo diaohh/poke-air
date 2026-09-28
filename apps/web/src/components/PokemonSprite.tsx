@@ -42,7 +42,11 @@ export function PokemonSprite({
           'mon-placeholder grid place-items-center rounded-full font-display leading-none',
           className,
         )}
-        style={{ width: 64 * scale, height: 64 * scale, fontSize: 30 * scale, ...style }}
+        style={
+          fit
+            ? { width: '82%', height: '82%', fontSize: '1.5em', ...style }
+            : { width: 64 * scale, height: 64 * scale, fontSize: 30 * scale, ...style }
+        }
       >
         {species.charAt(0)}
       </span>

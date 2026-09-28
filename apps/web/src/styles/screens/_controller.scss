@@ -71,6 +71,88 @@
   }
 }
 
+// Full-screen searchable list over the phone (species, items, moves, natures).
+.picker {
+  background:
+    var(--deco-dots) 0 0 / 22px 22px,
+    linear-gradient(180deg, var(--tint), var(--soft));
+  animation: sheet-up 0.18s ease-out;
+}
+
+// Tappable row in pickers and the team menu.
+.picker-row {
+  background: color(paper);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--deep) 22%, transparent);
+  cursor: pointer;
+
+  &:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--deep) 22%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+// Single choice among a few (abilities): selected = team color with a check icon.
+.choice-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background: color(paper-2);
+  color: color(ink-2);
+
+  &--on {
+    background: var(--c);
+    color: color(paper);
+    box-shadow: 0 3px 0 var(--deep);
+  }
+}
+
+// Nature picker stat buttons: selected raise = green ▲, selected lower = red ▼ (with the arrow).
+.nature-stat {
+  background: color(paper-2);
+  color: color(ink-2);
+  box-shadow: 0 3px 0 #{alpha(ink, 10%)};
+
+  &--up {
+    background: color(ok-soft);
+    color: color(ok-deep);
+    box-shadow:
+      inset 0 0 0 3px color(ok),
+      0 3px 0 color(ok-deep);
+  }
+
+  &--down {
+    background: color(team-red-tint);
+    color: color(team-red-deep);
+    box-shadow:
+      inset 0 0 0 3px color(team-red),
+      0 3px 0 color(team-red-deep);
+  }
+}
+
+// Stat Points stepper buttons and slider.
+.sp-step {
+  background: color(paper-2);
+  color: color(ink);
+
+  &:active:not(:disabled) {
+    background: var(--soft);
+  }
+
+  &:disabled {
+    color: color(muted);
+    opacity: 0.5;
+  }
+}
+
+.sp-slider {
+  accent-color: var(--c);
+}
+
 .mon-card {
   &__chip {
     background: color(paper-2);

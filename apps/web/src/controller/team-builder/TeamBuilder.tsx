@@ -1,12 +1,17 @@
 import type { PokemonSetData, PublicPlayer, PublicRoomState } from '@poke-air/shared';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PokemonSprite } from '../../components/PokemonSprite';
 import { Button } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { IconButton } from '../../components/ui/IconButton';
 import { PokeBall } from '../../components/ui/PokeBall';
+import { useTeamDex } from '../../lib/team-dex';
 import { useCountdown } from '../../lib/use-countdown';
 import { useControllerStore } from '../controller-store';
+import { ErrorNote } from './ErrorNote';
+import { PokemonEditor } from './PokemonEditor';
+import { TeamMenu } from './TeamMenu';
 
 interface Props {
   room: PublicRoomState;
@@ -14,25 +19,67 @@ interface Props {
 }
 
 /**
- * Phone TEAM_BUILDING (Phase 1: randomizer only). Quota-sized list of slots: each Pokémon card has
- * reroll + remove; empty slots add a random Pokémon. Randomize fills the empty slots (or rerolls
- * the whole team when it is full). Any change un-readies the player.
+ * Phone TEAM_BUILDING (Phase 2). Quota-sized list of slots: each Pokémon card opens the editor
+ * (✏️) or is removed (✕); empty slots add a Pokémon by search or at random (🎲). Randomize fills the
+ * empty slots (or rerolls the whole team when it is full). The Team menu imports / exports Showdown
+ * text and keeps saved teams. Any change un-readies the player.
  */
 export function TeamBuilder({ room, me }: Props) {
   const { t } = useTranslation();
-  const { team, busy, error, randomize, clearSlot, setReady, roomAt } = useControllerStore();
+  const { team, busy, error, errorParams, randomize, clearSlot, setReady, clearError, roomAt } =
+    useControllerStore();
   const seconds = useCountdown(room.battleCountdownMs, roomAt);
+  const [editing, setEditingSlot] = useState<number | null>(null);
+  const [menuOpen, setMenuOpenState] = useState(false);
+  // Errors belong to the view that caused them: start the editor and the menu clean.
+  const setEditing = (slot: number | null) => {
+    clearError();
+    setEditingSlot(slot);
+  };
+  const setMenuOpen = (open: boolean) => {
+    clearError();
+    setMenuOpenState(open);
+  };
+  const [notice, setNotice] = useState<string | null>(null);
+  // Start loading the dex while the player looks at the list (the editor needs it).
+  useTeamDex();
+
   const slots = team?.slots ?? Array.from({ length: me.quota }, () => null);
+  const sets = slots.filter((set): set is PokemonSetData => !!set);
   const empty = slots.flatMap((set, i) => (set ? [] : [i]));
-  const count = slots.length - empty.length;
+  const count = sets.length;
+
+  if (editing !== null) {
+    return (
+      <PokemonEditor
+        key={editing}
+        slot={editing}
+        initial={slots[editing] ?? null}
+        otherSpecies={slots.flatMap((set, i) => (set && i !== editing ? [set.species] : []))}
+        onDone={() => setEditing(null)}
+      />
+    );
+  }
+
+  const act = (action: () => Promise<unknown>) => {
+    setNotice(null);
+    void action();
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-[30px] leading-tight">{t('teamBuilder.title')}</h1>
-        <span className="text-[15px] font-extrabold text-(color:--deep)">
+        <span className="ml-auto text-[15px] font-extrabold text-(color:--deep)">
           {t('teamBuilder.count', { count, quota: slots.length })}
         </span>
+        <IconButton
+          icon="menu"
+          label={t('teamBuilder.menu.title')}
+          disabled={busy}
+          onClick={() => setMenuOpen(true)}
+          className="size-11 text-xl"
+        />
       </div>
 
       {seconds !== null && (
@@ -52,34 +99,46 @@ export function TeamBuilder({ room, me }: Props) {
               key={`${slot}-${set.species}`}
               set={set}
               disabled={busy}
-              onReroll={() => void randomize([slot])}
-              onRemove={() => void clearSlot(slot)}
+              onEdit={() => setEditing(slot)}
+              onRemove={() => act(() => clearSlot(slot))}
             />
           ) : (
-            <button
-              key={`empty-${slot}`}
-              type="button"
-              disabled={busy}
-              onClick={() => void randomize([slot])}
-              className="slot-empty flex min-h-[72px] shrink-0 items-center justify-center gap-2.5 rounded-[22px] text-base font-extrabold"
-            >
-              <Icon name="dice" />
-              {t('teamBuilder.addRandom')}
-            </button>
+            <div key={`empty-${slot}`} className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setEditing(slot)}
+                className="slot-empty flex min-h-[72px] flex-1 items-center justify-center gap-2.5 rounded-[22px] text-base font-extrabold"
+              >
+                <Icon name="plus" />
+                {t('teamBuilder.addPokemon')}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={t('teamBuilder.addRandom')}
+                title={t('teamBuilder.addRandom')}
+                onClick={() => act(() => randomize([slot]))}
+                className="slot-empty grid min-h-[72px] w-[72px] shrink-0 place-items-center rounded-[22px] text-2xl"
+              >
+                <Icon name="dice" />
+              </button>
+            </div>
           ),
         )}
       </div>
 
-      {error && (
-        <p role="alert" className="text-center text-sm font-semibold text-warn-deep">
-          {t(`errors.${error}`)}
+      {notice && !error && (
+        <p role="status" className="text-center text-sm font-semibold text-ok-deep">
+          {notice}
         </p>
       )}
+      {!menuOpen && <ErrorNote error={error} params={errorParams} />}
 
       <Button
         variant="gold"
         disabled={busy}
-        onClick={() => void randomize(empty.length > 0 ? empty : undefined)}
+        onClick={() => act(() => randomize(empty.length > 0 ? empty : undefined))}
         className="min-h-13.5 w-full rounded-md text-[17px]"
       >
         <Icon name="dice" />
@@ -108,8 +167,10 @@ export function TeamBuilder({ room, me }: Props) {
         </Button>
       )}
       <p role="status" className="text-center text-[13px] font-semibold text-ink-2">
-        {count === 0 ? t('teamBuilder.emptyHint') : me.ready ? t('teamBuilder.waitingOthers') : ' '}
+        {count === 0 ? t('teamBuilder.emptyHint') : me.ready ? t('teamBuilder.waitingOthers') : ' '}
       </p>
+
+      {menuOpen && <TeamMenu sets={sets} onClose={() => setMenuOpen(false)} onNotice={setNotice} />}
     </div>
   );
 }
@@ -117,31 +178,38 @@ export function TeamBuilder({ room, me }: Props) {
 interface CardProps {
   set: PokemonSetData;
   disabled: boolean;
-  onReroll: () => void;
+  onEdit: () => void;
   onRemove: () => void;
 }
 
-/** Icon, name, @ item, ability, nature, the 4 moves (no type chips) + reroll / remove. */
-function PokemonCard({ set, disabled, onReroll, onRemove }: CardProps) {
+/** Icon, name, @ item, ability, nature, the 4 moves (no type chips) + edit / remove. */
+function PokemonCard({ set, disabled, onEdit, onRemove }: CardProps) {
   const { t } = useTranslation();
   return (
     <article className="phone-card shrink-0 rounded-[22px] p-3 pb-3.5">
       <div className="flex items-center gap-3">
-        <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-(color:--tint)">
-          <PokemonSprite species={set.species} decorative fit />
-        </div>
-        <div className="min-w-0 flex-1">
-          <strong className="block truncate text-lg font-extrabold">{set.species}</strong>
-          <span className="block truncate text-[13px] text-ink-2">
-            {set.item ? t('teamBuilder.item', { item: set.item }) : t('teamBuilder.noItem')}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onEdit}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-(color:--tint)">
+            <PokemonSprite species={set.species} decorative fit />
           </span>
-        </div>
+          <span className="min-w-0 flex-1">
+            <strong className="block truncate text-lg font-extrabold">{set.species}</strong>
+            <span className="block truncate text-[13px] text-ink-2">
+              {set.item ? t('teamBuilder.item', { item: set.item }) : t('teamBuilder.noItem')}
+            </span>
+          </span>
+        </button>
         <div className="flex gap-1.5">
           <IconButton
-            icon="dice"
-            label={t('teamBuilder.reroll', { name: set.species })}
+            icon="edit"
+            label={t('teamBuilder.edit', { name: set.species })}
             disabled={disabled}
-            onClick={onReroll}
+            onClick={onEdit}
             className="size-10 text-lg"
           />
           <IconButton

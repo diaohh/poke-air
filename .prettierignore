@@ -3,7 +3,11 @@ dist
 coverage
 pnpm-lock.yaml
 apps/web/public/sprites
+apps/web/public/audio/cries
+apps/web/public/audio/cries-manifest.json
 apps/web/public/data
+test-results
+playwright-report
 
 # Design mockups (reference only, not app code)
 docs/design/

@@ -1,6 +1,9 @@
 node_modules/
 dist/
 coverage/
+# Playwright output
+test-results/
+playwright-report/
 *.log
 .env
 .env.*
@@ -11,6 +14,8 @@ coverage/
 
 # Pokémon assets are never committed (see docs/03-data-sources-and-licensing.md)
 apps/web/public/sprites/
+apps/web/public/audio/cries/
+apps/web/public/audio/cries-manifest.json
 # Generated data (packages/data output)
 apps/web/public/data/
 

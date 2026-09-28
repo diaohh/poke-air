@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "fetch:sprites": "pnpm --filter @poke-air/data fetch:sprites"
+    "fetch:sprites": "pnpm --filter @poke-air/data fetch:sprites",
+    "fetch:audio": "pnpm --filter @poke-air/data fetch:audio"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

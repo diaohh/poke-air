@@ -5,55 +5,102 @@
  * (docs/03-data-sources-and-licensing.md). We fetch each file ONCE, skip files that already exist,
  * and go sequentially to be gentle with their server.
  *
- * Currently: trainer avatars. Phase 1 adds Pokémon sprites (gen5ani front/back) for the roster.
+ * - Trainer avatars: `sprites/trainers/<id>.png`.
+ * - Pokémon: front + back sprites for every species a battle can show (`battleRoster()` from core:
+ *   the Champions random-set species plus their Mega / battle-only formes). For each one we try
+ *   `gen5ani`, then `ani`, then static `gen5` (new Champions Megas often only exist as static
+ *   sprites), and record what we got in `sprites/pokemon-manifest.json`, which the web app reads.
  */
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { TRAINER_AVATARS } from '@poke-air/shared';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Sprites } from '@pkmn/img';
+import { battleRoster } from '@poke-air/core';
+import { toId, TRAINER_AVATARS } from '@poke-air/shared';
+import { download, PUBLIC_DIR, report, SHOWDOWN_HOST as HOST, stats } from './lib/download.js';
 
-const SOURCE = 'https://play.pokemonshowdown.com/sprites';
-const OUTPUT = join(dirname(fileURLToPath(import.meta.url)), '../../../apps/web/public/sprites');
-const DELAY_MS = 150;
+const SOURCE = `https://${HOST}/sprites`;
+const OUTPUT = join(PUBLIC_DIR, 'sprites');
+const MANIFEST = join(OUTPUT, 'pokemon-manifest.json');
+/** Preferred graphics first. `@pkmn/img` already falls back to what it knows exists. */
+const GENS = ['gen5ani', 'ani', 'gen5'] as const;
+const SIDES = { front: 'p2', back: 'p1' } as const;
 
-interface Job {
-  url: string;
-  file: string;
+type Facing = keyof typeof SIDES;
+
+export interface SpriteEntry {
+  /** Path under the web root, e.g. "/sprites/gen5ani/garchomp.gif". */
+  src: string;
+  w: number;
+  h: number;
+  pixelated: boolean;
+}
+export type SpriteManifest = Record<string, Partial<Record<Facing, SpriteEntry>>>;
+
+async function fetchTrainers(): Promise<void> {
+  for (const id of TRAINER_AVATARS) {
+    const url = `${SOURCE}/trainers/${id}.png`;
+    if (!(await download(url, join(OUTPUT, 'trainers', `${id}.png`)))) {
+      stats.failed.push(`${url} (missing)`);
+    }
+  }
 }
 
-const jobs: Job[] = TRAINER_AVATARS.map((id) => ({
-  url: `${SOURCE}/trainers/${id}.png`,
-  file: join(OUTPUT, 'trainers', `${id}.png`),
-}));
-
-let downloaded = 0;
-let skipped = 0;
-const failed: string[] = [];
-
-for (const { url, file } of jobs) {
-  if (existsSync(file)) {
-    skipped++;
-    continue;
+/** First candidate sprite that exists locally or can be downloaded. */
+async function resolveSprite(species: string, facing: Facing): Promise<SpriteEntry | undefined> {
+  const seen = new Set<string>();
+  for (const gen of GENS) {
+    const sprite = Sprites.getPokemon(species, { gen, side: SIDES[facing], domain: HOST });
+    if (seen.has(sprite.url)) continue;
+    seen.add(sprite.url);
+    const path = new URL(sprite.url).pathname; // "/sprites/gen5ani/garchomp.gif"
+    const file = join(OUTPUT, path.replace(/^\/sprites\//, ''));
+    if (await download(sprite.url, file)) {
+      return { src: path, w: sprite.w, h: sprite.h, pixelated: sprite.pixelated };
+    }
   }
+  return undefined;
+}
+
+async function readManifest(): Promise<SpriteManifest> {
   try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'poke-air sprite sync (fan project)' },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    await mkdir(dirname(file), { recursive: true });
-    await writeFile(file, Buffer.from(await response.arrayBuffer()));
-    downloaded++;
-    await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
-  } catch (error) {
-    failed.push(`${url} (${(error as Error).message})`);
+    return JSON.parse(await readFile(MANIFEST, 'utf8')) as SpriteManifest;
+  } catch {
+    return {};
   }
 }
 
-console.log(
-  `Sprites: ${downloaded} downloaded, ${skipped} already present, ${failed.length} failed.`,
-);
-if (failed.length > 0) {
-  console.error(failed.join('\n'));
-  process.exitCode = 1;
+async function fetchPokemon(): Promise<void> {
+  const manifest = await readManifest();
+  const roster = battleRoster();
+  const missing: string[] = [];
+  console.log(`Pokémon roster: ${roster.length} species/formes.`);
+
+  for (const [index, species] of roster.entries()) {
+    const id = toId(species);
+    const entry = (manifest[id] ??= {});
+    for (const facing of Object.keys(SIDES) as Facing[]) {
+      const known = entry[facing];
+      if (known && existsSync(join(OUTPUT, known.src.replace(/^\/sprites\//, '')))) {
+        stats.skipped++;
+        continue;
+      }
+      const sprite = await resolveSprite(species, facing);
+      if (sprite) entry[facing] = sprite;
+      else missing.push(`${species} (${facing})`);
+    }
+    if ((index + 1) % 50 === 0) console.log(`  ${index + 1} / ${roster.length}`);
+  }
+
+  await mkdir(OUTPUT, { recursive: true });
+  await writeFile(MANIFEST, `${JSON.stringify(manifest)}\n`);
+  if (missing.length > 0) {
+    console.warn(`No sprite found for ${missing.length} (the app shows a placeholder):`);
+    console.warn(`  ${missing.join(', ')}`);
+  }
 }
+
+await fetchTrainers();
+await fetchPokemon();
+
+report('Sprites');

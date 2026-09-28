@@ -10,12 +10,15 @@
     "disconnected": "Disconnected",
     "you": "You",
     "language": "Language",
-    "roomCode": "Room code {{code}}"
+    "roomCode": "Room code {{code}}",
+    "back": "Back",
+    "close": "Close"
   },
   "status": {
     "ready": "Ready",
     "building": "Building",
-    "pending": "Pending"
+    "pending": "Pending",
+    "choosing": "Choosing"
   },
   "home": {
     "heroTitle": "Your <wine>phone</wine>.<br/>Your <red>team</red>.<br/><mark>Your battle.</mark>",
@@ -28,7 +31,116 @@
   },
   "battle": {
     "fight": "FIGHT",
-    "pokemon": "Pokémon"
+    "pokemon": "Pokémon",
+    "turn": "Turn {{turn}}",
+    "level": "Lv. {{level}}",
+    "hpValue": "{{hp}} / {{maxhp}} HP",
+    "prompt": "What will {{pokemon}} do?",
+    "chooseMove": "Choose a move",
+    "mega": "Mega Evolve",
+    "tapAgain": "Tap again to use",
+    "selectHint": "Tap a move to select it.",
+    "useHint": "Tap <b>{{move}}</b> again to use it.",
+    "noPp": "No PP left",
+    "disabled": "Can't be used right now",
+    "details": "Details",
+    "useMove": "Use move",
+    "power": "Power",
+    "accuracy": "Accuracy",
+    "pp": "PP",
+    "categories": {
+      "Physical": "Physical",
+      "Special": "Special",
+      "Status": "Status"
+    },
+    "yourPokemon": "Your Pokémon",
+    "inBattle": "In battle",
+    "fainted": "Fainted",
+    "switchIn": "Switch in",
+    "trapped": "Your Pokémon can't switch out!",
+    "forcedSwitch": "Choose your next Pokémon",
+    "forcedSwitchHint": "Pick who goes into battle next.",
+    "item": "Item",
+    "ability": "Ability",
+    "hp": "HP",
+    "moves": "Moves",
+    "yourChoice": "Your choice",
+    "choiceMove": "{{pokemon}} · <b>{{move}}</b>",
+    "choiceSwitch": "Switch to <b>{{pokemon}}</b>",
+    "choiceDefault": "Picked automatically",
+    "megaTag": "Mega Evolution",
+    "waitingOpponent": "Waiting for the other trainer…",
+    "undo": "Undo",
+    "watchScreen": "Look at the big screen!",
+    "watchHint": "Your next move will appear here.",
+    "opponentChoosing": "The other trainer is choosing…",
+    "forfeit": "Forfeit",
+    "forfeitTitle": "Forfeit the battle?",
+    "forfeitBody": "Your team will lose immediately.",
+    "keepPlaying": "Keep playing",
+    "choosing": "Choosing…",
+    "starting": "Get ready…",
+    "log": {
+      "sentOut": "{{trainer}} sent out {{pokemon}}!",
+      "dragged": "{{pokemon}} was dragged out!",
+      "used": "{{pokemon}} used <b>{{move}}</b>!",
+      "superEffective": "It's super effective!",
+      "resisted": "It's not very effective…",
+      "immune": "It doesn't affect {{pokemon}}…",
+      "crit": "A critical hit!",
+      "missed": "{{pokemon}} avoided the attack!",
+      "failed": "But it failed!",
+      "fainted": "{{pokemon}} fainted!",
+      "megaEvolved": "{{pokemon}} has Mega Evolved!",
+      "status": {
+        "brn": "{{pokemon}} was burned!",
+        "par": "{{pokemon}} is paralyzed! It may be unable to move!",
+        "psn": "{{pokemon}} was poisoned!",
+        "tox": "{{pokemon}} was badly poisoned!",
+        "slp": "{{pokemon}} fell asleep!",
+        "frz": "{{pokemon}} was frozen solid!"
+      },
+      "cured": "{{pokemon}} was cured of its status condition!",
+      "boost": {
+        "1": "{{pokemon}}'s {{stat}} rose!",
+        "2": "{{pokemon}}'s {{stat}} rose sharply!",
+        "3": "{{pokemon}}'s {{stat}} rose drastically!"
+      },
+      "unboost": {
+        "1": "{{pokemon}}'s {{stat}} fell!",
+        "2": "{{pokemon}}'s {{stat}} harshly fell!",
+        "3": "{{pokemon}}'s {{stat}} severely fell!"
+      },
+      "hurtBy": "{{pokemon}} was hurt by {{effect}}!",
+      "hurtByStatus": {
+        "brn": "{{pokemon}} was hurt by its burn!",
+        "psn": "{{pokemon}} was hurt by poison!"
+      },
+      "restoredBy": "{{pokemon}} restored HP with {{effect}}!",
+      "healed": "{{pokemon}} had its HP restored.",
+      "cant": "{{pokemon}} can't move!",
+      "protected": "{{pokemon}} protected itself!",
+      "ability": "[{{pokemon}}'s {{ability}}]",
+      "confused": "{{pokemon}} became confused!",
+      "weatherStart": "The weather changed: {{weather}}.",
+      "weather": {
+        "SunnyDay": "The sunlight turned harsh!",
+        "RainDance": "It started to rain!",
+        "Sandstorm": "A sandstorm kicked up!",
+        "Snow": "It started to snow!",
+        "Hail": "It started to hail!",
+        "DesolateLand": "The sunlight turned extremely harsh!",
+        "PrimordialSea": "A heavy rain began to fall!",
+        "DeltaStream": "Mysterious strong winds are protecting Flying-type Pokémon!"
+      },
+      "weatherEnd": "The weather returned to normal.",
+      "fieldStart": "{{effect}} took effect!",
+      "fieldEnd": "{{effect}} wore off.",
+      "sideStart": "{{effect}} is up on {{trainer}}'s side!",
+      "sideEnd": "{{effect}} wore off on {{trainer}}'s side.",
+      "won": "{{name}} won the battle!",
+      "tie": "The battle ended in a draw!"
+    }
   },
   "formats": {
     "singles": "Singles",
@@ -79,7 +191,47 @@
       "subtitle": "Trainers are picking their Pokémon on their phones. Teams stay secret until the battle.",
       "readyCount": "{{ready}} / {{total}} ready",
       "waiting": "Waiting for trainers…",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "pokemonCount": "{{count}} / {{quota}} Pokémon",
+      "allReady": "Everyone is ready!",
+      "countdown": "Battle starts in"
+    },
+    "battle": {
+      "turn": "Turn {{turn}}",
+      "skipHint": "Space: skip · L: battle log",
+      "timer": "Time left",
+      "megaReady": "Mega Evolution available",
+      "megaUsed": "Mega Evolution used",
+      "weathers": {
+        "SunnyDay": "Harsh sunlight",
+        "RainDance": "Rain",
+        "Sandstorm": "Sandstorm",
+        "Snow": "Snow",
+        "Hail": "Hail",
+        "DesolateLand": "Extremely harsh sunlight",
+        "PrimordialSea": "Heavy rain",
+        "DeltaStream": "Strong winds"
+      },
+      "boost": "{{stat}} {{amount}}",
+      "log": {
+        "title": "Battle log",
+        "start": "Battle start",
+        "hideHint": "L · hide"
+      }
+    },
+    "results": {
+      "rematch": "Rematch",
+      "backToLobby": "Back to lobby"
+    },
+    "sound": {
+      "menu": "Sound",
+      "on": "Sound on",
+      "off": "Sound off",
+      "music": "Music",
+      "effects": "Effects",
+      "cries": "Pokémon cries",
+      "criesMissing": "Not downloaded (pnpm fetch:audio)",
+      "musicMissing": "No music files yet (see audio/README)"
     }
   },
   "controller": {
@@ -109,6 +261,77 @@
       "title": "Tap to continue",
       "hint": "The controller works in full screen so the browser bars don't get in the way."
     }
+  },
+  "teamBuilder": {
+    "title": "Your team",
+    "count": "{{count}} / {{quota}} Pokémon",
+    "item": "@ {{item}}",
+    "noItem": "No item",
+    "ability": "Ability",
+    "nature": "Nature",
+    "reroll": "Reroll {{name}}",
+    "remove": "Remove {{name}}",
+    "addRandom": "Add a random Pokémon",
+    "fillRandom": "Fill with random Pokémon",
+    "randomizeAll": "Randomize team",
+    "ready": "I'm ready",
+    "editAgain": "Ready! Tap to keep editing",
+    "emptyHint": "Add at least one Pokémon to get ready.",
+    "waitingOthers": "Waiting for the other trainers…",
+    "countdown": "The battle starts in {{seconds}}…"
+  },
+  "stats": {
+    "hp": "HP",
+    "atk": "Attack",
+    "def": "Defense",
+    "spa": "Sp. Atk",
+    "spd": "Sp. Def",
+    "spe": "Speed",
+    "accuracy": "accuracy",
+    "evasion": "evasiveness"
+  },
+  "statuses": {
+    "brn": "BRN",
+    "par": "PAR",
+    "psn": "PSN",
+    "tox": "TOX",
+    "slp": "SLP",
+    "frz": "FRZ"
+  },
+  "types": {
+    "Normal": "Normal",
+    "Fire": "Fire",
+    "Water": "Water",
+    "Electric": "Electric",
+    "Grass": "Grass",
+    "Ice": "Ice",
+    "Fighting": "Fighting",
+    "Poison": "Poison",
+    "Ground": "Ground",
+    "Flying": "Flying",
+    "Psychic": "Psychic",
+    "Bug": "Bug",
+    "Rock": "Rock",
+    "Ghost": "Ghost",
+    "Dragon": "Dragon",
+    "Dark": "Dark",
+    "Steel": "Steel",
+    "Fairy": "Fairy",
+    "Stellar": "Stellar"
+  },
+  "results": {
+    "wins": "{{team}} wins!",
+    "draw": "It's a draw!",
+    "victory": "Victory!",
+    "defeat": "Defeat",
+    "reason": {
+      "normal": "After {{turns}} turns",
+      "forfeit": "{{team}} forfeited",
+      "error": "The battle was stopped by an unexpected error"
+    },
+    "kos": "KOs",
+    "remaining": "Pokémon left",
+    "waitingHost": "Waiting for the host to pick a rematch…"
   },
   "errors": {
     "INVALID_PAYLOAD": "Something in the request was not valid.",

@@ -1,0 +1,150 @@
+@use '../abstracts' as *;
+
+// Pokémon type color comes from `--tc` (set inline by `typeStyle()` in lib/pokemon-types.ts).
+
+// Phone move row: type-colored 3D button. `--light` types get ink text.
+.move-btn {
+  --tc: #{color(type-normal)};
+  --edge: color-mix(in srgb, var(--tc) 55%, var(--color-ink));
+
+  @include pressable;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 20px;
+  background: var(--tc);
+  color: color(paper);
+  text-align: left;
+  text-shadow: 0 1px 0 alpha(ink, 20%);
+
+  &--light {
+    color: color(ink);
+    text-shadow: none;
+  }
+
+  &--selected {
+    --ring: 0 0 0 4px #{color(paper)}, 0 0 0 8px #{color(ink)};
+
+    transform: translateY(-3px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    filter: grayscale(0.6);
+  }
+
+  &__type {
+    padding: 4px 9px;
+    border-radius: 99px;
+    background: alpha(paper, 28%);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  // "Tap again to use" bubble.
+  &__again {
+    position: absolute;
+    top: -12px;
+    right: 10px;
+    padding: 4px 9px;
+    border-radius: 99px;
+    background: color(ink);
+    color: color(paper);
+    font-size: 11px;
+    font-weight: 800;
+    text-shadow: none;
+  }
+}
+
+// Small type pill (move details, Pokémon sheet).
+.type-chip {
+  --tc: #{color(type-normal)};
+
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--tc);
+  color: color(paper);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &--light {
+    color: color(ink);
+  }
+}
+
+// Mega Evolve toggle: rainbow key stone + switch.
+.mega-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border-radius: 18px;
+  background: linear-gradient(100deg, color(mega-tint), color(mega-soft));
+  box-shadow: inset 0 0 0 3px color(mega);
+  color: color(mega-deep);
+  font-weight: 800;
+  text-align: left;
+
+  &__switch {
+    position: relative;
+    flex: none;
+    width: 50px;
+    height: 30px;
+    border-radius: 99px;
+    background: color(canvas-deep);
+    transition: background 0.15s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: color(paper);
+      transition: left 0.15s;
+    }
+  }
+
+  &--on &__switch {
+    background: color(mega);
+
+    &::after {
+      left: 24px;
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+// Rainbow key stone: Mega toggle, and the Host's "Mega available / used" mark. Size via utilities.
+.mega-stone {
+  flex: none;
+  border-radius: 50%;
+  background: conic-gradient(
+    color(type-fairy),
+    color('gold'),
+    color(ok),
+    color(team-blue),
+    color(mega),
+    color(type-fairy)
+  );
+  box-shadow: inset 0 0 0 0.2em color(paper);
+
+  &--used {
+    opacity: 0.3;
+    filter: grayscale(1);
+  }
+}

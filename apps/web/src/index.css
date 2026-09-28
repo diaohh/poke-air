@@ -17,6 +17,7 @@
   --color-paper: #fffaf6; /* cards */
   --color-paper-2: #f6ebe5; /* insets, disabled */
   --color-qr: #fff; /* pure white: QR codes only */
+  --color-line: rgb(43 23 34 / 0.14); /* hairlines, HP bar track */
   /* brand */
   --color-wine: #7d1d3f;
   --color-wine-2: #9e2a52;
@@ -43,6 +44,11 @@
   --color-warn-deep: #9a5600;
   --color-warn-soft: #ffe9c7;
   --color-hp-mid: #f2b705;
+  /* Mega Evolution (toggle, tags, glow) */
+  --color-mega: #b04fd3;
+  --color-mega-deep: #6a1f8a;
+  --color-mega-soft: #f3e4ff;
+  --color-mega-tint: #ffe7f1;
   /* Pokémon types (moves only) */
   --color-type-normal: #a8a77a;
   --color-type-fire: #ee8130;

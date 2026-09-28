@@ -1,0 +1,38 @@
+@use '../abstracts' as *;
+
+// Phone bottom sheet (docs/12-design-system.md § Components): plum 45% backdrop + paper panel.
+.sheet-backdrop {
+  background: alpha(ink, 45%);
+  animation: fade-in 0.15s ease-out;
+}
+
+.sheet {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: color(paper);
+  box-shadow: var(--shadow-float);
+  animation: sheet-up 0.2s ease-out;
+
+  &__grab {
+    background: color(canvas-deep);
+  }
+
+  // Close + primary action.
+  &__actions {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 10px;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(40%);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,14 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/cn';
 
-export type PlayerStatus = 'ready' | 'building' | 'pending';
+export type PlayerStatus = 'ready' | 'building' | 'pending' | 'choosing';
 
 interface Props {
   status: PlayerStatus;
   className?: string;
 }
 
-/** Player state as icon + color + word (`✓ Ready` · `● Building` · `Pending`). Size via className. */
+/**
+ * Player state as icon + color + word (`✓ Ready` · `● Building` · `● Choosing` · `Pending`).
+ * Size via className.
+ */
 export function StatusPill({ status, className }: Props) {
   const { t } = useTranslation();
   return (

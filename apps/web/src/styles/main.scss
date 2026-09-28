@@ -16,6 +16,9 @@
   @include meta.load-css('components/hp-bar');
   @include meta.load-css('components/field');
   @include meta.load-css('components/team-panel');
+  @include meta.load-css('components/sheet');
+  @include meta.load-css('components/move');
+  @include meta.load-css('components/tag');
   @include meta.load-css('screens/home');
   @include meta.load-css('screens/host');
   @include meta.load-css('screens/controller');

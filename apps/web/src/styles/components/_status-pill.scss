@@ -17,7 +17,8 @@
     color: color(ok-deep);
   }
 
-  &--building {
+  &--building,
+  &--choosing {
     background: color(warn-soft);
     color: color(warn-deep);
 

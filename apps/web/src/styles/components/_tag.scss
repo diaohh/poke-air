@@ -1,0 +1,64 @@
+@use '../abstracts' as *;
+
+// Small uppercase tags: "In battle", "Fainted", "Mega Evolution", status conditions.
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.35em 0.8em;
+  border-radius: 99px;
+  background: color(paper-2);
+  color: color(ink-2);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &--active {
+    background: color(ok-soft);
+    color: color(ok-deep);
+  }
+
+  &--fainted {
+    background: alpha(muted, 18%);
+    color: color(muted);
+  }
+
+  &--mega {
+    background: color(mega-soft);
+    color: color(mega-deep);
+  }
+
+  // Status conditions reuse the matching type colors.
+  &--brn {
+    background: color(type-fire);
+    color: color(paper);
+  }
+
+  &--par {
+    background: color(type-electric);
+    color: color(ink);
+  }
+
+  &--psn,
+  &--tox {
+    background: color(type-poison);
+    color: color(paper);
+  }
+
+  &--slp {
+    background: color(ink-2);
+    color: color(paper);
+  }
+
+  &--frz {
+    background: color(type-ice);
+    color: color(ink);
+  }
+}
+
+// Letter badge when a Pokémon sprite is missing.
+.mon-placeholder {
+  background: color(canvas-deep);
+  color: color(wine);
+}

@@ -1,9 +1,18 @@
+// Self-hosted fonts (no Google Fonts requests at runtime): Lilita One for display, Rubik for UI.
+import '@fontsource/lilita-one/400.css';
+import '@fontsource/rubik/400.css';
+import '@fontsource/rubik/500.css';
+import '@fontsource/rubik/600.css';
+import '@fontsource/rubik/700.css';
+import '@fontsource/rubik/800.css';
+import '@fontsource/rubik/900.css';
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { HomeScreen } from './home/HomeScreen';
 import './i18n';
-import './index.css';
+import './index.css'; // Tailwind + tokens; declares the cascade layers used by main.scss.
+import './styles/main.scss';
 
 // Each face is its own chunk: phones never download the Host screen (QR, and later the battle scene).
 const HostScreen = lazy(() => import('./host/HostScreen').then((m) => ({ default: m.HostScreen })));

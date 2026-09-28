@@ -1,0 +1,80 @@
+@use '../abstracts' as *;
+
+// Decoration assets (docs/12-design-system.md § Decoration). The SVG strokes are URL-encoded wine and
+// paper: CSS variables can't reach inside a data URI.
+:root {
+  --deco-ball: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%237d1d3f" stroke-width="5"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="15"/></svg>');
+  --deco-ball-light: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23fffaf6" stroke-width="5"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="15"/></svg>');
+  --deco-dots: radial-gradient(#{alpha(wine, 8%)} 2px, transparent 2.6px);
+}
+
+// Showdown sprites are pixel art.
+.pixelated {
+  image-rendering: pixelated;
+}
+
+.deco-dots {
+  background-image: var(--deco-dots);
+  background-size: 26px 26px;
+}
+
+@keyframes ball-spin {
+  0% {
+    transform: rotate(0);
+  }
+
+  70%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ball-wobble {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+
+  15% {
+    transform: rotate(-16deg);
+  }
+
+  30% {
+    transform: rotate(12deg);
+  }
+
+  45% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes ball-bounce {
+  50% {
+    transform: translateY(-7px) rotate(20deg);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 var(--depth) 0 var(--edge),
+      0 20px 60px #{alpha(wine-2, 60%)};
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}

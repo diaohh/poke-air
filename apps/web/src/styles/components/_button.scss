@@ -1,0 +1,91 @@
+@use 'sass:map';
+@use '../abstracts' as *;
+
+// 3D buttons (docs/12-design-system.md § Components). One primary per screen; team variants only for
+// team actions. Size (padding, font size, min-height) is set by Tailwind utilities at the call site.
+
+$variants: (
+  primary: (
+    bg: color(wine),
+    fg: color(paper),
+    edge: color(wine-deep),
+  ),
+  gold: (
+    bg: color('gold'),
+    fg: color(ink),
+    edge: color(gold-deep),
+  ),
+  ok: (
+    bg: color(ok),
+    fg: color(paper),
+    edge: color(ok-deep),
+  ),
+  team-red: (
+    bg: color(team-red),
+    fg: color(paper),
+    edge: color(team-red-deep),
+  ),
+  team-blue: (
+    bg: color(team-blue),
+    fg: color(paper),
+    edge: color(team-blue-deep),
+  ),
+  ghost: (
+    bg: color(paper),
+    fg: color(ink),
+    edge: alpha(ink, 25%),
+  ),
+);
+
+.btn {
+  @include pressable;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+
+  &:focus-visible {
+    outline: 4px solid color('gold');
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    --edge: #{color(canvas-deep)};
+
+    background: color(paper-2);
+    color: color(muted);
+    cursor: not-allowed;
+  }
+}
+
+@each $name, $v in $variants {
+  .btn--#{$name}:not(:disabled) {
+    --edge: #{map.get($v, edge)};
+
+    background: map.get($v, bg);
+    color: map.get($v, fg);
+  }
+}
+
+.btn--ghost {
+  --ring: inset 0 0 0 3px #{color(ink)};
+}
+
+// Host-sized button: deeper edge.
+.btn--xl {
+  --depth: 9px;
+}
+
+// Pulsing glow for the Host's main call to action.
+.btn--glow:not(:disabled) {
+  animation: glow 2.2s infinite;
+}

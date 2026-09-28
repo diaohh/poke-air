@@ -1,0 +1,98 @@
+@use 'sass:map';
+@use '../abstracts' as *;
+
+// Poké Ball in pure CSS: band ≈ 9% of the diameter, center button ≈ 26% with a ring in the edge color.
+// Size comes from `--s` (set inline by <PokeBall size>).
+
+.ball {
+  --s: 22px;
+  --top: #{color(team-red)};
+  --bot: #{color(paper)};
+  --edge: #{color(ink)};
+  --btn: #{color(paper)};
+  --gloss: transparent;
+
+  position: relative;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 31% 24%, var(--gloss) 0 9%, transparent 10%),
+    linear-gradient(var(--top) 0 45.5%, var(--edge) 45.5% 54.5%, var(--bot) 54.5%);
+  box-shadow: inset 0 0 0 calc(var(--s) * 0.07) var(--edge);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 37%;
+    border-radius: 50%;
+    background: var(--btn);
+    box-shadow: 0 0 0 calc(var(--s) * 0.06) var(--edge);
+  }
+
+  // Brand ball: monochrome wine with a small top-left gloss.
+  &--brand {
+    --top: #{color(wine-2)};
+    --bot: #{color(wine)};
+    --edge: #{color(wine-deep)};
+    --btn: #{color(wine-tint)};
+    --gloss: #{alpha(paper, 40%)};
+  }
+
+  // White ball on a team-colored badge: edges in the team's deep shade.
+  &--on-team {
+    --top: #{color(paper)};
+    --edge: var(--deep);
+  }
+
+  // Counter / seat that is not filled yet.
+  &--empty {
+    background: transparent;
+    box-shadow: inset 0 0 0 calc(var(--s) * 0.07) #{alpha(ink, 25%)};
+
+    &::after {
+      display: none;
+    }
+  }
+
+  // Dashed "open slot" ball: outline only, in the team's deep shade.
+  &--outline {
+    --edge: var(--deep);
+
+    background: linear-gradient(transparent 0 44%, var(--edge) 44% 56%, transparent 56%);
+    opacity: 0.5;
+
+    &::after {
+      background: transparent;
+    }
+  }
+
+  &--spin {
+    animation: ball-spin 1.8s cubic-bezier(0.6, 0.05, 0.3, 1) infinite;
+  }
+
+  &--wobble {
+    animation: ball-wobble 1.4s ease-in-out infinite;
+  }
+
+  &--bounce {
+    animation: ball-bounce 1s ease-in-out infinite;
+  }
+}
+
+// Top-half colors.
+$tones: (
+  red: color(team-red),
+  blue: color(team-blue),
+  team: var(--c),
+  gold: color('gold'),
+  ok: color(ok),
+  muted: color(muted),
+);
+
+@each $name, $top in $tones {
+  .ball--#{$name} {
+    --top: #{$top};
+  }
+}

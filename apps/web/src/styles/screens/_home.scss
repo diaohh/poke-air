@@ -1,0 +1,138 @@
+@use '../abstracts' as *;
+
+.home {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 72% 40%, #{alpha(paper, 70%)}, transparent 70%),
+    var(--deco-dots) 0 0 / 26px 26px,
+    linear-gradient(180deg, color(wine-tint) 0%, color(canvas) 55%, color(paper-2) 100%);
+
+  &::before {
+    @include deco-ball(720px, 0.08);
+
+    top: -200px;
+    left: -260px;
+    transform: rotate(-18deg);
+  }
+
+  &::after {
+    @include deco-ball(520px, 0.08);
+
+    right: -170px;
+    bottom: -190px;
+    transform: rotate(24deg);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  // Gold marker behind "Your battle."
+  &__mark {
+    position: relative;
+    z-index: 0;
+    white-space: nowrap;
+
+    &::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      right: -8px;
+      bottom: 6%;
+      left: -6px;
+      height: 42%;
+      transform: rotate(-1.5deg);
+      border-radius: 10px;
+      background: color('gold');
+    }
+  }
+}
+
+// Hero illustration: a TV "stadium" and two phone controllers. Decorative only (aria-hidden).
+.scene {
+  position: relative;
+
+  &__tv {
+    position: absolute;
+    top: 30px;
+    right: 4%;
+    left: 4%;
+    aspect-ratio: 16 / 10;
+    padding: 14px;
+    border-radius: 30px;
+    background: color(wine-deep);
+    box-shadow:
+      var(--shadow-float),
+      0 10px 0 color-mix(in srgb, var(--color-wine-deep) 60%, var(--color-ink));
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 40%;
+      bottom: -34px;
+      left: 40%;
+      height: 26px;
+      border-radius: 0 0 14px 14px;
+      background: color(wine);
+    }
+  }
+
+  &__screen {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border-radius: 18px;
+    background: linear-gradient(
+      180deg,
+      color(team-red-soft) 0%,
+      color(gold-soft) 52%,
+      color-mix(in srgb, var(--color-type-grass) 70%, var(--color-paper)) 52%,
+      color(type-grass) 100%
+    );
+  }
+
+  &__platform {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at 50% 40%,
+      color-mix(in srgb, var(--color-type-grass) 30%, var(--color-paper)),
+      color-mix(in srgb, var(--color-type-grass) 75%, var(--color-paper)) 70%
+    );
+    box-shadow: inset 0 -6px 0 #{alpha(ink, 8%)};
+  }
+
+  &__hp {
+    position: absolute;
+    width: 34%;
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: color(paper);
+    box-shadow: var(--shadow-lift);
+  }
+
+  &__phone {
+    position: absolute;
+    width: 150px;
+    height: 300px;
+    padding: 8px;
+    border-radius: 28px;
+    background: color(ink);
+    box-shadow: var(--shadow-float);
+  }
+
+  &__phone-screen {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+    height: 100%;
+    padding: 12px 10px;
+    border-radius: 21px;
+    background: linear-gradient(180deg, var(--tint), var(--soft));
+  }
+}

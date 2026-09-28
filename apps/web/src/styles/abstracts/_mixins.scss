@@ -1,0 +1,47 @@
+@use 'functions' as *;
+
+/// Chunky 3D surface: solid bottom edge (`--edge`) that collapses when pressed.
+/// Extra shadows (e.g. an inset ring) go in `--ring` so both states keep them.
+@mixin pressable($depth: 6px) {
+  --depth: #{$depth};
+  --ring: 0 0 0 0 transparent;
+
+  box-shadow:
+    var(--ring),
+    0 var(--depth) 0 var(--edge);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.15s;
+
+  &:active:not(:disabled) {
+    transform: translateY(calc(var(--depth) - 1px));
+    box-shadow:
+      var(--ring),
+      0 1px 0 var(--edge);
+  }
+}
+
+/// Large Poké Ball outline used as background decoration (never behind body text).
+@mixin deco-ball($size, $opacity, $light: false) {
+  content: '';
+  position: absolute;
+  width: $size;
+  height: $size;
+  opacity: $opacity;
+  pointer-events: none;
+
+  @if $light {
+    background: var(--deco-ball-light) center / contain no-repeat;
+  } @else {
+    background: var(--deco-ball) center / contain no-repeat;
+  }
+}
+
+/// Sets the team palette custom properties consumed by team-colored components.
+@mixin team-palette($team) {
+  --c: #{color($team)};
+  --deep: #{color(#{$team}-deep)};
+  --soft: #{color(#{$team}-soft)};
+  --tint: #{color(#{$team}-tint)};
+}

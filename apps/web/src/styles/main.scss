@@ -1,0 +1,22 @@
+// Component styles of the "Stadium Wine" design system (docs/12-design-system.md).
+// Everything is emitted inside Tailwind's `components` cascade layer (declared by `src/index.css`,
+// which must be imported first), so Tailwind utilities on an element always win over these styles.
+// Rule of thumb: SCSS for design-system pieces (3D states, pseudo-element decoration, multi-layer
+// backgrounds, animations); Tailwind utilities for layout, spacing, sizing and typography.
+@use 'sass:meta';
+
+@layer components {
+  @include meta.load-css('base/decoration');
+  @include meta.load-css('base/team-scope');
+  @include meta.load-css('components/button');
+  @include meta.load-css('components/icon-button');
+  @include meta.load-css('components/poke-ball');
+  @include meta.load-css('components/status-pill');
+  @include meta.load-css('components/team-chip');
+  @include meta.load-css('components/hp-bar');
+  @include meta.load-css('components/field');
+  @include meta.load-css('components/team-panel');
+  @include meta.load-css('screens/home');
+  @include meta.load-css('screens/host');
+  @include meta.load-css('screens/controller');
+}

@@ -1,0 +1,22 @@
+// Team chip / badge: team color + white Poké Ball + name, with a bottom edge in the deep shade.
+// Needs a team scope (`.team-scope--red|blue`) on itself or an ancestor. Size via Tailwind utilities.
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em 0.9em 0.4em 0.45em;
+  border-radius: 999px;
+  background: var(--c);
+  color: var(--color-paper);
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 var(--deep);
+
+  &--lg {
+    padding: 0.33em 0.72em 0.33em 0.4em;
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    box-shadow: 0 5px 0 var(--deep);
+  }
+}

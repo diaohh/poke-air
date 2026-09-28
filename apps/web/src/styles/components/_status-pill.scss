@@ -1,0 +1,38 @@
+@use '../abstracts' as *;
+
+// State = icon + color + word (never color alone). Size is set by Tailwind utilities at the call site.
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.55em 1em;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &--ready {
+    background: color(ok-soft);
+    color: color(ok-deep);
+  }
+
+  &--building {
+    background: color(warn-soft);
+    color: color(warn-deep);
+
+    &::before {
+      content: '';
+      width: 0.55em;
+      height: 0.55em;
+      border-radius: 50%;
+      background: color(warn);
+      animation: blink 1s infinite;
+    }
+  }
+
+  &--pending {
+    background: alpha(muted, 16%);
+    color: color(ink-2);
+  }
+}

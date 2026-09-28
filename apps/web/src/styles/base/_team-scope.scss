@@ -1,0 +1,18 @@
+@use '../abstracts' as *;
+
+// Team scope: sets --c / --deep / --soft / --tint for every team-colored piece inside it.
+// Neutral (wine/blush) is used before a player has a team.
+.team-scope--neutral {
+  --c: #{color(wine)};
+  --deep: #{color(wine-deep)};
+  --soft: #{color(canvas-deep)};
+  --tint: #{color(canvas)};
+}
+
+.team-scope--red {
+  @include team-palette(team-red);
+}
+
+.team-scope--blue {
+  @include team-palette(team-blue);
+}

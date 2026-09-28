@@ -1,0 +1,25 @@
+@use '../abstracts' as *;
+
+// HP bar: green > 50%, yellow ≤ 50%, scarlet ≤ 20%. Height via Tailwind utilities.
+.hp-bar {
+  overflow: hidden;
+  border-radius: 99px;
+  background: color(paper-2);
+  box-shadow: inset 0 0 0 1px color(line);
+
+  &__fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: color(ok);
+    transition: width 0.4s ease;
+
+    &--mid {
+      background: color(hp-mid);
+    }
+
+    &--low {
+      background: color(team-red);
+    }
+  }
+}

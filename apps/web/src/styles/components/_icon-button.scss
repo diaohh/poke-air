@@ -1,0 +1,38 @@
+@use '../abstracts' as *;
+
+// Square icon button: 44 px on phones (minimum tap target); the Host enlarges it with size utilities.
+.icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color(paper-2);
+  color: color(ink-2);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: color(wine-soft);
+    color: color(wine);
+  }
+
+  &:focus-visible {
+    outline: 4px solid color('gold');
+    outline-offset: 2px;
+  }
+
+  // Raised variant for the Host header (paper card with lift).
+  &--raised {
+    background: color(paper);
+    box-shadow: var(--shadow-lift);
+  }
+
+  &--danger:hover {
+    background: color(team-red);
+    color: color(paper);
+  }
+}

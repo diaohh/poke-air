@@ -1,13 +1,78 @@
+/*
+ * Tailwind entry + "Stadium Wine" design tokens (docs/12-design-system.md).
+ * Tailwind 4 is not processed by Sass, so tokens and utilities live here in plain CSS; component
+ * styles live in the SCSS partials under `styles/` and read these tokens as CSS variables.
+ */
 @import 'tailwindcss';
 
-@theme {
-  --color-team-red: #ef4444;
-  --color-team-red-dark: #7f1d1d;
-  --color-team-blue: #3b82f6;
-  --color-team-blue-dark: #1e3a8a;
-  --color-surface: #0f172a;
-  --color-surface-raised: #1e293b;
-  --color-accent: #facc15;
+/* `static`: emit every token even if no utility uses it — the SCSS reads them as variables. */
+@theme static {
+  /* ink */
+  --color-ink: #2b1722;
+  --color-ink-2: #5b4150;
+  --color-muted: #927a86;
+  /* surfaces */
+  --color-canvas: #f6e6e3;
+  --color-canvas-deep: #e8cdc9; /* stage letterbox, fallbacks */
+  --color-paper: #fffaf6; /* cards */
+  --color-paper-2: #f6ebe5; /* insets, disabled */
+  --color-qr: #fff; /* pure white: QR codes only */
+  /* brand */
+  --color-wine: #7d1d3f;
+  --color-wine-2: #9e2a52;
+  --color-wine-deep: #4f0f26; /* 3D edges */
+  --color-wine-soft: #f2cdd8;
+  --color-wine-tint: #fbedf1;
+  --color-gold: #ffc93c;
+  --color-gold-deep: #d49a00;
+  --color-gold-soft: #fff0c2;
+  /* teams (reserved for team identity) */
+  --color-team-red: #e8432d;
+  --color-team-red-deep: #ad2a17;
+  --color-team-red-soft: #ffd0c4;
+  --color-team-red-tint: #ffede7;
+  --color-team-blue: #2f6fd6;
+  --color-team-blue-deep: #1b4aa0;
+  --color-team-blue-soft: #c9dcff;
+  --color-team-blue-tint: #eaf1ff;
+  /* feedback */
+  --color-ok: #1e9e6a;
+  --color-ok-deep: #147550;
+  --color-ok-soft: #d4f3e4;
+  --color-warn: #e98a0c;
+  --color-warn-deep: #9a5600;
+  --color-warn-soft: #ffe9c7;
+  --color-hp-mid: #f2b705;
+  /* Pokémon types (moves only) */
+  --color-type-normal: #a8a77a;
+  --color-type-fire: #ee8130;
+  --color-type-water: #6390f0;
+  --color-type-electric: #f7d02c;
+  --color-type-grass: #7ac74c;
+  --color-type-ice: #96d9d6;
+  --color-type-fighting: #c22e28;
+  --color-type-poison: #a33ea1;
+  --color-type-ground: #e2bf65;
+  --color-type-flying: #a98ff3;
+  --color-type-psychic: #f95587;
+  --color-type-bug: #a6b91a;
+  --color-type-rock: #b6a136;
+  --color-type-ghost: #735797;
+  --color-type-dragon: #6f35fc;
+  --color-type-dark: #705746;
+  --color-type-steel: #b7b7ce;
+  --color-type-fairy: #d685ad;
+
+  --font-display: 'Lilita One', 'Rubik', system-ui, sans-serif;
+  --font-sans: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+
+  --shadow-lift: 0 6px 0 rgb(43 23 34 / 0.12);
+  --shadow-float: 0 18px 40px rgb(79 15 38 / 0.18);
 }
 
 html,
@@ -17,17 +82,6 @@ body,
 }
 
 body {
-  @apply bg-surface text-slate-100 antialiased;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  @apply bg-canvas font-sans text-ink antialiased;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* Showdown sprites are pixel art. */
-.pixelated {
-  image-rendering: pixelated;
 }

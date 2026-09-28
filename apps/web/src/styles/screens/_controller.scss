@@ -1,0 +1,58 @@
+@use '../abstracts' as *;
+
+// Phone controller: team-tinted gradient + dots + light Poké Ball outline behind the header area.
+// Needs a team scope (neutral before joining).
+.phone-shell {
+  position: relative;
+  overflow: hidden;
+  background:
+    var(--deco-dots) 0 0 / 22px 22px,
+    linear-gradient(180deg, var(--tint), var(--soft));
+
+  &::before {
+    @include deco-ball(300px, 0.6, $light: true);
+
+    top: 120px;
+    right: -120px;
+  }
+
+  > * {
+    position: relative;
+  }
+}
+
+// Team card on the phone (paper card with a team-colored ring and bottom edge).
+.team-card {
+  background: color(paper);
+  box-shadow:
+    inset 0 0 0 3px var(--c),
+    0 5px 0 var(--deep);
+
+  &__row {
+    background: var(--tint);
+  }
+
+  &__slot {
+    border: 2px dashed color-mix(in srgb, var(--c) 40%, transparent);
+    color: color(muted);
+  }
+}
+
+// Paper card with a soft team-tinted bottom edge.
+.phone-card {
+  background: color(paper);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--deep) 28%, transparent);
+}
+
+// Trainer picker tile.
+.trainer-tile {
+  background: color(paper);
+  box-shadow: 0 3px 0 #{alpha(ink, 10%)};
+
+  &--selected {
+    background: color(gold-soft);
+    box-shadow:
+      inset 0 0 0 3px color(wine),
+      0 3px 0 color(wine-deep);
+  }
+}

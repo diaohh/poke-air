@@ -1,0 +1,12 @@
+// Tokens are defined once as CSS variables in `src/index.css` (@theme). SCSS only references them.
+
+/// A theme color token, e.g. `color(wine)` → `var(--color-wine)`.
+/// Quote names that are also CSS named colors (`color('gold')`) so Stylelint doesn't flag them.
+@function color($name) {
+  @return var(--color-#{$name});
+}
+
+/// A theme color with transparency, e.g. `alpha(ink, 25%)`. Keeps tokens as the only color source.
+@function alpha($name, $amount) {
+  @return color-mix(in srgb, var(--color-#{$name}) $amount, transparent);
+}

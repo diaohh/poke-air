@@ -1,6 +1,12 @@
-import type { PokemonSetData, PublicPlayer, PublicRoomState } from '@poke-air/shared';
+import {
+  toId,
+  type PokemonSetData,
+  type PublicPlayer,
+  type PublicRoomState,
+} from '@poke-air/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ItemIcon } from '../../components/ItemIcon';
 import { PokemonSprite } from '../../components/PokemonSprite';
 import { Button } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
@@ -42,7 +48,9 @@ export function TeamBuilder({ room, me }: Props) {
   };
   const [notice, setNotice] = useState<string | null>(null);
   // Start loading the dex while the player looks at the list (the editor needs it).
-  useTeamDex();
+  const dexState = useTeamDex();
+  const itemIcon = (item: string) =>
+    dexState.status === 'ready' ? dexState.dex.itemById.get(toId(item))?.icon : undefined;
 
   const slots = team?.slots ?? Array.from({ length: me.quota }, () => null);
   const sets = slots.filter((set): set is PokemonSetData => !!set);
@@ -98,6 +106,7 @@ export function TeamBuilder({ room, me }: Props) {
             <PokemonCard
               key={`${slot}-${set.species}`}
               set={set}
+              itemIcon={set.item ? itemIcon(set.item) : undefined}
               disabled={busy}
               onEdit={() => setEditing(slot)}
               onRemove={() => act(() => clearSlot(slot))}
@@ -177,13 +186,14 @@ export function TeamBuilder({ room, me }: Props) {
 
 interface CardProps {
   set: PokemonSetData;
+  itemIcon: number | undefined;
   disabled: boolean;
   onEdit: () => void;
   onRemove: () => void;
 }
 
 /** Icon, name, @ item, ability, nature, the 4 moves (no type chips) + edit / remove. */
-function PokemonCard({ set, disabled, onEdit, onRemove }: CardProps) {
+function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardProps) {
   const { t } = useTranslation();
   return (
     <article className="phone-card shrink-0 rounded-[22px] p-3 pb-3.5">
@@ -199,8 +209,11 @@ function PokemonCard({ set, disabled, onEdit, onRemove }: CardProps) {
           </span>
           <span className="min-w-0 flex-1">
             <strong className="block truncate text-lg font-extrabold">{set.species}</strong>
-            <span className="block truncate text-[13px] text-ink-2">
-              {set.item ? t('teamBuilder.item', { item: set.item }) : t('teamBuilder.noItem')}
+            <span className="flex min-w-0 items-center gap-1 text-[13px] text-ink-2">
+              <ItemIcon icon={itemIcon} />
+              <span className="truncate">
+                {set.item ? t('teamBuilder.item', { item: set.item }) : t('teamBuilder.noItem')}
+              </span>
             </span>
           </span>
         </button>

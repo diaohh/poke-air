@@ -10,6 +10,7 @@ import {
 } from '@poke-air/shared';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ItemIcon } from '../../components/ItemIcon';
 import { PokemonSprite } from '../../components/PokemonSprite';
 import { Button } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
@@ -222,8 +223,11 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
         </button>
 
         <Field label={t('teamBuilder.editor.item')} onClick={() => setPicker('item')}>
-          <span className={cn('truncate', !draft.item && 'text-muted')}>
-            {draft.item || t('teamBuilder.editor.noItem')}
+          <span className="flex min-w-0 items-center gap-2">
+            {draft.item && <ItemIcon icon={dex.itemById.get(toId(draft.item))?.icon} />}
+            <span className={cn('truncate', !draft.item && 'text-muted')}>
+              {draft.item || t('teamBuilder.editor.noItem')}
+            </span>
           </span>
         </Field>
         {species.megaStones && !species.megaStones.includes(draft.item) && (
@@ -486,13 +490,18 @@ function PickerFor(props: PickerForProps) {
           </button>
         }
         render={(item) => (
-          <span className="min-w-0 flex-1">
-            <strong className="flex items-center gap-2 text-base font-extrabold">
-              {item.name}
-              {draft?.item === item.name && <Icon name="check" />}
-            </strong>
-            <small className="line-clamp-2 text-xs text-ink-2">{item.desc}</small>
-          </span>
+          <>
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-(color:--tint)">
+              <ItemIcon icon={item.icon} scale={1.5} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <strong className="flex items-center gap-2 text-base font-extrabold">
+                {item.name}
+                {draft?.item === item.name && <Icon name="check" />}
+              </strong>
+              <small className="line-clamp-2 text-xs text-ink-2">{item.desc}</small>
+            </span>
+          </>
         )}
       />
     );

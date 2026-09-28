@@ -20,8 +20,9 @@ pnpm dev              # builds the team builder data if needed, then server :300
 Open `http://localhost:5173/host` on the PC. The QR automatically points to the PC's **LAN IP**
 (the Host asks the backend's `/api/info` for it), so phones on the same Wi-Fi can scan and join.
 
-Sprites: trainers and Pokémon (front + back for every legal species — the team builder allows 1234 —
-plus the randomizer's species and their Mega / Primal / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
+Sprites: trainers, the item icon sheet (`sprites/itemicons-sheet.png`, D-42) and Pokémon (front + back
+for every legal species — the team builder allows 1234 — plus the randomizer's species and their Mega /
+Primal / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
 `gen5ani`, then `ani`, then static `gen5`, and writes `apps/web/public/sprites/pokemon-manifest.json`; the
 web app falls back to the base forme (new Champions Megas without sprites) and then to a letter badge.
 The roster grew with Phase 2 (decision D-40): re-run `pnpm fetch:sprites` once to download the new species
@@ -157,7 +158,7 @@ Example: a new player action `player:foo`.
 - **Host scene (web):** `battle-scene/model.test.ts` runs the reducer over a recorded spectator log;
   `playback.test.ts` drives the animation queue with manual timers.
 - **E2E:** `pnpm test:e2e` (`e2e/battle.spec.ts`, `@playwright/test`) opens `/host?speed=8` + two phone
-  contexts and plays a whole battle, then a rematch. Uses the system Edge (`E2E_CHANNEL=chrome` for Chrome),
+  contexts and plays a whole singles battle, then a rematch (a doubles spec is in the Phase 3 test list). Uses the system Edge (`E2E_CHANNEL=chrome` for Chrome),
   so no browser download. `E2E_SCREENSHOTS=<dir>` saves a screenshot of every screen. Not part of
   `pnpm check` (needs the dev servers; Playwright starts `pnpm dev` if nothing is running).
 
@@ -210,7 +211,14 @@ Example: a new player action `player:foo`.
 - **Validator text is English prose:** `INVALID_SET` forwards it in `params.details` (D-38); everything else
   stays an error code.
 - **Nicknames are not supported** (D-37): `name` always equals `species`; code relies on unique names per
-  side (nature lookup in `MatchController`, the Host model).
+  side (ownership, nature lookup in `MatchController`, the Host model).
+- **The sim renames a set named after its species to its base species** (`Rotom-Wash` → idents
+  `p1: Rotom`). Anything matching sim idents to our sets must use `battleName(set)` (core
+  `battle/request.ts`), never `set.name`.
+- **Doubles (Phase 3):** a one-Pokémon side crashes the sim (hence `Room.minimumFor`); `default` inside a
+  comma-separated choice completes every remaining position (the OwnershipLayer builds explicit actions);
+  the merged side choice needs every position, `pass` included; `side.pokemon` in requests is reordered by
+  switches (use `slot` / names, never cached indexes). Details: `docs/14-phase-3-plan.md`.
 
 ## Simulator baseline (spike S1, measured 2026-09-25, Node 22.22, pokemon-showdown 0.11.11)
 

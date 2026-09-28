@@ -3,8 +3,9 @@
 > Showdown-style Pokémon battles for **playing in the same room**: the big screen shows the battle,
 > phones are the controllers. Inspired by Pokémon Showdown + AirConsole.
 
-**Status:** Phase 1 — playable singles MVP: random teams on the phones, battles on the big screen,
-private controls, results and rematch. Next: the full team builder.
+**Status:** v1 feature-complete, pending manual validation — singles and doubles (1v1 / 1v2 / 2v2)
+battles on the big screen with private phone controls, full team builder (editor, import / export,
+saved teams, item icons), results and rematch. Next: Spanish (Phase 4).
 
 ## Quick start
 
@@ -12,7 +13,7 @@ Requires Node ≥ 22.22 and pnpm 10.
 
 ```bash
 pnpm install
-pnpm fetch:sprites   # downloads trainer + Pokémon sprites (self-hosted, git-ignored)
+pnpm fetch:sprites   # downloads trainer + Pokémon sprites and item icons (self-hosted, git-ignored)
 pnpm fetch:audio     # optional: Pokémon cries (self-hosted, git-ignored)
 pnpm dev             # builds the team builder data, then open http://localhost:5173/host on the PC; scan the QR with phones on the same Wi-Fi
 ```
@@ -47,6 +48,7 @@ Mechanics follow a **Pokémon Champions–style** format: level 50, no IVs, Stat
 - [Development guide](./docs/10-development.md)
 - [Phase 1 plan](./docs/11-phase-1-plan.md)
 - [Battle info + Phase 2 plan](./docs/13-phase-2-plan.md)
+- [Phase 3 plan (doubles)](./docs/14-phase-3-plan.md)
 - [Design system](./docs/12-design-system.md)
 
 ## Legal notice

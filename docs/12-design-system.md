@@ -170,6 +170,12 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
   ("Spikes ×2"), "● Choosing" pill.
 - **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects with turns left
   ("Rain · 4", "Trick Room · 2").
+- **Doubles (Phase 3, D-48):** two platforms per side with smaller sprites and trainers; the far side is
+  mirrored (p2a on the right, facing p1a), so "left / right" on the TV is what the phones' target picker
+  shows. Side cards get narrower and list one compact row per position (name, HP bar, %, then status /
+  Mega / stat stage tags), with one Mega mark per Mega of the side's budget (greyed as used) and, when two
+  trainers share the side, a "Name ● Choosing" pill per trainer. Special-move orbs fly from the user's slot
+  to the target's slot; Ally Switch swaps the two slots.
 - **Narration box:** paper strip under the field, previous line muted (26 px) + current line (40 px Rubik
   800); "Space: skip animations" hint.
 - **Generic animations (own CSS, nothing from pokemon-showdown-client):** switch-in pop with flash,
@@ -206,10 +212,11 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
    dice button for a random trainer · **Join room**.
 2. **Teams:** Red card above Blue card, each with its players and a "Join Team X" button ("✓ You're on
    this team" on your own) · "Waiting for the host…" · **Leave room** (ghost).
-3. **Team builder:** "Your team N / quota" + ☰ Team options · Pokémon cards: icon, name, `@ item`,
-   ability, nature, the 4 moves (no type chips) · ✏️ edit and ✕ remove icon buttons · dashed "+ Add
+3. **Team builder:** "Your team N / quota" + ☰ Team options · Pokémon cards: icon, name, item icon +
+   `@ item`, ability, nature, the 4 moves (no type chips) · ✏️ edit and ✕ remove icon buttons · dashed "+ Add
    Pokémon" with a dashed 🎲 tile (random) · **Randomize** (gold, fills the missing slots, or rerolls a full
-   team) · **I'm ready** (green). The list is always compact: Pokémon first, empty slots at the bottom
+   team) · **I'm ready** (green; disabled below the minimum: a solo doubles player needs 2 Pokémon, with
+   the hint under it). The list is always compact: Pokémon first, empty slots at the bottom
    (removing one moves the ones below up).
    - **Editor (full view, Phase 2):** back + title + 🎲 (random Pokémon for the slot) · species card
      (sprite, name, type chips, "Change ✏️") · rows Item / Nature (tap → picker) with a Mega Stone hint ·
@@ -222,7 +229,8 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
      paper rows with a soft team edge; at most 60 rows, then "N more · keep typing". Species rows: sprite,
      name, type chips, BST; species already on your team are disabled with "In your team". Moves: type
      chip, name, category · power · accuracy, short description. Items: "No item" first, "For this
-     Pokémon" (Mega Stones, required items) before all items.
+     Pokémon" (Mega Stones, required items) before all items; each row has the item icon (24 px ×1.5,
+     pixelated, on a team-tint tile). The editor's Item field shows the icon next to the name.
    - **Nature picker (by effect, not by name):** card "▲ Raises" with 5 stat buttons (Atk, Def, SpA, SpD,
      Spe; selected = ok-soft + green ring + ▲), card "▼ Lowers" with the same 5 (selected = scarlet tint +
      red ring + ▼), a "Neutral nature" chip (the same stat twice also means neutral). A result card shows
@@ -232,7 +240,12 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
    - **Team options (sheet):** Import from text · Export as text (copy) · Save this team, then "Saved on this
      phone" (name, mini sprites, **Load**, 🗑).
 4. **Battle (3DS lower-screen model):**
-   - **Menu:** active Pokémon card (name, Lv, HP) + ally line in doubles · "What will X do?" ·
+   - **Steps (doubles, Phase 3):** one step per position the player controls (a solo doubles player has
+     two): a "1 / 2" chip before the prompt, "← Back to X" to redo the previous position; the last step
+     sends everything. Forced switches work the same ("Pick who replaces X"; a Pokémon picked for the
+     first hole shows "Chosen").
+   - **Menu:** active Pokémon card (name, Lv, HP) + ally line in doubles ("Beside it: X · 64%", public
+     HP) · "What will X do?" ·
      **FIGHT** (wine) and **Pokémon** (gold) split **60 / 40** of the free height · small Forfeit link
      (confirmation sheet) · turn timer chip in the header.
    - **Fight:** back button · Mega Evolve toggle · **one move per row** (type color background, name, type
@@ -240,14 +253,23 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
      uses** the move.
    - **Move details (sheet):** type, category (Physical/Special/Status), power, accuracy, PP, description,
      **Use move**.
-   - **Target (doubles, single-target moves only):** opponents row + your side (ally allowed but flagged ⚠,
-     self disabled). Spread and self moves skip this step.
+   - **Target (doubles, single-target moves only):** "Move: choose a target" · "Opponents" row + "Your
+     side" row, left → right as on the TV, two big cards per row (sprite, name, public HP bar); the ally is
+     allowed but tagged "⚠ Your ally", the user itself only for moves like Acupressure ("Itself");
+     fainted / empty positions disabled. Spread and self moves skip this step, and so does a move with a
+     single standing target.
+   - **Mega toggle in doubles:** disabled (dimmed + hint) when the ally already Mega Evolves this turn or
+     an earlier position of the same player does; hidden once the player's quota is spent.
    - **Pokémon:** your share of the team with HP and tags (In battle / Fainted); tap → details sheet (item,
      ability, HP, nature "Jolly (▲ Spe · ▼ SpA)", one row per stat: name, value and a **Stat Points bar**
      (0–32, team color) with "+32", so the player sees where the build is focused; the nature's raised
      row is green with ▲, the lowered one red with ▼, neutral natures mark nothing; stat stages of the
      active Pokémon as ▲/▼ tags; moves) with **Switch in**.
-   - **Waiting:** summary of the choice (+ Mega tag), spinning brand ball, **Undo**.
+   - **Waiting:** summary of the choice, one line per position ("Garchomp · **Dragon Claw** → Snorlax",
+     - Mega tag), spinning brand ball, **Undo**. Wait screens: "The other trainer(s) are choosing…", and
+       "Your Pokémon are out. Cheer on your ally!" for a 2v2 player with nothing left.
+   - **Pokémon sheet:** the item row shows the item icon. **Forfeit** with a teammate warns that the whole
+     team loses (D-47).
 
 ## Implementation notes
 
@@ -259,4 +281,6 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
 - Fonts are self-hosted with Fontsource (`@fontsource/lilita-one`, `@fontsource/rubik`, imported in
   `main.tsx`).
 - Pokémon icons: the self-hosted front sprite shrunk into the tile (the icon sheet is not used yet).
+  Item icons: `components/ItemIcon` cuts the self-hosted item icon sheet (24 px, `scale` prop, always next
+  to the item name, so decorative for screen readers).
 - The mockup's QR and battle data are fake; real QR stays `qrcode.react`.

@@ -28,9 +28,13 @@ phones are the controllers).
 - ✅ **Battle-info iteration + Phase 2 implemented** (pending manual validation, 2026-09-28): stats / nature /
   stat stages on the phone, field effects with turns left on the Host, spike S3, full team builder (editor,
   `TeamValidator`, Showdown import/export, saved teams), generated builder data (`pnpm build:data`).
-  Unit tests for this code are deliberately deferred until after validation. Plan, results and checklist:
-  `docs/13-phase-2-plan.md`.
-- 👉 **Next:** manual validation → tests in `docs/13-phase-2-plan.md` § Tests to add → Phase 3 (doubles, spike S2).
+  Plan, results and checklist: `docs/13-phase-2-plan.md`.
+- ✅ **Phase 3 implemented** (pending manual validation, 2026-09-28): spike S2, doubles 1v1 / 1v2 / 2v2
+  (OwnershipLayer: per-player requests, per-position merge, forced-switch hand-over, timer defaults),
+  target selection, one Mega per player, doubles Host scene, item icons. v1 scope is feature-complete.
+  Plan, S2 results and checklist: `docs/14-phase-3-plan.md`.
+- Unit tests for Phases 2–3 are deliberately deferred until after validation (lists in docs 13 and 14).
+- 👉 **Next:** manual validation → those tests → Phase 4 (Spanish; TODO in `docs/09-roadmap.md`, spike S4 first).
 - Not done on purpose: CI/CD and deployment (decision D-23).
 
 ## Documents
@@ -44,12 +48,13 @@ phones are the controllers).
 | `docs/05-game-rules-and-mechanics.md`   | Champions format, ruleset presets, randomizer, **verified simulator facts**        |
 | `docs/06-i18n.md`                       | i18n: language availability in sources, per-room locale                            |
 | `docs/07-hosting-and-deployment.md`     | $0 hosting strategy and alternatives                                               |
-| `docs/08-decisions.md`                  | Decision log (D-01…D-41) + open questions                                          |
+| `docs/08-decisions.md`                  | Decision log (D-01…D-49) + open questions                                          |
 | `docs/09-roadmap.md`                    | Status, spikes, phases, risks                                                      |
 | `docs/10-development.md`                | **Setup, commands, env vars, feature recipe, testing, pitfalls**                   |
 | `docs/11-phase-1-plan.md`               | Phase 1 plan + **what was actually built** (§ Status)                              |
 | `docs/12-design-system.md`              | **UI design system** (tokens, components, screen specs) — read before any UI work  |
 | `docs/13-phase-2-plan.md`               | Battle-info iteration + Phase 2 (team builder): analysis, S3 results, status       |
+| `docs/14-phase-3-plan.md`               | Phase 3 (doubles, OwnershipLayer, item icons): S2 results, decisions, status       |
 | `docs/design/ui-mockup.html`            | Interactive HTML mockup (~70 KB; open only for a specific screen, the .md wins)    |
 
 ## Commands
@@ -57,7 +62,7 @@ phones are the controllers).
 ```bash
 nvm use 22.22.0        # Node ≥ 22.22 required (.nvmrc)
 pnpm install
-pnpm fetch:sprites     # trainer + Pokémon sprites → apps/web/public/sprites (git-ignored, never commit)
+pnpm fetch:sprites     # trainer + Pokémon sprites + item icon sheet → apps/web/public/sprites (git-ignored, never commit)
 pnpm fetch:audio       # optional Pokémon cries → apps/web/public/audio/cries (git-ignored, never commit)
 pnpm build:data        # team builder JSON → apps/web/public/data (git-ignored; dev/build run it, skips if current)
 pnpm dev               # build:data + server :3001 + web :5173 → open http://localhost:5173/host

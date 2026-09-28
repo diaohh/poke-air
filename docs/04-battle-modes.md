@@ -35,7 +35,9 @@ setups (1v2). We map humans ↔ what the sim understands.
 | 1                  | 6                 |
 | 2                  | 3                 |
 
-E.g. doubles 1v2: the solo player builds 6, each opponent builds 3. A player may bring fewer than their quota.
+E.g. doubles 1v2: the solo player builds 6, each opponent builds 3. A player may bring fewer than their quota,
+but **a doubles side needs at least 2 Pokémon** (the simulator crashes with a one-Pokémon side, spike S2):
+a solo doubles player needs 2 to be Ready, each player of a pair at least 1 (D-44, `TEAM_TOO_SMALL`).
 
 ## Chosen approach: one sim side per team + **OwnershipLayer**
 
@@ -50,24 +52,34 @@ Blue humans: Carla (Pokémon 1-6)                         ──► p2 (team of 
 
 ### OwnershipLayer rules
 
+✅ Implemented in Phase 3 (`packages/core/src/battle/ownership.ts`, decision D-43; details and spike S2
+results in `14-phase-3-plan.md`).
+
 1. **Ownership is per Pokémon, not per position.** Whoever controls an active position is the owner of
    the Pokémon currently in it (so Ally Switch or switches never break anything). **Controller = owner, always.**
-2. **Initial positions:** in 2v2 the left position gets Ana's first Pokémon, the right one Ben's first.
-   A solo player controls both positions.
+   Pokémon are identified by the sim's name for them (`battleName()`: formes use their base species).
+2. **Initial positions:** in 2v2 the left position gets Ana's first Pokémon, the right one Ben's first
+   (the side team is ordered leads first, D-46). A solo player controls both positions.
 3. **Request splitting:** when a `|request|` arrives for `p1`, a filtered request is built per human:
-   only their active positions in `active[]` and only their Pokémon as switch options (allies' Pokémon may
-   be shown read-only, without sets). Mega options are filtered by the player's Mega quota (see below).
-4. **Choice merging:** the server waits for each human's choice for their positions and builds the full side
-   choice: `>p1 move 1 2 mega, switch 5`. Validation: correct owner, switch indices they own, choice valid
-   against the current request, Mega quota.
+   only their active positions (`active[]` / `forceSwitch[]` entries carry `position` + `pokemon`) and only
+   their own Pokémon (with `slot` = `switch N`). Allies' Pokémon are **not** sent: the ally only appears in
+   the public `field` view (name, species, public HP %) used for targets. Mega options are filtered by the
+   player's Mega quota (see below). A player with nothing to decide gets a `wait` request.
+4. **Choice merging:** each human sends one action per position they control, comma-separated
+   (`move 1 2 mega, switch 5`); the server builds the full side choice position by position, writing `pass`
+   where nobody decides (fainted / commanding positions, holes nobody can fill — the sim needs them
+   explicit). Validation: correct owner, switch slots they own and not picked twice, targets valid for the
+   move, Mega quota and one Mega per team per turn; the sim validates the merged choice.
 5. **Forced switch after a faint:** the owner of the fainted Pokémon picks among **their** benched Pokémon.
    If they have none left but the sim forces the slot to be filled (it does whenever any Pokémon on the side
    is available), the position passes to the **ally**, who sends in one of their own Pokémon (and therefore
    controls it — rule 1 holds). A human with no Pokémon left becomes a spectator on their phone.
-6. **Timer and `default`:** if a human doesn't choose in time, their part is completed with the first valid
-   option (never Mega Evolving) and the merged choice is sent.
-7. **Undo:** while the merged choice hasn't been sent, each human can change their part. After sending,
-   undo is disabled for simplicity.
+6. **Timer:** if a human doesn't choose in time (60 s singles / 90 s doubles, D-49), their part is completed
+   with explicit automatic actions (first usable move aimed at a standing foe, or their first Pokémon that
+   can come in; never Mega Evolving) and the teammates' parts are kept. `default` can't be used per
+   position: inside a comma list it completes every remaining position.
+7. **Undo:** each human can undo their part while the turn hasn't resolved; if the merged choice was
+   already sent, the side's choice is undone in the sim and the teammates' parts are kept.
 
 ### Why not Showdown's `multi` game type for 2v2?
 
@@ -92,7 +104,7 @@ different mechanisms. One side per team + OwnershipLayer covers every compositio
 | 1v2                      | solo player: **2** (must be different Pokémon) | 1 + 1 |
 | 2v2                      | 1 + 1                                          | 1 + 1 |
 
-### Implementation (verified against the sim source)
+### Implementation (verified against the sim source; ✅ built in Phase 3)
 
 Two limits exist in Showdown:
 
@@ -113,18 +125,18 @@ Plan:
 
 ### Edge cases
 
-| Case                                                    | Handling                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Both teammates toggle Mega on the same turn** (2v2)   | Live lock: when one player toggles Mega, the ally's toggle is disabled with _"Your ally is Mega Evolving this turn"_; released if they untoggle/undo. If two choices still race, the first confirmed one keeps the Mega; the second is sent as the same move **without** Mega and that player gets a notice. No quota is lost. |
-| Solo player in 1v2 wants to Mega both actives on turn 1 | Not allowed (one per team per turn); they can Mega the second one on a later turn. The UI disables the second toggle.                                                                                                                                                                                                          |
-| Player toggles Mega, then undoes / changes action       | Quota is consumed only when the `\|-mega\|` event happens, never on selection.                                                                                                                                                                                                                                                 |
-| Pokémon holding a Mega Stone passes to the ally         | Can't happen: ownership is per Pokémon and the controller is always the owner, so quota is charged to the right player.                                                                                                                                                                                                        |
-| Turn timer expires                                      | The auto-completed choice never includes Mega.                                                                                                                                                                                                                                                                                 |
-| Several Mega Stones on one player's team                | Allowed (no Item Clause); the quota decides how many actually Mega Evolve.                                                                                                                                                                                                                                                     |
-| Primal Reversion (Red/Blue Orb)                         | Automatic on switch-in; not a Mega, doesn't consume quota.                                                                                                                                                                                                                                                                     |
-| Mega Rayquaza (no stone, needs Dragon Ascent)           | Counts as a Mega (legendaries allowed).                                                                                                                                                                                                                                                                                        |
-| Mega already used and the Pokémon switches out/back in  | Stays Mega (sim behavior); no additional quota consumed.                                                                                                                                                                                                                                                                       |
-| Public information                                      | Host shows a Mega Ring icon per trainer (available / used).                                                                                                                                                                                                                                                                    |
+| Case                                                    | Handling                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Both teammates toggle Mega on the same turn** (2v2)   | Lock: once one player's **sent** part Mega Evolves, the ally's menu is re-sent with `allyMega` and their toggle is disabled with _"Your ally is Mega Evolving this turn"_; released if they undo. If two choices still race, the first confirmed one keeps the Mega and the second is **rejected** with `MEGA_TAKEN` (the player re-taps without Mega; D-45). No quota is lost. |
+| Solo player in 1v2 wants to Mega both actives on turn 1 | Not allowed (one per team per turn); they can Mega the second one on a later turn. The UI disables the second toggle.                                                                                                                                                                                                                                                           |
+| Player toggles Mega, then undoes / changes action       | Quota is consumed only when the `\|-mega\|` event happens, never on selection.                                                                                                                                                                                                                                                                                                  |
+| Pokémon holding a Mega Stone passes to the ally         | Can't happen: ownership is per Pokémon and the controller is always the owner, so quota is charged to the right player.                                                                                                                                                                                                                                                         |
+| Turn timer expires                                      | The auto-completed choice never includes Mega.                                                                                                                                                                                                                                                                                                                                  |
+| Several Mega Stones on one player's team                | Allowed (no Item Clause); the quota decides how many actually Mega Evolve.                                                                                                                                                                                                                                                                                                      |
+| Primal Reversion (Red/Blue Orb)                         | Automatic on switch-in; not a Mega, doesn't consume quota.                                                                                                                                                                                                                                                                                                                      |
+| Mega Rayquaza (no stone, needs Dragon Ascent)           | Counts as a Mega (legendaries allowed).                                                                                                                                                                                                                                                                                                                                         |
+| Mega already used and the Pokémon switches out/back in  | Stays Mega (sim behavior); no additional quota consumed.                                                                                                                                                                                                                                                                                                                        |
+| Public information                                      | Host side card shows one Mega mark per Mega of the side's budget, greyed as the side Mega Evolves (D-48).                                                                                                                                                                                                                                                                       |
 
 ## Future extension: triples
 

@@ -83,6 +83,11 @@ PokeAPI**, so for names the two sources agree.
   tier, zero egress) with long cache headers. **Assets are never committed to git.**
 - Styles: `gen5ani` + `gen5ani-back` (classic Showdown BW animated look) recommended for consistency and
   weight. Need to verify coverage of the newest Megas (Legends Z-A / Champions); fallback to `home`/static.
+- **Item icons (D-42):** Showdown's single item icon sheet (`/sprites/itemicons-sheet.png`, 24 px icons,
+  16 per row, ~89 KB, verified to cover all 363 legal items incl. the new Champions Mega Stones). Each
+  item's position is its dex `spritenum` (MIT data), the same offsets `@pkmn/img`'s `Icons.getItem()`
+  computes. Same rights as the sprites: downloaded once by `pnpm fetch:sprites`, never committed or
+  hotlinked.
 - **Mandatory in-app credits:** Smogon Sprite Project, Showdown trainer sprite artists, PokeAPI, Pokémon Showdown.
 - Audio: see the next section.
 

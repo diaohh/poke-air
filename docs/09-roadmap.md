@@ -18,15 +18,25 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 | $0 hosting                                        | Low–Medium                                      | Render cold start handled by UX; memory limits to be measured                              |
 | Legal                                             | Low risk without monetization or mass promotion | See `03`                                                                                   |
 
-## Current status (2026-09-28)
+## Current status (2026-09-28, Phase 3)
+
+- ✅ **Phase 3 implemented** (pending manual validation; unit tests after it, as with Phase 2): spike S2,
+  doubles 1v1 / 1v2 / 2v2 with the OwnershipLayer (per-player requests, per-position merge, forced-switch
+  hand-over, timer defaults), target selection on the phone, Mega Evolution per player, doubles Host
+  scene, 90 s doubles timer, minimum 2 Pokémon per doubles side, plus **item icons** in the team builder
+  and the battle sheets. Plan, S2 results, decisions D-42…D-49 and manual checklist:
+  `docs/14-phase-3-plan.md`. **v1 scope (D-12) is now feature-complete.**
+- 👉 **Next:** manual validation of Phases 2 and 3 (checklists in `13` and `14`) → the tests listed in
+  `13-phase-2-plan.md` and `14-phase-3-plan.md` § Tests to add → **Phase 4** (Spanish, see the TODO
+  below; spike S4 first).
+
+### Status on 2026-09-28 (Phase 2)
 
 - ✅ **Battle information iteration + Phase 2 implemented** (pending manual validation; unit tests for the new
   code come after it, as agreed): stats / nature / stat stages in the phone's Pokémon sheet, field effects
   with turns left and hazard layers on the Host, spike S3, full team builder (editor, `TeamValidator`,
   import / export, saved teams), generated team builder data (`pnpm build:data`). Plan, results and manual
   checklist: `docs/13-phase-2-plan.md`.
-- 👉 **Next:** manual validation → tests listed in `13-phase-2-plan.md` § Tests to add → **Phase 3**
-  (doubles, spike S2 first).
 
 ### Status on 2026-09-27
 
@@ -52,12 +62,12 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 
 - ✅ **S1 — Simulator on Node:** full singles and doubles battles with the Champions mod; `getPlayerStreams`
   and `request` format inspected; RAM/startup measured (fits Render free tier).
-- **S2 — OwnershipLayer + Mega per player:** console prototype of doubles 1v2 and 2v2 with two "humans"
-  on one side: split requests, merge choices, forced switches after KO, Ally Switch. Override
-  `runMegaEvo` on the battle instance, verify that a second Mega on the same side works on a later turn,
-  that requests expose `canMegaEvo` correctly afterwards, and that quota tracking from `|-mega|` events is
-  reliable. Also learn how to register custom formats when using the package as a library (needed later
-  for triples).
+- ✅ **S2 — OwnershipLayer + Mega per player** (results in `14-phase-3-plan.md` and `05`): doubles request
+  shape and reordering, per-position merge with explicit `pass`, forced switches with fewer Pokémon than
+  holes, targets required for single-target moves, `default` completing every remaining position, the
+  `runMegaEvo` instance override (a second Mega on a later turn works), `|-mega|` quota tracking, and the
+  **one-Pokémon doubles side crash**. Still open for later: registering custom formats when using the
+  package as a library (needed for triples).
 - ✅ **S3 — Roster & rules** (results in `13-phase-2-plan.md` and `05`): Champions mod + `NatDex Mod`: validate learnsets for species outside the
   Champions roster, ban Z-Crystals/other gimmick items if they become legal, confirm `Min Team Size = 1`
   override and Stat Point validation (66 total / 32 max).
@@ -126,13 +136,33 @@ Per-Pokémon editor (species, item, ability, moves, nature, Stat Points), `TeamV
 Showdown text import/export, saved teams on the phone. Spike S3 done; S4 is reduced to the i18n part
 (the compact data generator exists: `pnpm build:data`).
 
-### Phase 3 — Doubles (completes v1)
+### Phase 3 — Doubles (completes v1) ✅ (pending manual validation) — see `docs/14-phase-3-plan.md`
 
-OwnershipLayer, target selection, Mega per player with team parity, doubles 1v1 / 1v2 / 2v2.
+OwnershipLayer, target selection, Mega per player with team parity, doubles 1v1 / 1v2 / 2v2. Also item
+icons (D-42). Known gap: Revival Blessing (picking a fainted Pokémon) is left to the turn timer.
 
-### Phase 4 — Spanish (es-ES)
+### Phase 4 — Spanish (es-ES) — next
 
-Locale tables from Showdown + our overrides, localized UI and battle narration, bilingual search.
+Locale tables from Showdown + our overrides, localized UI and battle narration, bilingual search. Plan in
+`docs/06-i18n.md`; write `docs/15-phase-4-plan.md` after spike S4. TODO:
+
+- [ ] **Spike S4 (i18n part):** fetch Showdown `data/text/es` at a pinned commit (not in the npm
+      release); measure coverage for the 1234-species roster (forme `null`s), items, abilities, moves;
+      decide our own `BattleTextFormatter` vs `@pkmn/view`; size of the per-locale JSON.
+- [ ] `packages/data`: `build:locales` → `names.es-ES.json` (species / moves / abilities / items / types /
+      natures by Showdown id), `battle.es-ES.json` (message templates), overrides for missing texts and
+      forme suffixes; English fallback everywhere (short descriptions stay English in v1).
+- [ ] `SUPPORTED_LOCALES` adds `es-ES`; the Host language selector enables it; default to the Host
+      browser language; phones follow the room locale (`room:state`).
+- [ ] `apps/web`: `locales/es-ES/ui.json` (every key, typed like `en`), lazy-loaded `names` / `battle`
+      namespaces, trainer names table, type / stat / nature labels.
+- [ ] Localize by id everywhere a dex name is shown: team builder (pickers, cards, editor), phone battle
+      (moves, Pokémon, items, abilities, targets), Host (side cards, narration, battle log, field chips).
+- [ ] Host narration from templates with the documented placeholder grammar (`[POKEMON]`,
+      `{TRAINER:definite:capitalize}`…), including abilities / items / weather lines added in Phase 2.
+- [ ] Bilingual search in the pickers (localized + English name); Showdown import / export stays English.
+- [ ] `INVALID_SET` validator details stay English (D-38) — note it in the UI.
+- [ ] Docs: `06` (measured coverage, final architecture), `02`, `10`, `12`, `CLAUDE.md`.
 
 ### Phase 5 — Polish
 
@@ -145,17 +175,19 @@ themes), spectators, replays, PWA, credits screen.
 - Room rules in the lobby: VGC preset with team preview, custom toggles (Item Clause, no legendaries…).
 - Optional gimmicks (Tera, Dynamax, Z-Moves).
 - Two Megas per team on the same turn (see O-01).
+- Revival Blessing support on the phone (choose a fainted Pokémon to revive).
+- Field effects mirrored on the phones (optional, from the battle-information iteration).
 
 ## Main risks
 
-| Risk                                                                                | Mitigation                                                                       |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Phones disconnect mid-turn                                                          | Wake Lock, reconnection tokens, timer + `default`                                |
-| Shared-team edge cases                                                              | Spike S2 + unit tests with scripted battles (fixed PRNG seeds)                   |
-| Champions + NatDex combination behaves unexpectedly (untested upstream combination) | Spike S3; fall back to Champions roster only if needed                           |
-| Mega instance override breaks on a Showdown upgrade                                 | Pin version; dedicated tests for Mega quota behavior                             |
-| Battle scene consumes too much time                                                 | MVP with generic animations; iterate later                                       |
-| Team builder data too heavy for phones                                              | Precompiled JSON per ruleset, gzip/brotli, caching                               |
-| Render free limits (RAM, cold start)                                                | Measure in S1/S6; fallback: Oracle Always Free VM or Host-authoritative option D |
-| Nintendo/TPC takedown                                                               | Non-commercial, private instance, disclaimer, no assets in a public repo         |
-| Upstream changes (Showdown protocol/data)                                           | Pin versions/commits; upgrade deliberately                                       |
+| Risk                                                                                | Mitigation                                                                        |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Phones disconnect mid-turn                                                          | Wake Lock, reconnection tokens, timer + `default`                                 |
+| Shared-team edge cases                                                              | Spike S2 ✅; unit tests with scripted battles (fixed PRNG seeds) after validation |
+| Champions + NatDex combination behaves unexpectedly (untested upstream combination) | Spike S3; fall back to Champions roster only if needed                            |
+| Mega instance override breaks on a Showdown upgrade                                 | Pin version; dedicated tests for Mega quota behavior                              |
+| Battle scene consumes too much time                                                 | MVP with generic animations; iterate later                                        |
+| Team builder data too heavy for phones                                              | Precompiled JSON per ruleset, gzip/brotli, caching                                |
+| Render free limits (RAM, cold start)                                                | Measure in S1/S6; fallback: Oracle Always Free VM or Host-authoritative option D  |
+| Nintendo/TPC takedown                                                               | Non-commercial, private instance, disclaimer, no assets in a public repo          |
+| Upstream changes (Showdown protocol/data)                                           | Pin versions/commits; upgrade deliberately                                        |

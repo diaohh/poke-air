@@ -72,8 +72,9 @@ Sim ──spectator log──► Host ──(animates)──► host:animated {u
   when it arrived; it is released to the phone once the Host reports `host:animated { upTo }` past that
   point, after **15 s** anyway, or at once if the Host is offline. Meanwhile phones get
   `battle:request { request: null }` ("look at the big screen"). The move to RESULTS waits the same way.
-- **Turn timer** (60 s per decision, from the moment the menu is released); on expiry the missing choices
-  are auto-completed with `default` (never Mega Evolves).
+- **Turn timer** (60 s per decision in singles, 90 s in doubles, from the moment the menu is released); on
+  expiry the missing parts are auto-completed with automatic actions per position (never Mega Evolves),
+  keeping what teammates already chose.
 - On the Host, `@pkmn/protocol` parses the log and **our own lightweight reducer** (`HostBattleModel`)
   keeps the displayed state (HP, status, boosts, field, Mega) and produces an **event queue** to animate
   (`|move|`, `|-damage|`, `|switch|`, `|-mega|`, `|faint|`…). We don't use `@pkmn/client`: it needs a
@@ -97,39 +98,39 @@ Conventions:
 - After every successful mutation the server broadcasts the full public snapshot `room:state` to the room
   (Host + phones). Private data goes through dedicated events to one socket only.
 
-### Implemented (Phase 0 + Phase 1 + Phase 2)
+### Implemented (Phase 0 → Phase 3)
 
-| Namespace | Event (client → server)  | Payload                                                        | Ack data                             |
-| --------- | ------------------------ | -------------------------------------------------------------- | ------------------------------------ |
-| `/host`   | `host:createRoom`        | `{ locale? }`                                                  | `{ code, hostToken, room }`          |
-| `/host`   | `host:resumeRoom`        | `{ code, hostToken }`                                          | `{ code, hostToken, room }`          |
-| `/host`   | `host:setFormat`         | `{ gameType: 'singles' \| 'doubles' }`                         | —                                    |
-| `/host`   | `host:setLocale`         | `{ locale }`                                                   | —                                    |
-| `/host`   | `host:kick`              | `{ playerId }`                                                 | —                                    |
-| `/host`   | `host:startTeamBuilding` | `{}`                                                           | —                                    |
-| `/host`   | `host:backToLobby`       | `{}` (TEAM_BUILDING or RESULTS)                                | —                                    |
-| `/host`   | `host:animated`          | `{ upTo }` — log lines the scene has shown                     | —                                    |
-| `/host`   | `host:rematch`           | `{}` (RESULTS → TEAM_BUILDING, teams kept)                     | —                                    |
-| `/player` | `player:join`            | `{ code, name, avatar, playerId?, reconnectToken? }`           | `{ playerId, reconnectToken, room }` |
-| `/player` | `player:update`          | `{ name?, avatar? }`                                           | —                                    |
-| `/player` | `player:switchTeam`      | `{ team: 'red' \| 'blue' }`                                    | —                                    |
-| `/player` | `player:leave`           | `{}`                                                           | —                                    |
-| `/player` | `player:ready`           | `{ ready }` (needs ≥ 1 Pokémon)                                | —                                    |
-| `/player` | `team:randomize`         | `{ slots? }` — no slots = whole team                           | —                                    |
-| `/player` | `team:setSlot`           | `{ slot, set }` — edited set (validated) or `null` = remove    | —                                    |
-| `/player` | `team:import`            | `{ text }` — Showdown team text, replaces the team             | `{ count, skipped }`                 |
-| `/player` | `battle:choose`          | `{ choice, rqid? }` — `move N [mega]` · `switch N` · `default` | —                                    |
-| `/player` | `battle:undo`            | `{}`                                                           | —                                    |
-| `/player` | `battle:forfeit`         | `{}`                                                           | —                                    |
+| Namespace | Event (client → server)  | Payload                                                                                                                                | Ack data                             |
+| --------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `/host`   | `host:createRoom`        | `{ locale? }`                                                                                                                          | `{ code, hostToken, room }`          |
+| `/host`   | `host:resumeRoom`        | `{ code, hostToken }`                                                                                                                  | `{ code, hostToken, room }`          |
+| `/host`   | `host:setFormat`         | `{ gameType: 'singles' \| 'doubles' }`                                                                                                 | —                                    |
+| `/host`   | `host:setLocale`         | `{ locale }`                                                                                                                           | —                                    |
+| `/host`   | `host:kick`              | `{ playerId }`                                                                                                                         | —                                    |
+| `/host`   | `host:startTeamBuilding` | `{}`                                                                                                                                   | —                                    |
+| `/host`   | `host:backToLobby`       | `{}` (TEAM_BUILDING or RESULTS)                                                                                                        | —                                    |
+| `/host`   | `host:animated`          | `{ upTo }` — log lines the scene has shown                                                                                             | —                                    |
+| `/host`   | `host:rematch`           | `{}` (RESULTS → TEAM_BUILDING, teams kept)                                                                                             | —                                    |
+| `/player` | `player:join`            | `{ code, name, avatar, playerId?, reconnectToken? }`                                                                                   | `{ playerId, reconnectToken, room }` |
+| `/player` | `player:update`          | `{ name?, avatar? }`                                                                                                                   | —                                    |
+| `/player` | `player:switchTeam`      | `{ team: 'red' \| 'blue' }`                                                                                                            | —                                    |
+| `/player` | `player:leave`           | `{}`                                                                                                                                   | —                                    |
+| `/player` | `player:ready`           | `{ ready }` (needs `team:state.minimum` Pokémon: 1, or 2 for a solo doubles player)                                                    | —                                    |
+| `/player` | `team:randomize`         | `{ slots? }` — no slots = whole team                                                                                                   | —                                    |
+| `/player` | `team:setSlot`           | `{ slot, set }` — edited set (validated) or `null` = remove                                                                            | —                                    |
+| `/player` | `team:import`            | `{ text }` — Showdown team text, replaces the team                                                                                     | `{ count, skipped }`                 |
+| `/player` | `battle:choose`          | `{ choice, rqid? }` — one action per position the player decides, comma-separated: `move N [target] [mega]` · `switch N`; or `default` | —                                    |
+| `/player` | `battle:undo`            | `{}`                                                                                                                                   | —                                    |
+| `/player` | `battle:forfeit`         | `{}`                                                                                                                                   | —                                    |
 
-| Namespace | Event (server → client) | Payload                                                                                                                                             |
-| --------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| both      | `room:state`            | `PublicRoomState` (ready flags, team counts, countdown, result — no species)                                                                        |
-| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'`                                                                                                            |
-| `/player` | `team:state`            | Owner only: `{ quota, slots }`                                                                                                                      |
-| `/player` | `battle:request`        | Owner only: `{ request: BattleRequest \| null, choice }` (`null` = watch the screen); own Pokémon carry stats, nature and stat stages (D-34)        |
-| `/host`   | `battle:log`            | `{ from, lines, moves, effects, resync? }` — public spectator lines, append-only; `effects` = dex durations of the timed effects started in `lines` |
-| both      | `battle:waiting`        | `{ waitingFor: playerId[], timerMs }`                                                                                                               |
+| Namespace | Event (server → client) | Payload                                                                                                                                                                                                                                                                                                                            |
+| --------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| both      | `room:state`            | `PublicRoomState` (ready flags, team counts, countdown, result — no species)                                                                                                                                                                                                                                                       |
+| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'`                                                                                                                                                                                                                                                                                           |
+| `/player` | `team:state`            | Owner only: `{ quota, minimum, slots }`                                                                                                                                                                                                                                                                                            |
+| `/player` | `battle:request`        | Owner only: `{ request: BattleRequest \| null, choice }` (`null` = watch the screen). The OwnershipLayer's share (D-43): the player's positions (`active` / `forceSwitch` with `position` + `pokemon`), own Pokémon only (with `slot`, stats, nature, stat stages, item icon), public `field` for targets, `megasLeft`, `allyMega` |
+| `/host`   | `battle:log`            | `{ from, lines, moves, effects, resync? }` — public spectator lines, append-only; `effects` = dex durations of the timed effects started in `lines`                                                                                                                                                                                |
+| both      | `battle:waiting`        | `{ waitingFor: playerId[], timerMs }`                                                                                                                                                                                                                                                                                              |
 
 `player:join` with a valid `playerId` + `reconnectToken` **rejoins** the existing seat (any phase);
 otherwise it creates a new player (LOBBY only). A newer socket for the same seat replaces the older one
@@ -140,12 +141,13 @@ animating the past. Battle choices are rejected through the ack (`INVALID_CHOICE
 Team edits (`team:setSlot` with a set, `team:import`) are validated with Showdown's `TeamValidator`
 (`INVALID_SET`, with the validator's English lines in `params.details`, decision D-38) and Species Clause
 across the whole side (`SPECIES_CLAUSE { species }`); unreadable text is `INVALID_IMPORT`.
+Phase 3 adds `TEAM_TOO_SMALL { min }` (doubles side under 2 Pokémon, D-44) and `MEGA_TAKEN` (a teammate
+already Mega Evolves this turn, D-45). When a teammate's part changes, the server re-sends the player's
+`battle:request` (same `rqid`) so the Mega lock (`allyMega`) stays current.
 
-### Planned (Phase 3+)
+### Planned
 
-| Namespace | Event           | Direction | Purpose                                                        |
-| --------- | --------------- | --------- | -------------------------------------------------------------- |
-| `/player` | `battle:choose` | c → s     | Targets (`move 1 2`) and per-position parts (Phase 3, doubles) |
+No protocol changes are planned for Phase 4 (i18n happens on the clients, keyed by Showdown ids).
 
 ## Identity, sessions and reconnection
 
@@ -229,6 +231,7 @@ poke-air/
 │     │  │                           StatPointsEditor, TeamMenu (import / export / saved teams)
 │     │  └─ battle/               ✅ ControllerBattle (menu/fight/party/waiting), sheets, TurnTimerChip
 │     ├─ components/              ✅ Stage (1920×1080), TrainerSprite, PokemonSprite, LanguageSelect
+│     │  ├─ ItemIcon.tsx          ✅ item icon from the self-hosted sheet (D-42)
 │     │  └─ ui/                   ✅ design-system primitives: Button, IconButton, Icon, PokeBall,
 │     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip, Sheet
 │     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en/ui.json
@@ -243,8 +246,10 @@ poke-air/
 │  │  ├─ battle/showdown.ts       ✅ the ONLY import point for pokemon-showdown (+ smoke tests)
 │  │  ├─ team/                    ✅ TeamService (random sets, validation, import), legality (Casual
 │  │  │                              validator, legal species / moves / items), dex-data, battleRoster
-│  │  ├─ battle/                  ✅ BattleSession, MatchController, OwnershipLayer (identity), TurnTimer,
-│  │  │                              request enrichment (stats, nature, boosts), effects (dex durations)
+│  │  ├─ battle/                  ✅ BattleSession (+ runMegaEvo override, public field), MatchController,
+│  │  │                              OwnershipLayer (positions, per-player requests, merge, Mega quota),
+│  │  │                              TurnTimer, request enrichment (stats, nature, boosts, battleName),
+│  │  │                              effects (dex durations)
 │  │  └─ time.ts                  ✅ injectable Scheduler (fake one in testing/)
 │  └─ data/scripts/               ✅ build-dex.ts (team builder JSON), fetch-sprites.ts (trainers + Pokémon +
 │                                    manifest), fetch-audio.ts (cries) · 🔜 locales

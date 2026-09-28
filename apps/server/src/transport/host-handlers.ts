@@ -8,17 +8,14 @@ import {
   hostSetLocaleSchema,
   type HostSession,
 } from '@poke-air/shared';
+import { registerHostBattleHandlers, resyncHost } from './battle-handlers.js';
 import type { HostSocket, Realtime } from './realtime.js';
-import type { z } from 'zod';
-import { withValidation } from './with-validation.js';
+import { withValidation, type On } from './with-validation.js';
 
 export function registerHostHandlers(rt: Realtime): void {
   rt.hosts.on('connection', (socket: HostSocket) => {
     const log = rt.logger.child({ ns: 'host', socket: socket.id });
-    const on = <S extends z.ZodType, R extends object | void>(
-      schema: S,
-      handler: (payload: z.output<S>) => R,
-    ) => withValidation(schema, log, handler);
+    const on: On = (schema, handler) => withValidation(schema, log, handler);
 
     /** Binds this socket as the room's Host screen, replacing any previous one. */
     const attach = (room: Room): HostSession => {
@@ -29,6 +26,8 @@ export function registerHostHandlers(rt: Realtime): void {
       void socket.join(room.code);
       room.setHostConnected(true);
       rt.broadcast(room);
+      // Mid-battle refresh: the scene is rebuilt from the whole log (sent after the ack).
+      setImmediate(() => resyncHost(rt, socket, room));
       return { code: room.code, hostToken: room.hostToken, room: room.toPublicState() };
     };
 
@@ -41,7 +40,11 @@ export function registerHostHandlers(rt: Realtime): void {
     socket.on(
       'host:createRoom',
       on(hostCreateRoomSchema, ({ locale }) => {
+        const ip = rt.clientIp(socket);
+        if (!rt.createLimiter.take(ip)) throw new RoomError('RATE_LIMITED');
+        if (rt.roomsOwnedBy(ip) >= rt.limits.maxRoomsPerIp) throw new RoomError('TOO_MANY_ROOMS');
         const room = rt.rooms.createRoom(locale ? { locale } : {});
+        rt.roomOwnerIp.set(room.code, ip);
         log.info({ code: room.code }, 'Room created');
         return attach(room);
       }),
@@ -95,7 +98,9 @@ export function registerHostHandlers(rt: Realtime): void {
       on(emptyPayloadSchema, () => {
         const room = currentRoom();
         room.startTeamBuilding();
+        rt.match(room).sync();
         rt.broadcast(room);
+        rt.sendTeamStates(room);
       }),
     );
 
@@ -104,9 +109,12 @@ export function registerHostHandlers(rt: Realtime): void {
       on(emptyPayloadSchema, () => {
         const room = currentRoom();
         room.backToLobby();
+        rt.match(room).sync();
         rt.broadcast(room);
       }),
     );
+
+    registerHostBattleHandlers(rt, socket, on, currentRoom);
 
     socket.on('disconnect', () => {
       const code = socket.data.code;
@@ -115,6 +123,8 @@ export function registerHostHandlers(rt: Realtime): void {
       const room = rt.rooms.get(code);
       if (!room) return;
       room.setHostConnected(false);
+      // Phones must not wait for animations on a screen that is gone.
+      rt.match(room).sync();
       rt.broadcast(room);
     });
   });

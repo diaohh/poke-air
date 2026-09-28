@@ -5,6 +5,12 @@ import type { z } from 'zod';
 
 type AnyAck = (result: Result<object>) => void;
 
+/** `withValidation` bound to a logger: `socket.on('x', on(schema, handler))`. */
+export type On = <S extends z.ZodType, R extends object | void>(
+  schema: S,
+  handler: (payload: z.output<S>) => R,
+) => (payload: unknown, ack: unknown) => void;
+
 /**
  * Wraps a socket event handler:
  * - validates the payload with zod (INVALID_PAYLOAD on failure),

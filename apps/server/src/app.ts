@@ -6,13 +6,15 @@ import { Server } from 'socket.io';
 import type { Config } from './config.js';
 import { registerHostHandlers } from './transport/host-handlers.js';
 import { registerPlayerHandlers } from './transport/player-handlers.js';
-import { Realtime } from './transport/realtime.js';
+import { Realtime, type RealtimeOptions } from './transport/realtime.js';
 
 export interface AppOptions {
   config: Config;
   rooms?: RoomManager;
   /** Pino logger options; `false` disables logging (tests). */
   logger?: boolean | Record<string, unknown>;
+  /** Abuse limits and battle timings (tests shorten them). */
+  realtime?: RealtimeOptions;
 }
 
 export interface PokeAirApp {
@@ -23,7 +25,12 @@ export interface PokeAirApp {
 }
 
 /** Builds Fastify + Socket.IO without listening, so tests can start it on a random port. */
-export async function buildApp({ config, rooms = new RoomManager(), logger }: AppOptions) {
+export async function buildApp({
+  config,
+  rooms = new RoomManager(),
+  logger,
+  realtime: realtimeOptions,
+}: AppOptions) {
   const app = Fastify({
     logger: logger ?? {
       level: config.logLevel,
@@ -47,18 +54,25 @@ export async function buildApp({ config, rooms = new RoomManager(), logger }: Ap
     pingTimeout: 20_000,
   });
 
-  const realtime = new Realtime(io, rooms, app.log);
+  const realtime = new Realtime(io, rooms, app.log, {
+    trustProxy: config.isProduction,
+    ...realtimeOptions,
+  });
   registerHostHandlers(realtime);
   registerPlayerHandlers(realtime);
 
   const sweepTimer = setInterval(() => {
     const removed = rooms.sweep();
+    for (const code of removed) realtime.forgetRoom(code);
+    realtime.joinLimiter.prune();
+    realtime.createLimiter.prune();
     if (removed.length > 0) app.log.info({ removed }, 'Idle rooms removed');
   }, config.roomSweepIntervalMs);
   sweepTimer.unref();
 
   const close = async () => {
     clearInterval(sweepTimer);
+    for (const room of rooms.list()) realtime.forgetRoom(room.code);
     await io.close();
     await app.close();
   };

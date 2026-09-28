@@ -2,21 +2,21 @@ import { RoomError, type PlayerRecord, type Room } from '@poke-air/core';
 import {
   emptyPayloadSchema,
   playerJoinSchema,
+  playerReadySchema,
   playerSwitchTeamSchema,
   playerUpdateSchema,
+  teamRandomizeSchema,
+  teamSetSlotSchema,
   type PlayerSession,
 } from '@poke-air/shared';
+import { registerPlayerBattleHandlers, resyncPlayer } from './battle-handlers.js';
 import type { PlayerSocket, Realtime } from './realtime.js';
-import type { z } from 'zod';
-import { withValidation } from './with-validation.js';
+import { withValidation, type On } from './with-validation.js';
 
 export function registerPlayerHandlers(rt: Realtime): void {
   rt.players.on('connection', (socket: PlayerSocket) => {
     const log = rt.logger.child({ ns: 'player', socket: socket.id });
-    const on = <S extends z.ZodType, R extends object | void>(
-      schema: S,
-      handler: (payload: z.output<S>) => R,
-    ) => withValidation(schema, log, handler);
+    const on: On = (schema, handler) => withValidation(schema, log, handler);
 
     /** Binds this socket to a seat, kicking out any older socket holding the same seat. */
     const attach = (room: Room, player: PlayerRecord): PlayerSession => {
@@ -32,6 +32,11 @@ export function registerPlayerHandlers(rt: Realtime): void {
       void socket.join(room.code);
       room.setPlayerConnected(player.id, true);
       rt.broadcast(room);
+      // Private state for this seat, sent right after the ack: own team, current battle menu.
+      setImmediate(() => {
+        socket.emit('team:state', room.teamState(player.id));
+        resyncPlayer(rt, socket, room, player.id);
+      });
       return {
         playerId: player.id,
         reconnectToken: player.reconnectToken,
@@ -64,6 +69,7 @@ export function registerPlayerHandlers(rt: Realtime): void {
     socket.on(
       'player:join',
       on(playerJoinSchema, ({ code, name, avatar, playerId, reconnectToken }) => {
+        if (!rt.joinLimiter.take(rt.clientIp(socket))) throw new RoomError('RATE_LIMITED');
         const room = rt.rooms.require(code);
         if (playerId && reconnectToken && room.getPlayer(playerId)) {
           const player = room.rejoinPlayer(playerId, reconnectToken);
@@ -105,6 +111,38 @@ export function registerPlayerHandlers(rt: Realtime): void {
         rt.broadcast(room);
       }),
     );
+
+    socket.on(
+      'player:ready',
+      on(playerReadySchema, ({ ready }) => {
+        const { room, playerId } = currentSeat();
+        room.setReady(playerId, ready);
+        rt.match(room).sync();
+        rt.broadcast(room);
+      }),
+    );
+
+    socket.on(
+      'team:randomize',
+      on(teamRandomizeSchema, ({ slots }) => {
+        const { room, playerId } = currentSeat();
+        socket.emit('team:state', room.randomizeTeam(playerId, slots));
+        rt.match(room).sync();
+        rt.broadcast(room);
+      }),
+    );
+
+    socket.on(
+      'team:setSlot',
+      on(teamSetSlotSchema, ({ slot }) => {
+        const { room, playerId } = currentSeat();
+        socket.emit('team:state', room.clearSlot(playerId, slot));
+        rt.match(room).sync();
+        rt.broadcast(room);
+      }),
+    );
+
+    registerPlayerBattleHandlers(rt, socket, on, currentSeat);
 
     socket.on('disconnect', () => detach());
   });

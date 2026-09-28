@@ -7,12 +7,17 @@ export class TurnTimer {
 
   constructor(
     private readonly scheduler: Scheduler,
-    private readonly durationMs: number,
+    private durationMs: number,
     private readonly onExpire: () => void,
   ) {}
 
   get running(): boolean {
     return this.deadline !== null;
+  }
+
+  /** Duration of the next countdowns (the format decides it: 60 s singles, 90 s doubles). */
+  setDuration(ms: number): void {
+    this.durationMs = ms;
   }
 
   /** Starts the timer unless it is already running (it is not restarted). */

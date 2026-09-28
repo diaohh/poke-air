@@ -198,7 +198,10 @@ describe('MatchController · choices', () => {
     expect(t.logs.at(-1)?.moves).toEqual({ Earthquake: { type: 'Ground', category: 'Physical' } });
     t.match.hostAnimated(t.logLength());
 
-    expect(t.lastRequest(t.ben)?.request).toMatchObject({ kind: 'switch', forceSwitch: [true] });
+    expect(t.lastRequest(t.ben)?.request).toMatchObject({
+      kind: 'switch',
+      forceSwitch: [{ position: 0 }],
+    });
     expect(t.lastRequest(t.ana)?.request?.kind).toBe('wait');
     expect(t.match.waiting().waitingFor).toEqual([t.ben]);
     expect(() => t.match.choose(t.ana, 'move 1')).toThrowError('NO_PENDING_REQUEST');

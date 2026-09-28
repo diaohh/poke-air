@@ -32,11 +32,83 @@ export interface BattleMoveOption extends MoveMeta {
   description: string;
 }
 
+/** One active position this player decides in a `move` request. */
 export interface BattleActiveOption {
+  /** Side position: 0 = left (`p1a`), 1 = right (`p1b`, doubles). */
+  position: number;
+  /** Name of the Pokémon in that position. */
+  pokemon: string;
   moves: BattleMoveOption[];
+  /** This Pokémon can Mega Evolve and the player still has a Mega Evolution left. */
   canMegaEvo: boolean;
   /** Can't switch out. */
   trapped: boolean;
+}
+
+/** One position this player must fill in a `switch` request. */
+export interface BattleSwitchSlot {
+  position: number;
+  /** Name of the Pokémon leaving it (fainted, or switched out by U-turn / Eject Button…). */
+  pokemon: string;
+}
+
+/** Public view of one active position (what the TV shows): used to pick targets. */
+export interface BattleFieldSlot {
+  name: string;
+  species: string;
+  /** Public HP percentage (0–100). */
+  hp: number;
+  fainted: boolean;
+}
+
+/** Every active position by side, indexed by position (`null` = empty). */
+export interface BattleField {
+  own: (BattleFieldSlot | null)[];
+  foe: (BattleFieldSlot | null)[];
+}
+
+/**
+ * Move targets that need a chosen target when there is more than one position per side
+ * (Showdown's `targetTypeChoices`). Spread, self and field moves never ask.
+ */
+export const CHOSEN_TARGETS = [
+  'normal',
+  'any',
+  'adjacentFoe',
+  'adjacentAlly',
+  'adjacentAllyOrSelf',
+] as const;
+
+export interface TargetOption {
+  /** Value for `move N <target>`: foe positions 1, 2; own positions -1, -2. */
+  loc: number;
+  side: 'own' | 'foe';
+  position: number;
+}
+
+/**
+ * Where a move used from `position` can be aimed (doubles: every position is adjacent). Empty when
+ * the move needs no target. Fainted / empty positions are included: the sim retargets.
+ */
+export function targetOptions(
+  target: string,
+  position: number,
+  activePerSide: number,
+): TargetOption[] {
+  const options: TargetOption[] = [];
+  if (activePerSide < 2 || !(CHOSEN_TARGETS as readonly string[]).includes(target)) return options;
+  const foes = target !== 'adjacentAlly' && target !== 'adjacentAllyOrSelf';
+  const allies = target !== 'adjacentFoe';
+  for (let i = 0; i < activePerSide; i++) {
+    if (foes) options.push({ loc: i + 1, side: 'foe', position: i });
+  }
+  for (let i = 0; i < activePerSide; i++) {
+    const self = i === position;
+    if (allies && (!self || target === 'adjacentAllyOrSelf')) {
+      options.push({ loc: -(i + 1), side: 'own', position: i });
+    }
+  }
+  return options;
 }
 
 export interface BattlePokemonMove {
@@ -70,7 +142,13 @@ export interface BattlePokemon {
   status?: StatusId;
   fainted: boolean;
   active: boolean;
+  /** `switch N` value: 1-based index in the side's current order (it changes as Pokémon switch). */
+  slot: number;
+  /** Side position when active (0 = left, 1 = right). */
+  position?: number;
   item: string;
+  /** Item icon sheet index (`ITEM_ICON_SHEET`), when holding an item. */
+  itemIcon?: number;
   ability: string;
   moves: BattlePokemonMove[];
   /** Computed stats (Lv 50, nature and Stat Points applied); `hp` = max HP. */
@@ -84,24 +162,37 @@ export interface BattlePokemon {
 }
 
 /**
- * The choice a phone has to make:
- * - `move`: pick a move or a switch for the active Pokémon (`active[0]`),
- * - `switch`: forced switch after a faint / U-turn (`forceSwitch[i]` true for slots to fill),
- * - `wait`: nothing to do (the opponent is choosing).
+ * What one phone has to decide (the OwnershipLayer's share of its side's request, decision D-43):
+ * - `move`: a move or a switch for each position in `active` (the player's own active Pokémon),
+ * - `switch`: a Pokémon for each position in `forceSwitch` (after a faint / U-turn),
+ * - `wait`: nothing to do now (the opponent or the teammate is choosing).
+ *
+ * The phone answers with one action per entry, in order, comma-separated:
+ * `move 1 2 mega, switch 4` (`move N [target] [mega]` · `switch <slot>`).
  */
 export interface BattleRequest {
   kind: 'move' | 'switch' | 'wait';
   /** Showdown request id; echoed back in `battle:choose` to reject stale taps. */
   rqid: number;
   side: SideId;
+  /** Positions per side: 1 in singles, 2 in doubles. */
+  activePerSide: number;
   active: BattleActiveOption[];
-  forceSwitch: boolean[];
+  forceSwitch: BattleSwitchSlot[];
+  /** Only this player's own Pokémon (never a teammate's), in the side's current order. */
   pokemon: BattlePokemon[];
+  /** Public view of the field when the request was made (targets, ally line). */
+  field: BattleField;
+  /** Mega Evolutions this player has left (1 per player; 2 for the solo player of a 1v2). */
+  megasLeft: number;
+  /** A teammate's chosen action Mega Evolves this turn (one per team per turn). */
+  allyMega: boolean;
 }
 
 /**
  * `battle:request` payload. `request: null` means "a new turn is resolving: watch the big screen";
- * `choice` is the choice already sent for this request (to rebuild the waiting view after a refresh).
+ * `choice` is this player's choice already sent for this request (to rebuild the waiting view after
+ * a refresh).
  */
 export interface BattleRequestPayload {
   request: BattleRequest | null;

@@ -112,8 +112,14 @@ export const teamImportSchema = z.object({
   text: z.string().trim().min(1).max(TEAM_TEXT_MAX_LENGTH),
 });
 
-/** Singles choices. Targets (`move 1 2`) arrive with doubles in Phase 3. */
-export const battleChoiceSchema = z.string().regex(/^(move [1-4]( mega)?|switch [1-6]|default)$/);
+/**
+ * One action per position the player decides, comma-separated (decision D-43):
+ * `move N [target] [mega]` (target: foe 1 / 2, own -1 / -2) · `switch <slot>`; or `default`.
+ */
+const battleActionPattern = '(?:move [1-4](?: -?[12])?(?: mega)?|switch [1-6])';
+export const battleChoiceSchema = z
+  .string()
+  .regex(new RegExp(`^(?:default|${battleActionPattern}(?:, ${battleActionPattern})?)$`));
 export const battleChooseSchema = z.object({
   choice: battleChoiceSchema,
   /** Request id the phone answered; stale taps on an older request are rejected. */

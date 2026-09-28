@@ -1,11 +1,12 @@
 import {
+  ACTIVE_PER_SIDE,
   ANIMATION_TIMEOUT_MS,
   BATTLE_COUNTDOWN_MS,
   SIDE_IDS,
   SIDE_TEAM,
+  TURN_TIMER_DOUBLES_MS,
   TURN_TIMER_MS,
   type BattleLogPayload,
-  type BattleRequest,
   type BattleRequestPayload,
   type BattleResult,
   type BattleWaiting,
@@ -18,20 +19,29 @@ import type { Room } from '../rooms/room.js';
 import { systemScheduler, type Scheduler } from '../time.js';
 import { BattleSession, type BattleEnd, type BattleSideSummary } from './battle-session.js';
 import { effectsIn } from './effects.js';
-import { OwnershipLayer } from './ownership.js';
-import { enrichRequest, moveMeta, type RawRequest } from './request.js';
+import { OwnershipLayer, type PublicField } from './ownership.js';
+import {
+  battleName,
+  enrichRequest,
+  moveMeta,
+  type RawRequest,
+  type SideRequest,
+} from './request.js';
 import { BATTLE_FORMAT_IDS } from './showdown.js';
 import { TurnTimer } from './turn-timer.js';
 
 export interface MatchTimings {
   countdownMs: number;
   turnTimerMs: number;
+  /** Turn timer in doubles (two positions per player, decision D-49). */
+  doublesTurnTimerMs: number;
   animationTimeoutMs: number;
 }
 
 export const DEFAULT_MATCH_TIMINGS: MatchTimings = {
   countdownMs: BATTLE_COUNTDOWN_MS,
   turnTimerMs: TURN_TIMER_MS,
+  doublesTurnTimerMs: TURN_TIMER_DOUBLES_MS,
   animationTimeoutMs: ANIMATION_TIMEOUT_MS,
 };
 
@@ -57,12 +67,14 @@ export interface MatchDeps {
 
 /** One side's current decision point. */
 interface Decision {
-  request: BattleRequest;
+  request: SideRequest;
+  /** Public view of the field when the request arrived (targets on the phones). */
+  field: PublicField;
   /** Spectator log length when the request arrived: phones see it once the Host animated that far. */
   releaseAt: number;
   released: boolean;
-  /** Each owner's part of the choice (one owner per side in Phase 1). */
-  parts: Map<string, string>;
+  /** Each participant's part of the choice: one action per position they decide. */
+  parts: Map<string, string[]>;
   /** The merged side choice was accepted by the sim (the side waits for the other one). */
   sent: boolean;
 }
@@ -86,9 +98,10 @@ export class MatchController {
 
   private session: BattleSession | null = null;
   private ownership: OwnershipLayer | null = null;
-  /** Every Pokémon's set by side and nickname: nature + Stat Points for its owner (decision D-34). */
+  /** Every Pokémon's set by side and sim name: nature + Stat Points for its owner (D-34). */
   private sets: Record<SideId, Map<string, PokemonSetData>> = { p1: new Map(), p2: new Map() };
   private decisions: Partial<Record<SideId, Decision>> = {};
+  private activePerSide = 1;
   private animatedUpTo = 0;
   private pendingEnd: PendingEnd | null = null;
   private cancelCountdown: (() => void) | null = null;
@@ -134,8 +147,15 @@ export class MatchController {
     if (decision.request.kind === 'wait') throw new RoomError('NO_PENDING_REQUEST');
     if (decision.sent || decision.parts.has(playerId)) throw new RoomError('ALREADY_CHOSEN');
 
-    decision.parts.set(playerId, choice);
-    const merged = ownership.mergeChoices(side, decision.parts);
+    const actions = ownership.parsePart(
+      playerId,
+      decision.request,
+      choice,
+      decision.parts,
+      decision.field,
+    );
+    decision.parts.set(playerId, actions);
+    const merged = ownership.merge(decision.request, decision.parts);
     if (merged !== null) {
       decision.sent = true;
       // May resolve the turn synchronously: new decisions then replace this one.
@@ -145,6 +165,7 @@ export class MatchController {
         throw new RoomError('INVALID_CHOICE');
       }
     }
+    this.emitTeammates(side, playerId, decision);
     this.afterDecisionChange();
   }
 
@@ -154,6 +175,7 @@ export class MatchController {
     if (decision.sent && !session.undo(side)) throw new RoomError('CANT_UNDO');
     decision.sent = false;
     decision.parts.delete(playerId);
+    this.emitTeammates(side, playerId, decision);
     this.afterDecisionChange();
   }
 
@@ -188,15 +210,21 @@ export class MatchController {
     const decision = side && this.decisions[side];
     if (!this.ownership || !decision?.released) return { request: null, choice: null };
     return {
-      request: this.ownership.requestFor(playerId, decision.request),
-      choice: decision.parts.get(playerId) ?? null,
+      request: this.ownership.requestFor(
+        playerId,
+        decision.request,
+        decision.parts,
+        decision.field,
+      ),
+      choice: decision.parts.get(playerId)?.join(', ') ?? null,
     };
   }
 
   waiting(): BattleWaiting {
     const waitingFor = this.waitingSides().flatMap((side) => {
       const decision = this.decisions[side];
-      return (this.ownership?.ownersOf(side) ?? []).filter((id) => !decision?.parts.has(id));
+      if (!decision || !this.ownership) return [];
+      return this.ownership.participants(decision.request).filter((id) => !decision.parts.has(id));
     });
     return { waitingFor, timerMs: this.turnTimer.remainingMs() };
   }
@@ -232,26 +260,38 @@ export class MatchController {
     }
     const sides = this.room.battleSides();
     this.room.startBattle();
-    this.ownership = new OwnershipLayer({
-      p1: sides.p1.players.map((p) => p.playerId),
-      p2: sides.p2.players.map((p) => p.playerId),
-    });
+    // Mega budget per team = players on the larger team, split evenly (1v2: the solo player gets 2).
+    const larger = Math.max(sides.p1.players.length, sides.p2.players.length);
+    const ownersOf = (side: SideId) =>
+      sides[side].players.map((p) => ({
+        playerId: p.playerId,
+        pokemon: p.sets.map(battleName),
+        megas: Math.floor(larger / Math.max(1, sides[side].players.length)),
+      }));
+    this.ownership = new OwnershipLayer({ p1: ownersOf('p1'), p2: ownersOf('p2') });
+    this.activePerSide = ACTIVE_PER_SIDE[this.room.gameType];
+    this.turnTimer.setDuration(
+      this.room.gameType === 'doubles' ? this.timings.doublesTurnTimerMs : this.timings.turnTimerMs,
+    );
     this.decisions = {};
     this.animatedUpTo = 0;
     this.lastWaiting = '';
     for (const side of SIDE_IDS) {
+      // Keyed by the sim's name for the Pokémon (formes use their base species name).
       this.sets[side] = new Map(
-        sides[side].players.flatMap((p) => p.sets.map((set) => [set.name, set])),
+        sides[side].players.flatMap((p) => p.sets.map((set) => [battleName(set), set])),
       );
     }
 
     const input = (side: SideId) => {
       const setup = sides[side];
       const first = setup.players[0] && this.room.getPlayer(setup.players[0].playerId);
+      // Every player's first Pokémon leads (2v2: first-joined player on the left, decision D-46).
+      const teams = setup.players.map((p) => p.sets);
       return {
         name: setup.name,
         ...(first ? { avatar: first.avatar } : {}),
-        team: setup.players.flatMap((p) => p.sets),
+        team: [...teams.flatMap((sets) => sets.slice(0, 1)), ...teams.flatMap((s) => s.slice(1))],
       };
     };
     const seed = this.deps.seed?.();
@@ -273,6 +313,11 @@ export class MatchController {
 
   private onSpectator(lines: string[]): void {
     if (!this.session || lines.length === 0) return;
+    // Mega quota: charged to the owner of the Pokémon that Mega Evolved (decision D-45).
+    for (const line of lines) {
+      const mega = /^\|-mega\|(p[12])[a-c]?: ([^|]+)/.exec(line);
+      if (mega) this.ownership?.recordMega(mega[1] as SideId, mega[2] ?? '');
+    }
     const from = this.session.spectatorLog.length - lines.length;
     this.listener.battleLog({ from, lines, moves: movesIn(lines), effects: effectsIn(lines) });
   }
@@ -283,14 +328,16 @@ export class MatchController {
     if (!session || !ownership) return;
     const sets = this.sets[side];
     const request = enrichRequest(raw, rqid, {
+      activePerSide: this.activePerSide,
       setOf: (name) => sets.get(name),
       boosts: session.activeBoosts(side),
     });
+    const field = session.publicField();
     const previous = this.decisions[side];
 
     if (raw.update && previous && previous.request.rqid === rqid) {
       // Same decision with refreshed flags (hidden info revealed, undo): keep its release state.
-      this.decisions[side] = { ...previous, request, parts: new Map(), sent: false };
+      this.decisions[side] = { ...previous, request, field, parts: new Map(), sent: false };
       if (previous.released) this.emitRequest(side);
       this.afterDecisionChange();
       return;
@@ -298,6 +345,7 @@ export class MatchController {
 
     this.decisions[side] = {
       request,
+      field,
       releaseAt: session.spectatorLog.length,
       released: false,
       parts: new Map(),
@@ -377,6 +425,17 @@ export class MatchController {
     }
   }
 
+  /**
+   * A player's part changed: their teammates' menus refresh (the ally Mega lock, `allyMega`).
+   * Skipped when the turn already resolved (the decision was replaced).
+   */
+  private emitTeammates(side: SideId, playerId: string, decision: Decision): void {
+    if (this.decisions[side] !== decision || !decision.released) return;
+    for (const owner of this.ownership?.ownersOf(side) ?? []) {
+      if (owner !== playerId) this.listener.request(owner, this.requestFor(owner));
+    }
+  }
+
   // ── Turn timer ───────────────────────────────────────────────────
 
   /** Sides whose released, actionable request still lacks a sent choice. */
@@ -398,7 +457,10 @@ export class MatchController {
     this.listener.waiting(waiting);
   }
 
-  /** Auto-completes every missing choice with `default` (never Mega Evolves). */
+  /**
+   * Auto-completes every missing part with automatic actions (never a Mega); the parts teammates
+   * already chose are kept.
+   */
   private onTurnTimeout(): void {
     const session = this.session;
     const ownership = this.ownership;
@@ -406,14 +468,19 @@ export class MatchController {
     for (const side of this.waitingSides()) {
       const decision = this.decisions[side];
       if (!decision) continue;
-      for (const owner of ownership.ownersOf(side)) {
-        if (!decision.parts.has(owner)) decision.parts.set(owner, 'default');
+      for (const playerId of ownership.participants(decision.request)) {
+        if (!decision.parts.has(playerId)) {
+          decision.parts.set(
+            playerId,
+            ownership.defaultPart(playerId, decision.request, decision.field),
+          );
+        }
       }
-      const merged = ownership.mergeChoices(side, decision.parts);
+      const merged = ownership.merge(decision.request, decision.parts);
       if (merged === null) continue;
       decision.sent = true;
       if (!session.choose(side, merged)) {
-        // A rejected merge (Phase 3 edge cases): let the sim pick for the whole side.
+        // A rejected merge (an unexpected edge case): let the sim pick for the whole side.
         session.choose(side, 'default');
       }
       // Phones that were still choosing must leave their menu.

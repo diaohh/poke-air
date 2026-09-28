@@ -1,7 +1,7 @@
 import type {
+  BattleActiveOption,
   BattleMoveOption,
   BattlePokemon,
-  BattleRequest,
   BoostId,
   MoveCategory,
   MoveMeta,
@@ -44,6 +44,8 @@ export interface RawSidePokemon {
   item: string;
   /** Computed stats without HP (max HP is in `condition`). */
   stats?: Partial<Record<Exclude<keyof StatTable, 'hp'>, number>>;
+  /** Tatsugiri inside Dondozo: its position is skipped (the sim auto-passes it). */
+  commanding?: boolean;
 }
 
 export interface RawRequest {
@@ -67,10 +69,47 @@ export function moveMeta(nameOrId: string): MoveMeta {
 
 /** Owner-only data the raw request lacks (decision D-34). */
 export interface RequestExtras {
+  /** Positions per side (1 singles, 2 doubles); defaults to what the request shows. */
+  activePerSide?: number;
   /** The owner's own set for the Pokémon with this nickname: nature and Stat Points. */
   setOf?: (name: string) => Pick<PokemonSetData, 'nature' | 'evs'> | undefined;
   /** Current non-zero stat stages of the side's active Pokémon, by nickname. */
   boosts?: Record<string, Partial<Record<BoostId, number>>>;
+}
+
+/** A side Pokémon as the OwnershipLayer sees it (the phone never gets `commanding`). */
+export interface SidePokemon extends BattlePokemon {
+  commanding?: boolean;
+}
+
+/**
+ * A whole side's decision, enriched: every position and every Pokémon of the side. Internal to
+ * core: the OwnershipLayer splits it into one `BattleRequest` per player (decision D-43).
+ */
+export interface SideRequest {
+  kind: 'move' | 'switch' | 'wait';
+  rqid: number;
+  side: SideId;
+  activePerSide: number;
+  /** `move`: one entry per position (index = position). `canMegaEvo` is the sim's flag. */
+  active: BattleActiveOption[];
+  /** `switch`: `true` for positions to fill (index = position). */
+  forceSwitch: boolean[];
+  /** Every Pokémon of the side in the sim's current order (actives first, by position). */
+  pokemon: SidePokemon[];
+}
+
+/**
+ * The name the simulator gives this set's Pokémon (its idents, `p1a: <name>`): a set named after
+ * its species is renamed to the **base** species (`Rotom-Wash` → `Rotom`), capped at 20 characters.
+ * Our sets never carry nicknames (D-37) and Species Clause keeps base species unique per side, so
+ * this name identifies the Pokémon on its side.
+ */
+export function battleName(set: Pick<PokemonSetData, 'name' | 'species'>): string {
+  const species = getChampionsDex().species.get(set.species || set.name);
+  const name =
+    !set.name || set.name === set.species ? species.baseSpecies || set.species : set.name;
+  return name.slice(0, 20);
 }
 
 /** A nature by name with the stats it raises / lowers (`undefined` for unknown names). */
@@ -86,16 +125,19 @@ export function natureInfo(name: string | undefined): NatureInfo | undefined {
 }
 
 /**
- * Maps a raw sim request to the phone's model, adding move metadata (decision D-22) and the
+ * Maps a raw sim request to the side's model, adding move metadata (decision D-22) and the
  * owner-only extras: nature and stat stages (decision D-34).
  */
 export function enrichRequest(
   raw: RawRequest,
   rqid: number,
   extras: RequestExtras = {},
-): BattleRequest {
+): SideRequest {
   const dex = getChampionsDex();
   const kind = raw.wait ? 'wait' : raw.forceSwitch ? 'switch' : 'move';
+  const activePerSide =
+    extras.activePerSide ?? Math.max(1, raw.active?.length ?? 0, raw.forceSwitch?.length ?? 0);
+  const pokemon = raw.side.pokemon.map((entry, i) => toPokemon(entry, i, activePerSide, extras));
 
   const toOption = (slot: RawMoveSlot): BattleMoveOption => {
     const move = dex.moves.get(slot.id || slot.move);
@@ -118,24 +160,33 @@ export function enrichRequest(
     kind,
     rqid,
     side: raw.side.id,
+    activePerSide,
     active:
       kind === 'move'
-        ? (raw.active ?? []).map((active) => ({
+        ? (raw.active ?? []).map((active, position) => ({
+            position,
+            pokemon: pokemon[position]?.name ?? '',
             moves: active.moves.map(toOption),
             canMegaEvo: Boolean(active.canMegaEvo),
             trapped: Boolean(active.trapped),
           }))
         : [],
     forceSwitch: kind === 'switch' ? (raw.forceSwitch ?? []) : [],
-    pokemon: raw.side.pokemon.map((pokemon) => toPokemon(pokemon, extras)),
+    pokemon,
   };
 }
 
-function toPokemon(raw: RawSidePokemon, extras: RequestExtras): BattlePokemon {
+function toPokemon(
+  raw: RawSidePokemon,
+  index: number,
+  activePerSide: number,
+  extras: RequestExtras,
+): SidePokemon {
   const dex = getChampionsDex();
   const { species, level, gender, shiny } = parseDetails(raw.details);
   const { hp, maxhp, status, fainted } = parseCondition(raw.condition);
-  const pokemon: BattlePokemon = {
+  const item = raw.item ? dex.items.get(raw.item) : undefined;
+  const pokemon: SidePokemon = {
     ident: raw.ident,
     name: raw.ident.replace(/^p\d[a-z]?: /, ''),
     species,
@@ -144,7 +195,8 @@ function toPokemon(raw: RawSidePokemon, extras: RequestExtras): BattlePokemon {
     maxhp,
     fainted,
     active: raw.active,
-    item: raw.item ? dex.items.get(raw.item).name || raw.item : '',
+    slot: index + 1,
+    item: item ? item.name || raw.item : '',
     ability: dex.abilities.get(raw.ability || raw.baseAbility).name || raw.baseAbility,
     moves: raw.moves.map((id) => {
       const move = dex.moves.get(id);
@@ -159,6 +211,10 @@ function toPokemon(raw: RawSidePokemon, extras: RequestExtras): BattlePokemon {
       spe: raw.stats?.spe ?? 0,
     },
   };
+  // The sim keeps the active Pokémon first, in position order (spike S2).
+  if (raw.active && index < activePerSide) pokemon.position = index;
+  if (item?.exists && item.spritenum !== undefined) pokemon.itemIcon = item.spritenum;
+  if (raw.commanding) pokemon.commanding = true;
   const set = extras.setOf?.(pokemon.name);
   const nature = natureInfo(set?.nature);
   if (nature) pokemon.nature = nature;

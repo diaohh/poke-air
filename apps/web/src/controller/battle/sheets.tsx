@@ -7,6 +7,7 @@ import {
   type StatId,
 } from '@poke-air/shared';
 import { useTranslation } from 'react-i18next';
+import { ItemIcon } from '../../components/ItemIcon';
 import { Button } from '../../components/ui/Button';
 import { HpBar } from '../../components/ui/HpBar';
 import { Sheet } from '../../components/ui/Sheet';
@@ -181,7 +182,10 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
         <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
           {t('battle.item')}
         </dt>
-        <dd className="font-bold">{pokemon.item || '—'}</dd>
+        <dd className="flex items-center gap-1.5 font-bold">
+          {pokemon.item && <ItemIcon icon={pokemon.itemIcon} />}
+          {pokemon.item || '—'}
+        </dd>
         <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
           {t('battle.ability')}
         </dt>
@@ -256,15 +260,19 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
 }
 
 interface ForfeitSheetProps {
+  /** The player has a teammate: forfeiting ends the battle for both (decision D-47). */
+  team?: boolean;
   onClose: () => void;
   onForfeit: () => void;
 }
 
-export function ForfeitSheet({ onClose, onForfeit }: ForfeitSheetProps) {
+export function ForfeitSheet({ team, onClose, onForfeit }: ForfeitSheetProps) {
   const { t } = useTranslation();
   return (
     <Sheet title={t('battle.forfeitTitle')} onClose={onClose}>
-      <p className="text-[15px] leading-normal text-ink-2">{t('battle.forfeitBody')}</p>
+      <p className="text-[15px] leading-normal text-ink-2">
+        {team ? t('battle.forfeitBodyTeam') : t('battle.forfeitBody')}
+      </p>
       <div className="sheet__actions">
         <Button variant="ghost" onClick={onClose} className="min-h-13.5 text-[17px]">
           {t('battle.keepPlaying')}

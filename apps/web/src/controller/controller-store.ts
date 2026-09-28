@@ -70,6 +70,8 @@ interface ControllerStore {
 const PROFILE_KEY = 'profile';
 const seatKey = (code: string) => `seat:${code}`;
 let socket: PlayerSocket | undefined;
+/** A `battle:choose` waiting for its ack (request id + the choice sent). */
+let pendingChoice: { rqid: number; choice: string } | null = null;
 
 function initialProfile(): Profile {
   return local.get<Profile>(PROFILE_KEY) ?? { name: '', avatar: randomTrainerAvatar() };
@@ -164,7 +166,12 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
         const previous = get().battle?.request;
         const fresh = payload.request && payload.request.rqid !== previous?.rqid;
         if (fresh && payload.request?.kind !== 'wait' && !payload.choice) buzz();
-        set({ battle: payload });
+        // A teammate's choice re-sends this menu (Mega lock); if it was sent before the server
+        // got our own choice, keep the choice that is still waiting for its ack.
+        const sending = pendingChoice?.rqid === payload.request?.rqid ? pendingChoice : null;
+        set({
+          battle: sending && !payload.choice ? { ...payload, choice: sending.choice } : payload,
+        });
       });
       current.on('battle:waiting', (waiting) =>
         set({ waiting: { ...waiting, receivedAt: Date.now() } }),
@@ -229,7 +236,9 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
       if (!battle || !request) return;
       // Optimistic: show the waiting view right away (UI must react < 200 ms).
       set({ battle: { ...battle, choice } });
+      pendingChoice = { rqid: request.rqid, choice };
       const ok = await act((s) => s.emitWithAck('battle:choose', { choice, rqid: request.rqid }));
+      pendingChoice = null;
       const now = get().battle;
       if (!ok && now?.request?.rqid === request.rqid) set({ battle: { ...now, choice: null } });
     },

@@ -1,6 +1,7 @@
 import {
   SIDE_IDS,
   type BattleEndReason,
+  type BattleFieldSlot,
   type BoostId,
   type PokemonSetData,
   type SideId,
@@ -39,6 +40,26 @@ export interface BattleSessionOptions {
   onEnd?: (end: BattleEnd) => void;
   /** Unexpected simulator exception (the battle is ended as a tie with reason `error`). */
   onError?: (error: unknown) => void;
+}
+
+type ShowdownPokemon = ShowdownBattle['sides'][number]['pokemon'][number];
+
+/**
+ * Mega Evolution per player (decision D-45): Showdown's `runMegaEvo` disables `canMegaEvo` for
+ * the whole side after a Mega. This instance override only changes the evolving Pokémon, so a
+ * teammate (or the solo player of a 1v2) can Mega Evolve later; the OwnershipLayer enforces each
+ * player's quota. Same body as the sim's, minus the side-wide loop (verified in spike S2).
+ */
+function allowMegaPerPokemon(battle: ShowdownBattle): void {
+  battle.actions.runMegaEvo = (pokemon: ShowdownPokemon) => {
+    const speciesid = pokemon.canMegaEvo || pokemon.canUltraBurst;
+    if (!speciesid) return false;
+    pokemon.formeChange(speciesid, pokemon.getItem(), true);
+    pokemon.canMegaEvo = false;
+    pokemon.canUltraBurst = null;
+    battle.runEvent('AfterMega', pokemon);
+    return true;
+  };
 }
 
 /** Same splitter the sim uses internally (`extractChannelMessages` is not exported). */
@@ -81,6 +102,7 @@ export class BattleSession {
     this.battle.reportExactHP = false;
     // `debugMode` is typed readonly but is a plain field; it only gates `|debug|` output.
     (this.battle as { debugMode: boolean }).debugMode = false;
+    allowMegaPerPokemon(this.battle);
   }
 
   /** Adds both players; the sim starts the battle and emits the first chunk + requests. */
@@ -151,6 +173,30 @@ export class BattleSession {
       boosts[pokemon.name] = stages;
     }
     return boosts;
+  }
+
+  /**
+   * Public view of every active position (what spectators see): the phones' target list. An
+   * Illusion shows its disguise, like on the TV.
+   */
+  publicField(): Record<SideId, (BattleFieldSlot | null)[]> {
+    const field = {} as Record<SideId, (BattleFieldSlot | null)[]>;
+    for (const side of SIDE_IDS) {
+      field[side] = this.battle.getSide(side).active.map((pokemon) => {
+        if (!pokemon) return null;
+        const shown = pokemon.illusion ?? pokemon;
+        const [hp = 0, max = 0] = (/^(\d+)\/(\d+)/.exec(pokemon.getHealth().shared) ?? [])
+          .slice(1)
+          .map(Number);
+        return {
+          name: shown.name,
+          species: shown.species.name,
+          hp: pokemon.fainted || !max ? 0 : Math.round((hp / max) * 100),
+          fainted: pokemon.fainted,
+        };
+      });
+    }
+    return field;
   }
 
   summary(): Record<SideId, BattleSideSummary> {

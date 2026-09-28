@@ -55,6 +55,8 @@ export const SIDE_TEAM: Record<SideId, TeamId> = { p1: 'red', p2: 'blue' };
 /** Battle timings (docs/11-phase-1-plan.md). */
 export const BATTLE_COUNTDOWN_MS = 3_000;
 export const TURN_TIMER_MS = 60_000;
+/** Doubles decisions take longer: two positions per player (docs/05-game-rules-and-mechanics.md). */
+export const TURN_TIMER_DOUBLES_MS = 90_000;
 /** Phones get their next menu once the Host has animated the turn, or after this long anyway. */
 export const ANIMATION_TIMEOUT_MS = 15_000;
 

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:data": "tsx scripts/build-dex.ts",
     "fetch:sprites": "tsx scripts/fetch-sprites.ts",
     "fetch:audio": "tsx scripts/fetch-audio.ts",
     "typecheck": "tsc -p tsconfig.json"

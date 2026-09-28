@@ -7,7 +7,8 @@
  *
  * - Trainer avatars: `sprites/trainers/<id>.png`.
  * - Pokémon: front + back sprites for every species a battle can show (`battleRoster()` from core:
- *   the Champions random-set species plus their Mega / battle-only formes). For each one we try
+ *   every legal species of the team builder and the randomizer's, plus their Mega / Primal /
+ *   battle-only formes; decision D-40). For each one we try
  *   `gen5ani`, then `ani`, then static `gen5` (new Champions Megas often only exist as static
  *   sprites), and record what we got in `sprites/pokemon-manifest.json`, which the web app reads.
  */

@@ -7,8 +7,8 @@
     "node": ">=22.22.0"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @poke-air/server --filter @poke-air/web dev",
-    "build": "pnpm -r build",
+    "dev": "pnpm build:data && pnpm --parallel --filter @poke-air/server --filter @poke-air/web dev",
+    "build": "pnpm build:data && pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -21,7 +21,8 @@
     "format:check": "prettier --check .",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "fetch:sprites": "pnpm --filter @poke-air/data fetch:sprites",
-    "fetch:audio": "pnpm --filter @poke-air/data fetch:audio"
+    "fetch:audio": "pnpm --filter @poke-air/data fetch:audio",
+    "build:data": "pnpm --filter @poke-air/data build:data"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -4,14 +4,19 @@ import {
   playerNameSchema,
   randomTrainerAvatar,
 } from '@poke-air/shared';
-import type { FormEvent } from 'react';
+import { useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainerSprite } from '../components/TrainerSprite';
+import { Button } from '../components/ui/Button';
+import { Icon } from '../components/ui/Icon';
+import { cn } from '../lib/cn';
 import { useControllerStore } from './controller-store';
 
-export function JoinForm({ code }: { code: string }) {
+/** Join view: name · scrollable 4-column trainer grid · dice for a random trainer · Join room. */
+export function JoinForm() {
   const { t } = useTranslation();
   const { profile, setProfile, join, status, error } = useControllerStore();
+  const gridRef = useRef<HTMLDivElement>(null);
   const nameValid = playerNameSchema.safeParse(profile.name).success;
 
   const onSubmit = (event: FormEvent) => {
@@ -19,65 +24,91 @@ export function JoinForm({ code }: { code: string }) {
     if (nameValid) void join();
   };
 
+  const pickRandom = () => {
+    const avatar = randomTrainerAvatar();
+    setProfile({ avatar });
+    gridRef.current
+      ?.querySelector(`[data-avatar="${avatar}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
   return (
-    <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-6">
-      <h1 className="text-center text-2xl font-black">{t('controller.joinTitle', { code })}</h1>
+    <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col gap-3.5">
+      <h1 className="font-display text-[30px] leading-tight">{t('controller.joinTitle')}</h1>
 
-      <div className="flex flex-col items-center gap-2">
-        <TrainerSprite avatar={profile.avatar} className="size-32" />
-        <p className="font-semibold">{t(`trainers.${profile.avatar}`)}</p>
-      </div>
-
-      <label className="flex flex-col gap-2">
-        <span className="text-sm font-semibold text-slate-300">{t('controller.name')}</span>
+      <label className="block">
+        <span className="field-label text-[13px]">{t('controller.name')}</span>
         <input
           value={profile.name}
           onChange={(e) => setProfile({ name: e.target.value })}
           maxLength={PLAYER_NAME_MAX_LENGTH}
           placeholder={t('controller.namePlaceholder')}
           autoComplete="nickname"
-          className="rounded-xl bg-surface-raised px-4 py-3 text-lg outline-none focus:ring-2 focus:ring-accent"
+          enterKeyHint="go"
+          className="field mt-2 h-14 px-4 text-xl"
         />
       </label>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-300">
-            {t('controller.chooseTrainer')}
-          </span>
-          <button
-            type="button"
-            onClick={() => setProfile({ avatar: randomTrainerAvatar() })}
-            className="rounded-lg bg-surface-raised px-3 py-1 text-sm"
-          >
-            🎲 {t('controller.randomTrainer')}
-          </button>
+      <div className="flex items-center justify-between gap-2.5">
+        <div>
+          <p className="field-label text-[13px]">{t('controller.trainer')}</p>
+          <p className="font-display text-[22px] text-wine">{t(`trainers.${profile.avatar}`)}</p>
         </div>
-        <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto rounded-xl bg-black/20 p-2">
-          {TRAINER_AVATARS.map((avatar) => (
-            <button
-              type="button"
-              key={avatar}
-              onClick={() => setProfile({ avatar })}
-              className={`rounded-lg p-1 ${
-                profile.avatar === avatar ? 'bg-accent/30 ring-2 ring-accent' : 'bg-surface-raised'
-              }`}
-            >
-              <TrainerSprite avatar={avatar} className="size-12" />
-            </button>
-          ))}
+        <Button
+          variant="gold"
+          aria-label={t('controller.randomTrainer')}
+          title={t('controller.randomTrainer')}
+          onClick={pickRandom}
+          className="size-12 rounded-[14px] text-2xl"
+        >
+          <Icon name="dice" />
+        </Button>
+      </div>
+
+      <div
+        ref={gridRef}
+        role="radiogroup"
+        aria-label={t('controller.trainer')}
+        className="-mx-1.5 min-h-0 flex-1 overflow-y-auto px-1.5 pt-1 pb-2.5"
+      >
+        <div className="grid grid-cols-4 gap-2">
+          {TRAINER_AVATARS.map((avatar) => {
+            const selected = profile.avatar === avatar;
+            return (
+              <button
+                type="button"
+                key={avatar}
+                data-avatar={avatar}
+                role="radio"
+                aria-checked={selected}
+                aria-label={t(`trainers.${avatar}`)}
+                onClick={() => setProfile({ avatar })}
+                className={cn(
+                  'trainer-tile grid aspect-square place-items-center overflow-hidden rounded-2xl',
+                  selected && 'trainer-tile--selected',
+                )}
+              >
+                <TrainerSprite avatar={avatar} decorative className="size-full" />
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {error && <p className="text-center text-red-400">{t(`errors.${error}`)}</p>}
+      {error && (
+        <p role="alert" className="text-center text-sm font-semibold text-warn-deep">
+          {t(`errors.${error}`)}
+        </p>
+      )}
 
-      <button
+      <Button
         type="submit"
+        variant="primary"
         disabled={!nameValid || status === 'joining'}
-        className="mt-auto rounded-xl bg-accent px-6 py-4 text-lg font-bold text-slate-900 disabled:opacity-40"
+        className="min-h-15 w-full text-[19px]"
       >
         {status === 'joining' ? t('controller.joining') : t('controller.join')}
-      </button>
+      </Button>
     </form>
   );
 }

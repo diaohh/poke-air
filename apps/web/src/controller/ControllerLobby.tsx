@@ -1,72 +1,150 @@
-import { TEAM_IDS, type PublicRoomState, type TeamId } from '@poke-air/shared';
+import {
+  MAX_PLAYERS_PER_TEAM,
+  TEAM_IDS,
+  TEAM_SIZE_LIMITS,
+  type PublicPlayer,
+  type PublicRoomState,
+  type TeamId,
+} from '@poke-air/shared';
 import { useTranslation } from 'react-i18next';
 import { TrainerSprite } from '../components/TrainerSprite';
+import { Button } from '../components/ui/Button';
+import { Icon } from '../components/ui/Icon';
+import { PokeBall } from '../components/ui/PokeBall';
+import { TeamChip } from '../components/ui/TeamChip';
+import { cn } from '../lib/cn';
+import { TEAM_SCOPE } from '../lib/team';
 import { useControllerStore } from './controller-store';
 
-const TEAM_BG: Record<TeamId, string> = {
-  red: 'bg-team-red-dark/60 border-team-red',
-  blue: 'bg-team-blue-dark/60 border-team-blue',
-};
+interface Props {
+  room: PublicRoomState;
+  me: PublicPlayer;
+}
 
-export function ControllerLobby({ room }: { room: PublicRoomState }) {
+/** Lobby on the phone: Red card above Blue card, each with its players and a join button. */
+export function ControllerLobby({ room, me }: Props) {
   const { t } = useTranslation();
-  const { playerId, switchTeam, leave, error } = useControllerStore();
-  const me = room.players.find((p) => p.id === playerId);
-  if (!me) return null;
-  const otherTeam: TeamId = me.team === 'red' ? 'blue' : 'red';
+  const { switchTeam, leave, error } = useControllerStore();
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <header className={`flex items-center gap-4 rounded-2xl border-2 p-4 ${TEAM_BG[me.team]}`}>
-        <TrainerSprite avatar={me.avatar} className="size-20" />
-        <div>
-          <p className="text-xl font-bold">{me.name}</p>
-          <p className="text-sm text-slate-300">
-            {t('controller.yourTeam', { team: t(`teams.${me.team}`) })}
-          </p>
-        </div>
-        <span className="ml-auto font-mono text-lg text-slate-400">{room.code}</span>
-      </header>
+    <div className="flex min-h-0 flex-1 flex-col gap-3.5">
+      <h1 className="font-display text-[30px] leading-tight">{t('controller.chooseTeam')}</h1>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="-mx-1.5 flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-1.5 pt-1 pb-2.5">
         {TEAM_IDS.map((team) => (
-          <div key={team} className={`rounded-xl border p-3 ${TEAM_BG[team]}`}>
-            <p className="mb-2 text-sm font-bold">{t(`teams.${team}`)}</p>
-            <ul className="flex flex-col gap-2">
-              {room.players
-                .filter((p) => p.team === team)
-                .map((p) => (
-                  <li
-                    key={p.id}
-                    className={`flex items-center gap-2 ${p.connected ? '' : 'opacity-50'}`}
-                  >
-                    <TrainerSprite avatar={p.avatar} className="size-8" />
-                    <span className="truncate text-sm">
-                      {p.name}
-                      {p.id === me.id && ` (${t('common.you')})`}
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          </div>
+          <TeamCard
+            key={team}
+            team={team}
+            room={room}
+            me={me}
+            onJoin={() => void switchTeam(team)}
+          />
         ))}
       </div>
 
-      <button
-        onClick={() => void switchTeam(otherTeam)}
-        className="rounded-xl bg-surface-raised px-4 py-4 font-bold"
+      {error && (
+        <p role="alert" className="text-center text-sm font-semibold text-warn-deep">
+          {t(`errors.${error}`)}
+        </p>
+      )}
+
+      <p
+        role="status"
+        className="flex items-center justify-center gap-3 text-[15px] font-bold text-ink-2"
       >
-        {t('controller.switchTo', { team: t(`teams.${otherTeam}`) })}
-      </button>
-
-      {error && <p className="text-center text-red-400">{t(`errors.${error}`)}</p>}
-
-      <p className="mt-auto text-center text-slate-400">
+        <PokeBall size={26} tone="team" animation="bounce" />
         {room.hostConnected ? t('controller.waitingForHost') : t('controller.hostOffline')}
       </p>
-      <button onClick={() => void leave()} className="text-sm text-slate-500 underline">
+
+      <Button
+        variant="ghost"
+        onClick={() => void leave()}
+        className="min-h-13 w-full rounded-md text-base"
+      >
+        <Icon name="exit" />
         {t('controller.leave')}
-      </button>
+      </Button>
     </div>
+  );
+}
+
+interface TeamCardProps {
+  team: TeamId;
+  room: PublicRoomState;
+  me: PublicPlayer;
+  onJoin: () => void;
+}
+
+function TeamCard({ team, room, me, onJoin }: TeamCardProps) {
+  const { t } = useTranslation();
+  const players = room.players.filter((p) => p.team === team);
+  const { max } = TEAM_SIZE_LIMITS[room.gameType];
+  const openSlots = Math.max(0, max - players.length);
+  const mine = me.team === team;
+  const full = players.length >= MAX_PLAYERS_PER_TEAM;
+
+  return (
+    <section className={cn('team-card rounded-[22px] p-3.5', TEAM_SCOPE[team])}>
+      <div className="mb-2.5 flex items-center justify-between">
+        <TeamChip team={team} className="text-sm" />
+        <span className="text-sm font-extrabold text-(color:--deep)">
+          {t('controller.teamSlots', { count: players.length, max })}
+        </span>
+      </div>
+
+      <ul className="mb-3 flex flex-col gap-1.5">
+        {players.map((p) => (
+          <li
+            key={p.id}
+            className={cn(
+              'team-card__row flex items-center gap-2.5 rounded-[14px] py-1.5 pr-2.5 pl-1.5 text-base font-bold',
+              !p.connected && 'opacity-60',
+            )}
+          >
+            <TrainerSprite
+              avatar={p.avatar}
+              decorative
+              className={cn('size-10', !p.connected && 'grayscale')}
+            />
+            <span className="truncate">{p.name}</span>
+            {p.id === me.id ? (
+              <span className="ml-auto text-[11px] font-black tracking-widest text-(color:--deep) uppercase">
+                {t('common.you')}
+              </span>
+            ) : (
+              !p.connected && (
+                <span className="ml-auto text-[11px] font-black tracking-widest text-muted uppercase">
+                  {t('common.disconnected')}
+                </span>
+              )
+            )}
+          </li>
+        ))}
+        {Array.from({ length: openSlots }, (_, i) => (
+          <li
+            key={`open-${i}`}
+            className="team-card__slot flex min-h-12 items-center justify-center rounded-[14px] text-sm font-semibold italic"
+          >
+            {t('controller.openSlot')}
+          </li>
+        ))}
+      </ul>
+
+      {mine ? (
+        <p className="flex min-h-13 items-center justify-center gap-2 rounded-md bg-(color:--tint) font-extrabold text-(color:--deep)">
+          <Icon name="check" />
+          {t('controller.onThisTeam')}
+        </p>
+      ) : (
+        <Button
+          variant={team === 'red' ? 'team-red' : 'team-blue'}
+          disabled={full}
+          onClick={onJoin}
+          className="min-h-13 w-full rounded-md text-[17px]"
+        >
+          {t('controller.joinTeam', { team: t(`teams.${team}`) })}
+        </Button>
+      )}
+    </section>
   );
 }

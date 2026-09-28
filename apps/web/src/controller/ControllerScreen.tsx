@@ -1,54 +1,102 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
+import { Button } from '../components/ui/Button';
+import { CodeChip } from '../components/ui/CodeChip';
+import { Logo } from '../components/ui/Logo';
+import { PokeBall } from '../components/ui/PokeBall';
+import { TeamChip } from '../components/ui/TeamChip';
+import { cn } from '../lib/cn';
+import { TEAM_SCOPE } from '../lib/team';
 import { useRoomLocale } from '../lib/use-room-locale';
 import { useWakeLock } from '../lib/use-wake-lock';
 import { useControllerStore } from './controller-store';
 import { ControllerLobby } from './ControllerLobby';
 import { JoinForm } from './JoinForm';
 
-/** `/j/:code` — the phone controller. */
+/**
+ * `/j/:code` — the phone controller (portrait). Themed with the player's team colors once joined;
+ * neutral wine/blush before. The primary action of every view is pinned to the bottom.
+ */
 export function ControllerScreen() {
   const { t } = useTranslation();
   const { code = '' } = useParams();
-  const { open, status, room, online, removedReason, join } = useControllerStore();
+  const { open, status, room, online, removedReason, join, playerId } = useControllerStore();
+  const roomCode = code.toUpperCase();
+  const me = room?.players.find((p) => p.id === playerId);
+  const joined = status === 'joined' && room && me;
 
   useEffect(() => open(code), [open, code]);
   useRoomLocale(room?.locale);
   useWakeLock(status === 'joined');
 
   return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      {!online && status !== 'removed' && (
-        <p className="mb-3 rounded-lg bg-amber-500/20 p-3 text-center text-sm text-amber-200">
-          {status === 'connecting' ? t('common.wakingUp') : t('common.connecting')}
+    <div
+      className={cn(
+        'phone-shell mx-auto flex h-dvh max-w-md flex-col gap-3.5 px-4.5 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+        TEAM_SCOPE[joined ? me.team : 'neutral'],
+      )}
+    >
+      <header className="flex min-h-10 items-center justify-between gap-2">
+        {joined ? (
+          <TeamChip team={me.team} className="text-sm" />
+        ) : (
+          <Logo ballSize={26} className="gap-2 text-xl" />
+        )}
+        <CodeChip code={roomCode} />
+      </header>
+
+      {!online && status !== 'removed' && status !== 'connecting' && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-md bg-warn-soft px-3.5 py-2.5 text-sm font-semibold text-warn-deep"
+        >
+          <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-warn" />
+          {t('common.reconnecting')}
         </p>
       )}
 
-      {status === 'connecting' && <p className="m-auto text-slate-400">{t('common.connecting')}</p>}
+      {status === 'connecting' && (
+        <CenteredMessage>
+          <PokeBall size={72} tone="brand" animation="spin" />
+          <p className="text-base font-semibold text-ink-2">{t('common.connecting')}</p>
+          {!online && <p className="text-sm text-ink-2">{t('common.wakingUp')}</p>}
+        </CenteredMessage>
+      )}
 
-      {(status === 'form' || status === 'joining') && <JoinForm code={code.toUpperCase()} />}
+      {(status === 'form' || status === 'joining') && <JoinForm />}
 
-      {status === 'joined' && room?.phase === 'LOBBY' && <ControllerLobby room={room} />}
+      {joined && room.phase === 'LOBBY' && <ControllerLobby room={room} me={me} />}
 
-      {status === 'joined' && room && room.phase !== 'LOBBY' && (
+      {joined && room.phase !== 'LOBBY' && (
         // Phase 1 replaces this with the team builder and, later, the battle controls.
-        <p className="m-auto text-center text-lg text-slate-300">
-          {t('controller.teamBuildingSoon')}
-        </p>
+        <CenteredMessage>
+          <PokeBall size={72} tone="team" animation="bounce" />
+          <p className="text-base font-semibold text-ink-2">{t('controller.teamBuildingSoon')}</p>
+        </CenteredMessage>
       )}
 
       {status === 'removed' && (
-        <div className="m-auto flex flex-col items-center gap-6 text-center">
-          <p className="text-lg">{t(`controller.removed.${removedReason ?? 'kicked'}`)}</p>
-          <button
-            onClick={() => void join()}
-            className="rounded-xl bg-accent px-6 py-3 font-bold text-slate-900"
-          >
+        <>
+          <CenteredMessage>
+            <PokeBall size={72} tone="empty" />
+            <p className="text-lg font-bold">
+              {t(`controller.removed.${removedReason ?? 'kicked'}`)}
+            </p>
+          </CenteredMessage>
+          <Button variant="primary" onClick={() => void join()} className="min-h-15 text-[19px]">
             {t('controller.joinAgain')}
-          </button>
-        </div>
+          </Button>
+        </>
       )}
-    </main>
+    </div>
+  );
+}
+
+function CenteredMessage({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 px-4 text-center">
+      {children}
+    </div>
   );
 }

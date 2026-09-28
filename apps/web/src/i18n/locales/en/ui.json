@@ -1,8 +1,7 @@
 {
   "app": {
     "name": "Poke-Air",
-    "disclaimer": "Non-commercial fan project. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names are trademarks of their respective owners.",
-    "tagline": "Pokémon battles on the big screen. Your phone is the controller."
+    "disclaimer": "Non-commercial fan project. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names are trademarks of their respective owners."
   },
   "common": {
     "connecting": "Connecting to the server…",
@@ -11,11 +10,7 @@
     "disconnected": "Disconnected",
     "you": "You",
     "language": "Language",
-    "roomCode": "Room code {{code}}",
-    "retry": "Retry",
-    "back": "Back",
-    "players_one": "{{count}} player",
-    "players_other": "{{count}} players"
+    "roomCode": "Room code {{code}}"
   },
   "status": {
     "ready": "Ready",
@@ -29,8 +24,7 @@
     "codeLabel": "Room code",
     "codePlaceholder": "CODE",
     "joinButton": "Join",
-    "sceneTurn": "Your turn!",
-    "join": "Join a game"
+    "sceneTurn": "Your turn!"
   },
   "battle": {
     "fight": "FIGHT",
@@ -85,18 +79,8 @@
       "subtitle": "Trainers are picking their Pokémon on their phones. Teams stay secret until the battle.",
       "readyCount": "{{ready}} / {{total}} ready",
       "waiting": "Waiting for trainers…",
-      "cancel": "Cancel",
-      "comingSoon": "Players are building their teams on their phones. (Coming in Phase 1.)",
-      "backToLobby": "Back to lobby"
-    },
-    "roomCode": "Room code",
-    "scanToJoin": "Scan to join",
-    "orVisit": "or open {{url}}",
-    "format": "Format",
-    "language": "Language",
-    "waitingForPlayers": "Waiting for players…",
-    "emptyTeam": "No trainers yet",
-    "hostDisconnectedWarning": "Keep this screen open: it is the game board."
+      "cancel": "Cancel"
+    }
   },
   "controller": {
     "joinTitle": "Join the battle",
@@ -120,10 +104,7 @@
       "replaced": "This room was opened on another tab or device.",
       "roomClosed": "The room was closed."
     },
-    "joinAgain": "Join again",
-    "chooseTrainer": "Choose your trainer",
-    "yourTeam": "You are on the {{team}}",
-    "switchTo": "Move me to the {{team}}"
+    "joinAgain": "Join again"
   },
   "errors": {
     "INVALID_PAYLOAD": "Something in the request was not valid.",

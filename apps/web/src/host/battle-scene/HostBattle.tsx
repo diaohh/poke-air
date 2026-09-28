@@ -93,7 +93,7 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
   const frame = useBattlePlayback(battle, animated);
   const { scene, event, eventId, messages, log } = frame;
   const effectLabel = useEffectLabel();
-  useBattleAudio(frame, battle.moves);
+  useBattleAudio(frame, battle.moves, battle.effects);
   const [showLog, setShowLog] = useState(() => local.get<boolean>(LOG_KEY) ?? true);
   const seconds = useCountdown(
     waiting?.waitingFor.length ? waiting.timerMs : null,

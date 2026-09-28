@@ -103,6 +103,11 @@ export type NarrationKey =
   | 'protected'
   | 'ability'
   | 'confused'
+  | 'itemEaten'
+  | 'itemLost'
+  | 'itemUsed'
+  | 'itemRevealed'
+  | 'itemObtained'
   | 'weatherStart'
   | `weather.${WeatherId}`
   | 'weatherEnd'
@@ -449,6 +454,14 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
       return { kind: 'message', narration: { key: 'cant', params: { pokemon } } };
     case '-activate': {
       const effect = effectName(a2);
+      // Abilities announced through `-activate` (e.g. Synchronize, Cursed Body) get the ability call-out.
+      if (who && typeof a2 === 'string' && a2.startsWith('ability: ')) {
+        return {
+          kind: 'effect',
+          side: who.side,
+          narration: { key: 'ability', params: { pokemon, ability: effect } },
+        };
+      }
       if (
         !who ||
         !/^(Protect|Detect|Max Guard|King's Shield|Spiky Shield|Baneful Bunker|Silk Trap|Burning Bulwark)$/.test(
@@ -461,6 +474,31 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
         kind: 'effect',
         side: who.side,
         narration: { key: 'protected', params: { pokemon } },
+      };
+    }
+    case '-enditem': {
+      // Berries eaten, Focus Sash / Air Balloon / Weakness Policy used up, items knocked off…
+      if (!who || !a2) return null;
+      const item = effectName(a2);
+      const from = typeof kwArgs.from === 'string' ? kwArgs.from : '';
+      const key: NarrationKey = kwArgs.eat
+        ? 'itemEaten'
+        : from.startsWith('move:') || kwArgs.stealeat
+          ? 'itemLost'
+          : 'itemUsed';
+      return { kind: 'effect', side: who.side, narration: { key, params: { pokemon, item } } };
+    }
+    case '-item': {
+      // Revealed (Frisk, Air Balloon on switch-in) or received (Trick, Switcheroo, Thief).
+      if (!who || !a2) return null;
+      const from = typeof kwArgs.from === 'string' ? kwArgs.from : '';
+      return {
+        kind: 'effect',
+        side: who.side,
+        narration: {
+          key: from.startsWith('move:') ? 'itemObtained' : 'itemRevealed',
+          params: { pokemon, item: effectName(a2) },
+        },
       };
     }
     case '-ability': {

@@ -1,4 +1,4 @@
-import type { MoveMeta, PublicRoomState } from '@poke-air/shared';
+import type { EffectDuration, MoveMeta, PublicRoomState } from '@poke-air/shared';
 import { useEffect, useRef } from 'react';
 import { useCountdown } from '../../lib/use-countdown';
 import { activePokemon } from '../battle-scene/model';
@@ -54,7 +54,11 @@ export function useRoomAudio(room: PublicRoomState | undefined, roomAt: number):
 }
 
 /** Battle effects + cries, one per animated event (never for resync / skipped lines). */
-export function useBattleAudio(frame: PlaybackFrame, moves: Record<string, MoveMeta>): void {
+export function useBattleAudio(
+  frame: PlaybackFrame,
+  moves: Record<string, MoveMeta>,
+  effects: Record<string, EffectDuration>,
+): void {
   const { event, eventId, scene } = frame;
   const played = useRef(0);
   const previous = useRef(event);
@@ -63,7 +67,7 @@ export function useBattleAudio(frame: PlaybackFrame, moves: Record<string, MoveM
     if (!event || eventId === played.current) return;
     played.current = eventId;
     const category = event.kind === 'move' && event.move ? moves[event.move]?.category : undefined;
-    const sfx = sfxForEvent(event, category, previous.current);
+    const sfx = sfxForEvent(event, category, previous.current, effects);
     previous.current = event;
     if (sfx) playSfx(sfx);
 
@@ -73,5 +77,5 @@ export function useBattleAudio(frame: PlaybackFrame, moves: Record<string, MoveM
       const pitch = event.kind === 'faint' ? 0.8 : 1;
       if (pokemon) setTimeout(() => playCry(pokemon.species, pitch), 280);
     }
-  }, [event, eventId, moves, scene]);
+  }, [event, eventId, moves, effects, scene]);
 }

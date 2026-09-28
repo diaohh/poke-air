@@ -146,7 +146,12 @@
       "sideStart": "{{effect}} is up on {{trainer}}'s side!",
       "sideEnd": "{{effect}} wore off on {{trainer}}'s side.",
       "won": "{{name}} won the battle!",
-      "tie": "The battle ended in a draw!"
+      "tie": "The battle ended in a draw!",
+      "itemEaten": "{{pokemon}} ate its <b>{{item}}</b>!",
+      "itemLost": "{{pokemon}} lost its <b>{{item}}</b>!",
+      "itemUsed": "{{pokemon}}'s <b>{{item}}</b> was used up!",
+      "itemRevealed": "{{pokemon}} is holding <b>{{item}}</b>!",
+      "itemObtained": "{{pokemon}} obtained <b>{{item}}</b>!"
     },
     "statsTitle": "Stats",
     "statPointsTitle": "Stat Points",

@@ -1,7 +1,7 @@
 import { ZZFX, zzfx } from 'zzfx';
 import { spriteCandidates } from '../../lib/pokemon-sprites';
 import { useAudioStore } from './audio-store';
-import { FANFARE, SFX, type SfxName } from './sounds';
+import { SEQUENCES, SFX, type SfxName } from './sounds';
 
 /**
  * Host-only audio (the phones stay silent: everyone is in the same room). Browsers only allow
@@ -36,13 +36,14 @@ export function playSfx(name: SfxName): void {
   if (!unlocked || muted || effects <= 0) return;
   ZZFX.volume = 0.3 * effects;
   try {
-    if (name === 'fanfare') {
-      const [volume, randomness, , ...rest] = SFX.ready;
-      for (const [frequency, delay] of FANFARE) {
+    if (name in SEQUENCES) {
+      const { voice, notes } = SEQUENCES[name as keyof typeof SEQUENCES];
+      const [volume, randomness, , ...rest] = SFX[voice];
+      for (const [frequency, delay] of notes) {
         setTimeout(() => zzfx(volume, randomness, frequency, ...rest), delay);
       }
     } else {
-      zzfx(...SFX[name]);
+      zzfx(...SFX[name as keyof typeof SFX]);
     }
   } catch {
     // Audio is a nicety; never break the scene.

@@ -29,6 +29,6 @@ describe('sfxForEvent', () => {
     expect(sfxForEvent({ kind: 'mega' }, undefined, null)).toBe('mega');
     expect(sfxForEvent({ kind: 'end' }, undefined, null)).toBe('fanfare');
     expect(sfxForEvent({ kind: 'turn' }, undefined, null)).toBeNull();
-    expect(sfxForEvent(message('weatherStart'), undefined, null)).toBeNull();
+    expect(sfxForEvent(message('used'), undefined, null)).toBeNull();
   });
 });

@@ -18,7 +18,17 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 | $0 hosting                                        | Low–Medium                                      | Render cold start handled by UX; memory limits to be measured                              |
 | Legal                                             | Low risk without monetization or mass promotion | See `03`                                                                                   |
 
-## Current status (2026-09-27)
+## Current status (2026-09-28)
+
+- ✅ **Battle information iteration + Phase 2 implemented** (pending manual validation; unit tests for the new
+  code come after it, as agreed): stats / nature / stat stages in the phone's Pokémon sheet, field effects
+  with turns left and hazard layers on the Host, spike S3, full team builder (editor, `TeamValidator`,
+  import / export, saved teams), generated team builder data (`pnpm build:data`). Plan, results and manual
+  checklist: `docs/13-phase-2-plan.md`.
+- 👉 **Next:** manual validation → tests listed in `13-phase-2-plan.md` § Tests to add → **Phase 3**
+  (doubles, spike S2 first).
+
+### Status on 2026-09-27
 
 - ✅ **Phase 1 implemented** (pending manual validation by the team): randomizer team building with Ready,
   automatic battle start (3 s countdown), singles battles on the Champions mod with moves / switches /
@@ -26,7 +36,7 @@ used as a library. Even Spanish names and most battle messages exist. What remai
   spectator log, private phone controls, results + rematch, refresh/rejoin in every phase, rate limits.
   71 unit/integration tests + Playwright E2E. Details and deviations: `docs/11-phase-1-plan.md` § Status.
 - ✅ UI design system "Stadium Wine" applied to every screen (D-24).
-- 👉 **Next: Phase 2** (full team builder) — spike S3 first (roster & validation rules), then S4 (data & i18n).
+- 👉 Next was Phase 2 (full team builder) — spike S3 first (roster & validation rules), then S4 (data & i18n).
 
 ### Earlier status (2026-09-25)
 
@@ -48,7 +58,7 @@ used as a library. Even Spanish names and most battle messages exist. What remai
   that requests expose `canMegaEvo` correctly afterwards, and that quota tracking from `|-mega|` events is
   reliable. Also learn how to register custom formats when using the package as a library (needed later
   for triples).
-- **S3 — Roster & rules:** Champions mod + `NatDex Mod`: validate learnsets for species outside the
+- ✅ **S3 — Roster & rules** (results in `13-phase-2-plan.md` and `05`): Champions mod + `NatDex Mod`: validate learnsets for species outside the
   Champions roster, ban Z-Crystals/other gimmick items if they become legal, confirm `Min Team Size = 1`
   override and Stat Point validation (66 total / 32 max).
 - **S4 — Data & i18n:** script generating compact JSON for the Casual ruleset (legal species + learnsets +
@@ -92,28 +102,29 @@ and rules in `03-data-sources-and-licensing.md` (§ Audio), open choices O-06 / 
       room) and keep the vibration. **Still manual:** pick and add CC0 music files
       (`apps/web/public/audio/README.md`); until then the music is silent.
 
-### Next iteration — battle information (requested 2026-09-28)
+### Iteration — battle information (requested 2026-09-28) ✅ — see `docs/13-phase-2-plan.md` § Part A
 
-- [ ] **Stats in the phone's Pokémon details sheet** (switch menu and forced switch): HP, Atk, Def, SpA,
+- [x] **Stats in the phone's Pokémon details sheet** (switch menu and forced switch): HP, Atk, Def, SpA,
       SpD, Spe of each own Pokémon, with the stat raised by its nature in **green (▲)** and the lowered
       one in **red (▼)** (state = icon + color, principle 6 of `12-design-system.md`). Data: the request
       already carries the computed `stats` of every own Pokémon (`atk…spe`; HP = max HP from
       `condition`); the **nature is not in the request**, so the server adds it (and its ±stats) from the
       player's own set when enriching the request — owner-only data, never sent to the Host. Show the
       active Pokémon's current stat stages there too (e.g. `Atk +2`).
-- [ ] **Field effects with their remaining duration on the Host:** weather, terrain, Trick Room / Gravity,
+- [x] **Field effects with their remaining duration on the Host:** weather, terrain, Trick Room / Gravity,
       screens (Reflect, Light Screen, Aurora Veil), Tailwind, Safeguard, Mist… with **turns left**, and
       entry hazards (Spikes ×1–3, Toxic Spikes ×1–2, Stealth Rock, Sticky Web) with their **layers**. The
       spectator protocol carries no durations: `HostBattleModel` counts turns from `-weather` /
-      `-fieldstart` / `-sidestart` using the standard durations (5 turns; 8 with Light Clay / weather
-      rocks, which spectators can't see → show "5–8" until it ends) and counts repeated `-sidestart`
-      lines as hazard layers. Chips per side next to each side card, field-wide ones in the top bar;
-      consider mirroring them on the phones' battle menu.
+      `-fieldstart` / `-sidestart`; the durations come from the dex with the log (`battle:log.effects`:
+      5 turns, 8 with Light Clay / weather rocks, which spectators can't see → "5–8" until the base
+      duration is exceeded) and repeated `-sidestart` lines count as hazard layers. Chips per side on each
+      side card, field-wide ones in the top bar. Not done: mirroring them on the phones (optional).
 
-### Phase 2 — Full team builder 👉 next
+### Phase 2 — Full team builder ✅ (pending manual validation) — see `docs/13-phase-2-plan.md`
 
 Per-Pokémon editor (species, item, ability, moves, nature, Stat Points), `TeamValidator` validation,
-Showdown text import/export, saved teams on the phone.
+Showdown text import/export, saved teams on the phone. Spike S3 done; S4 is reduced to the i18n part
+(the compact data generator exists: `pnpm build:data`).
 
 ### Phase 3 — Doubles (completes v1)
 

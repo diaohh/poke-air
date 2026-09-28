@@ -84,6 +84,8 @@ Nothing below exists yet; it is the intended setup when deploying.
 - SPA fallback: add `apps/web/vercel.json` with a rewrite of `/(.*)` → `/index.html` (routes `/host`, `/j/:code`).
 - Sprites: `pnpm fetch:sprites` must run before the build (add it to the build command) or be
   uploaded to Cloudflare R2; they are never in git.
+- Team builder data: run `pnpm build:data` from the repo root before the web build (the root `pnpm build`
+  does it; `apps/web`'s own `build` does not): e.g. build command `cd ../.. && pnpm build:data && pnpm --filter @poke-air/web build`.
 
 **Later:** GitHub Actions running `pnpm check` on every push; `packages/data` generation in the web build
 (Showdown pinned commit → JSON, cached).

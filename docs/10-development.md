@@ -12,18 +12,26 @@ Everything needed to run, test and extend the codebase. Read `CLAUDE.md` first f
 
 ```bash
 pnpm install          # installs every workspace package
-pnpm fetch:sprites    # trainer + Pokémon sprites into apps/web/public/sprites (git-ignored, ~24 MB)
+pnpm fetch:sprites    # trainer + Pokémon sprites into apps/web/public/sprites (git-ignored; every legal species)
 cp .env.example .env  # optional: defaults work for local development
-pnpm dev              # server on :3001 + web on :5173 (both watch mode)
+pnpm dev              # builds the team builder data if needed, then server :3001 + web :5173 (watch mode)
 ```
 
 Open `http://localhost:5173/host` on the PC. The QR automatically points to the PC's **LAN IP**
 (the Host asks the backend's `/api/info` for it), so phones on the same Wi-Fi can scan and join.
 
-Sprites: trainers and Pokémon (front + back for every species the randomizer can produce, plus their
-Mega / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
+Sprites: trainers and Pokémon (front + back for every legal species — the team builder allows 1234 —
+plus the randomizer's species and their Mega / Primal / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
 `gen5ani`, then `ani`, then static `gen5`, and writes `apps/web/public/sprites/pokemon-manifest.json`; the
 web app falls back to the base forme (new Champions Megas without sprites) and then to a letter badge.
+The roster grew with Phase 2 (decision D-40): re-run `pnpm fetch:sprites` once to download the new species
+(incremental, a few thousand files at a polite pace: expect several minutes).
+
+Team builder data: `pnpm build:data` writes `apps/web/public/data/teambuilder.json` (legal species, learnsets,
+items, abilities, natures for the Casual ruleset, ~157 KB gzip, git-ignored). `pnpm dev` / `pnpm build` run it
+first; it takes ≈ 9 s and is skipped while the file matches the installed Showdown version + generator
+version (`TEAM_BUILDER_DATA_VERSION` in `core/team/dex-data.ts`: bump it when the data shape or selection
+changes). `--force` rebuilds: `pnpm --filter @poke-air/data build:data -- --force`.
 
 LAN notes:
 
@@ -38,14 +46,15 @@ LAN notes:
 
 | Command                                      | What it does                                                                              |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm dev`                                   | Server (`tsx watch`) + web (Vite) in parallel                                             |
+| `pnpm dev`                                   | `build:data`, then server (`tsx watch`) + web (Vite) in parallel                          |
 | `pnpm test` / `pnpm test:watch`              | Vitest over every `*.test.ts(x)` in `apps/*/src` and `packages/*/src`                     |
 | `pnpm typecheck`                             | `tsc --noEmit` in every package                                                           |
 | `pnpm lint`                                  | `lint:js` (ESLint) + `lint:styles` (Stylelint on `apps/web/src/**/*.scss`)                |
 | `pnpm lint:fix`                              | ESLint + Stylelint with `--fix`                                                           |
 | `pnpm format` / `pnpm format:check`          | Prettier (+ Tailwind class sorting)                                                       |
 | `pnpm check`                                 | typecheck + lint + format:check + test (run before handing work back)                     |
-| `pnpm build`                                 | Web → `apps/web/dist`; server → `apps/server/dist` (tsup bundle incl. workspace packages) |
+| `pnpm build`                                 | `build:data`, then web → `apps/web/dist`; server → `apps/server/dist` (tsup bundle)       |
+| `pnpm build:data`                            | Team builder JSON → `apps/web/public/data/teambuilder.json` (skipped when up to date)     |
 | `pnpm fetch:sprites`                         | Download missing sprites + write `pokemon-manifest.json` (idempotent, sequential, polite) |
 | `pnpm fetch:audio`                           | Optional: Pokémon cries + `audio/cries-manifest.json` (git-ignored, ~4 MB)                |
 | `pnpm test:e2e`                              | Playwright: 1 Host + 2 phones play a battle (reuses `pnpm dev`, system Edge)              |
@@ -166,7 +175,8 @@ Example: a new player action `player:foo`.
 - **React StrictMode** runs effects twice in dev: store `start()`/`open()` return a cleanup that fully
   tears down the socket; keep that pattern.
 - **Champions custom games enable Team Preview**; append `@@@!Team Preview` to the format id unless a
-  preview phase is implemented.
+  preview phase is implemented. Battle format ids are `@@@!Team Preview,+Past` (`+Past` enables Mega
+  Rayquaza, D-41): **no spaces after the commas** — `Battle` doesn't trim custom rules and throws.
 - **Tailwind 4 drops unused theme variables.** Tokens read only from SCSS (`var(--color-*)`) would vanish;
   that's why `index.css` uses `@theme static`. Keep it.
 - **`**/*` inside a CSS block comment closes it** (`*/`) and breaks the Tailwind build. Don't write globs in
@@ -190,6 +200,17 @@ Example: a new player action `player:foo`.
 - **Audio only starts after a user gesture** (browser autoplay policy): the Home "Host a battle" click counts;
   after a Host refresh the first click/key unlocks it. `zzfx` creates its `AudioContext` on import, so keep
   it inside `host/audio/engine.ts` (never import it from tested modules).
+
+- **Team validation (Phase 2):** only through `casualValidator()` (`core/team/legality.ts`), one set at a time
+  (`validateSet`). `validateTeam` enforces `Min Team Size = 6`, which the custom rules can't override. The
+  validator mutates the set (forme / ability normalization): read the result back, as `TeamService` does.
+- **Champions learnsets replace the roster's learnsets:** anything listing moves must union the Champions
+  movepool with `Dex.mod('gen9')`'s National Dex movepool and confirm each move with the validator
+  (`learnableMoves()`); the Champions dex alone misses most moves of roster species.
+- **Validator text is English prose:** `INVALID_SET` forwards it in `params.details` (D-38); everything else
+  stays an error code.
+- **Nicknames are not supported** (D-37): `name` always equals `species`; code relies on unique names per
+  side (nature lookup in `MatchController`, the Host model).
 
 ## Simulator baseline (spike S1, measured 2026-09-25, Node 22.22, pokemon-showdown 0.11.11)
 

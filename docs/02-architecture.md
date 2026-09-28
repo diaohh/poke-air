@@ -97,7 +97,7 @@ Conventions:
 - After every successful mutation the server broadcasts the full public snapshot `room:state` to the room
   (Host + phones). Private data goes through dedicated events to one socket only.
 
-### Implemented (Phase 0 + Phase 1)
+### Implemented (Phase 0 + Phase 1 + Phase 2)
 
 | Namespace | Event (client → server)  | Payload                                                        | Ack data                             |
 | --------- | ------------------------ | -------------------------------------------------------------- | ------------------------------------ |
@@ -116,19 +116,20 @@ Conventions:
 | `/player` | `player:leave`           | `{}`                                                           | —                                    |
 | `/player` | `player:ready`           | `{ ready }` (needs ≥ 1 Pokémon)                                | —                                    |
 | `/player` | `team:randomize`         | `{ slots? }` — no slots = whole team                           | —                                    |
-| `/player` | `team:setSlot`           | `{ slot, set: null }` (Phase 1: remove only)                   | —                                    |
+| `/player` | `team:setSlot`           | `{ slot, set }` — edited set (validated) or `null` = remove    | —                                    |
+| `/player` | `team:import`            | `{ text }` — Showdown team text, replaces the team             | `{ count, skipped }`                 |
 | `/player` | `battle:choose`          | `{ choice, rqid? }` — `move N [mega]` · `switch N` · `default` | —                                    |
 | `/player` | `battle:undo`            | `{}`                                                           | —                                    |
 | `/player` | `battle:forfeit`         | `{}`                                                           | —                                    |
 
-| Namespace | Event (server → client) | Payload                                                                              |
-| --------- | ----------------------- | ------------------------------------------------------------------------------------ |
-| both      | `room:state`            | `PublicRoomState` (ready flags, team counts, countdown, result — no species)         |
-| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'`                                             |
-| `/player` | `team:state`            | Owner only: `{ quota, slots }`                                                       |
-| `/player` | `battle:request`        | Owner only: `{ request: BattleRequest \| null, choice }` (`null` = watch the screen) |
-| `/host`   | `battle:log`            | `{ from, lines, moves, resync? }` — public spectator lines, append-only              |
-| both      | `battle:waiting`        | `{ waitingFor: playerId[], timerMs }`                                                |
+| Namespace | Event (server → client) | Payload                                                                                                                                             |
+| --------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| both      | `room:state`            | `PublicRoomState` (ready flags, team counts, countdown, result — no species)                                                                        |
+| `/player` | `player:removed`        | `'kicked' \| 'replaced' \| 'roomClosed'`                                                                                                            |
+| `/player` | `team:state`            | Owner only: `{ quota, slots }`                                                                                                                      |
+| `/player` | `battle:request`        | Owner only: `{ request: BattleRequest \| null, choice }` (`null` = watch the screen); own Pokémon carry stats, nature and stat stages (D-34)        |
+| `/host`   | `battle:log`            | `{ from, lines, moves, effects, resync? }` — public spectator lines, append-only; `effects` = dex durations of the timed effects started in `lines` |
+| both      | `battle:waiting`        | `{ waitingFor: playerId[], timerMs }`                                                                                                               |
 
 `player:join` with a valid `playerId` + `reconnectToken` **rejoins** the existing seat (any phase);
 otherwise it creates a new player (LOBBY only). A newer socket for the same seat replaces the older one
@@ -136,14 +137,14 @@ otherwise it creates a new player (LOBBY only). A newer socket for the same seat
 current `battle:request`; a Host gets the whole log with `resync: true` and rebuilds the scene without
 animating the past. Battle choices are rejected through the ack (`INVALID_CHOICE`, `STALE_REQUEST`,
 `ALREADY_CHOSEN`, `NO_PENDING_REQUEST`…); the result lives in `room:state.result` (no `battle:end` event).
+Team edits (`team:setSlot` with a set, `team:import`) are validated with Showdown's `TeamValidator`
+(`INVALID_SET`, with the validator's English lines in `params.details`, decision D-38) and Species Clause
+across the whole side (`SPECIES_CLAUSE { species }`); unreadable text is `INVALID_IMPORT`.
 
-### Planned (Phase 2+)
+### Planned (Phase 3+)
 
 | Namespace | Event           | Direction | Purpose                                                        |
 | --------- | --------------- | --------- | -------------------------------------------------------------- |
-| `/player` | `team:setSlot`  | c → s     | Full sets from the editor, validated with `TeamValidator`      |
-| `/player` | `team:import`   | c → s     | Showdown text paste (Phase 2)                                  |
-| `/player` | `team:state`    | s → c     | + validation errors (Phase 2)                                  |
 | `/player` | `battle:choose` | c → s     | Targets (`move 1 2`) and per-position parts (Phase 3, doubles) |
 
 ## Identity, sessions and reconnection
@@ -158,14 +159,18 @@ animating the past. Battle choices are rejected through the ack (`INVALID_CHOICE
 
 ## Team builder data
 
-Full dex data (species, learnsets, items, abilities) weighs several MB. Strategy:
+Full dex data (species, learnsets, items, abilities) weighs several MB. Strategy (decision D-36):
 
-1. `packages/data` generates **compact JSON per ruleset** at build time from the `pokemon-showdown` dex
-   (`Dex.mod('champions')`): legal species, learnsets, items, abilities, natures, plus locale tables
-   (see `06-i18n.md`).
-2. Served as hashed static files with **aggressive caching** from the frontend host (service worker if PWA).
-3. The phone loads them when entering TEAM_BUILDING → instant local search.
-4. **Final validation** always happens on the server with `TeamValidator`.
+1. ✅ `pnpm build:data` (`packages/data/scripts/build-dex.ts` → core `buildTeamBuilderData()`) generates
+   **compact JSON for the Casual ruleset** from the `pokemon-showdown` dex: 1234 legal species (types, base
+   stats, abilities, learnset as move indexes, Mega Stones), 827 moves, 363 items, ability descriptions,
+   natures (~830 KB, **~157 KB gzip**, ≈ 9 s). Written to `apps/web/public/data/teambuilder.json`
+   (git-ignored); `pnpm dev` and `pnpm build` run it first and it skips when its stamp (Showdown version +
+   generator version) is current.
+2. Served as a static file by the frontend host (🔜 hashed name / service-worker cache with the PWA).
+3. The phone loads it when entering TEAM_BUILDING (`lib/team-dex.ts`, one fetch per page) → instant local
+   search. Locale tables arrive with Phase 4 (see `06-i18n.md`).
+4. **Final validation** always happens on the server with `TeamValidator` (decision D-35).
 
 ## Stack
 
@@ -220,24 +225,29 @@ poke-air/
 │     │  └─ battle-scene/         ✅ model (HostBattleModel reducer), playback (animation queue), HostBattle,
 │     │                              SideCard, ActiveSlot, BattleLog, NarrationText
 │     ├─ controller/              ✅ ControllerScreen, JoinForm, ControllerLobby, ControllerResults, store
-│     │  ├─ team-builder/         ✅ TeamBuilder (randomizer, remove, ready)
+│     │  ├─ team-builder/         ✅ TeamBuilder (list, randomizer, ready), PokemonEditor, Picker,
+│     │  │                           StatPointsEditor, TeamMenu (import / export / saved teams)
 │     │  └─ battle/               ✅ ControllerBattle (menu/fight/party/waiting), sheets, TurnTimerChip
 │     ├─ components/              ✅ Stage (1920×1080), TrainerSprite, PokemonSprite, LanguageSelect
 │     │  └─ ui/                   ✅ design-system primitives: Button, IconButton, Icon, PokeBall,
 │     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip, Sheet
 │     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en/ui.json
 │     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale, cn, team,
-│                                    pokemon-sprites (manifest), pokemon-types, use-countdown
+│                                    pokemon-sprites (manifest), pokemon-types, use-countdown,
+│                                    team-dex (builder data), stats (Champions formula), saved-teams
 ├─ packages/
-│  ├─ shared/src/                 ✅ constants, avatars, errors, team, battle, room-state, schemas (zod), events
+│  ├─ shared/src/                 ✅ constants, avatars, errors, team, team-text (Showdown export), dex
+│  │                                 (builder data types), battle, room-state, schemas (zod), events
 │  ├─ core/src/
 │  │  ├─ rooms/                   ✅ Room, RoomManager, composition, room codes, RoomError (+ tests)
 │  │  ├─ battle/showdown.ts       ✅ the ONLY import point for pokemon-showdown (+ smoke tests)
-│  │  ├─ team/                    ✅ TeamService (random sets, Species Clause), battleRoster · 🔜 validation
+│  │  ├─ team/                    ✅ TeamService (random sets, validation, import), legality (Casual
+│  │  │                              validator, legal species / moves / items), dex-data, battleRoster
 │  │  ├─ battle/                  ✅ BattleSession, MatchController, OwnershipLayer (identity), TurnTimer,
-│  │  │                              request enrichment
+│  │  │                              request enrichment (stats, nature, boosts), effects (dex durations)
 │  │  └─ time.ts                  ✅ injectable Scheduler (fake one in testing/)
-│  └─ data/scripts/               ✅ fetch-sprites.ts (trainers + Pokémon + manifest), fetch-audio.ts (cries) · 🔜 compact dex, locales
+│  └─ data/scripts/               ✅ build-dex.ts (team builder JSON), fetch-sprites.ts (trainers + Pokémon +
+│                                    manifest), fetch-audio.ts (cries) · 🔜 locales
 ├─ e2e/                          ✅ Playwright: 1 Host + 2 phones play a battle (`pnpm test:e2e`)
 └─ docs/
 ```

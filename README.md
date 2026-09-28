@@ -14,7 +14,7 @@ Requires Node ≥ 22.22 and pnpm 10.
 pnpm install
 pnpm fetch:sprites   # downloads trainer + Pokémon sprites (self-hosted, git-ignored)
 pnpm fetch:audio     # optional: Pokémon cries (self-hosted, git-ignored)
-pnpm dev             # open http://localhost:5173/host on the PC; scan the QR with phones on the same Wi-Fi
+pnpm dev             # builds the team builder data, then open http://localhost:5173/host on the PC; scan the QR with phones on the same Wi-Fi
 ```
 
 More in [docs/10-development.md](./docs/10-development.md).
@@ -46,6 +46,8 @@ Mechanics follow a **Pokémon Champions–style** format: level 50, no IVs, Stat
 - [Roadmap](./docs/09-roadmap.md)
 - [Development guide](./docs/10-development.md)
 - [Phase 1 plan](./docs/11-phase-1-plan.md)
+- [Battle info + Phase 2 plan](./docs/13-phase-2-plan.md)
+- [Design system](./docs/12-design-system.md)
 
 ## Legal notice
 

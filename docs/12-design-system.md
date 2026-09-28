@@ -5,7 +5,8 @@ Visual source of truth for `apps/web`. The interactive reference is
 **This file wins over the mockup** when they disagree. The mockup is ~70 KB: read this file first and open
 the mockup only for a specific screen.
 
-Status: approved (2026-09-27) and **implemented for every Phase 0 + Phase 1 screen** (Home, Host lobby,
+Status: approved (2026-09-27) and **implemented for every Phase 0 + Phase 1 screen** plus the Phase 2 team
+editor (2026-09-28, pending validation) (Home, Host lobby,
 team building, battle scene and results; phone Join, Teams, team builder, battle and results). Code layout
 (tokens in `index.css`, SCSS partials in `styles/`, primitives in `components/ui/`): see
 `10-development.md` § Styles.
@@ -16,8 +17,9 @@ Known gaps vs. the mockup:
   `player:removed` reason `roomClosed` already exists for it).
 - **No "Battle!" button** on the Host team-building screen: O-11 was closed in favor of the automatic 3 s
   countdown (D-25), shown in place of the center ball.
-- **Team builder ✏️ edit** is replaced by 🎲 reroll until the Phase 2 editor exists; dashed empty slots add
-  a random Pokémon.
+- **Team builder** (Phase 2): ✏️ edit and ✕ remove per card as in the mockup; each dashed empty slot also
+  has a 🎲 tile (random Pokémon) next to "+ Add Pokémon", and a ☰ "Team options" button sits in the header.
+  The editor and pickers are not in the mockup; they follow the rules below.
 - **Host battle scene** is not in the mockup; it follows these rules (see below).
 
 ## Principles
@@ -163,8 +165,11 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
   blue (p2) is far: front sprite top-right on a blue-tint platform, trainer top-right.
 - **Side cards:** paper with a team ring + deep bottom edge: trainer name, Mega stone mark (available /
   used, greyed), Poké Ball row (fainted = grey), Pokémon name + Lv, HP bar with **percent only** (the
-  public value), status tag (type-colored), Mega tag, stat stages, side conditions, "● Choosing" pill.
-- **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects.
+  public value), status tag (type-colored), Mega tag, stat stages, side conditions with turns left
+  ("Reflect · 3", "Reflect · 3–6" while an unseen Light Clay may extend it) or hazard layers
+  ("Spikes ×2"), "● Choosing" pill.
+- **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects with turns left
+  ("Rain · 4", "Trick Room · 2").
 - **Narration box:** paper strip under the field, previous line muted (26 px) + current line (40 px Rubik
   800); "Space: skip animations" hint.
 - **Generic animations (own CSS, nothing from pokemon-showdown-client):** switch-in pop with flash,
@@ -181,7 +186,11 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
   shown. `L` toggles it (remembered in localStorage); hidden → the field uses the full width.
 - **Audio (D-32):** Host only. Sound toggle (🔊 / 🔇 icon button) next to fullscreen in the header, plus a
   volume setting; unlocked by the first click. Defaults: music 40 %, effects 80 %. Phones: silent,
-  vibration only.
+  vibration only. Battle feedback sounds (ZzFX, `host/audio/sounds.ts`): stat stages as a rising (raise) /
+  falling (drop) arpeggio with one more note per stage (±1 / ±2 / ±3+); a bright two-tone ding for
+  ability call-outs (including `-activate` abilities); distinct sounds for Protect, cures, items (berries,
+  Focus Sash, Knock Off, Frisk, Trick…), weather, terrain / rooms, timed side conditions (screens,
+  Tailwind) vs entry hazards, and a soft fade when an effect ends.
 
 ### Controller (phone, portrait only)
 
@@ -197,9 +206,31 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
    dice button for a random trainer · **Join room**.
 2. **Teams:** Red card above Blue card, each with its players and a "Join Team X" button ("✓ You're on
    this team" on your own) · "Waiting for the host…" · **Leave room** (ghost).
-3. **Team builder:** "Your team N / quota" · Pokémon cards: icon, name, `@ item`, ability, nature, the 4
-   moves (no type chips) · ✏️ edit and ✕ remove icon buttons · dashed "+ Add Pokémon" · **Randomize**
-   (gold, fills the missing slots only) · **I'm ready** (green).
+3. **Team builder:** "Your team N / quota" + ☰ Team options · Pokémon cards: icon, name, `@ item`,
+   ability, nature, the 4 moves (no type chips) · ✏️ edit and ✕ remove icon buttons · dashed "+ Add
+   Pokémon" with a dashed 🎲 tile (random) · **Randomize** (gold, fills the missing slots, or rerolls a full
+   team) · **I'm ready** (green). The list is always compact: Pokémon first, empty slots at the bottom
+   (removing one moves the ones below up).
+   - **Editor (full view, Phase 2):** back + title + 🎲 (random Pokémon for the slot) · species card
+     (sprite, name, type chips, "Change ✏️") · rows Item / Nature (tap → picker) with a Mega Stone hint ·
+     Ability as radio chips (selected = team color + ✓) with its description · Moves: one type-colored row
+     per move (category · power) + ✕, dashed "+ Add a move" · **Stat Points** card: "N / 66 left", per stat
+     base value, − / + (36 px), slider (team `accent-color`), resulting Lv 50 stat; the nature's raised
+     stat ▲ on ok-soft/ok-deep, lowered ▼ on scarlet tint/deep (always with the arrow) · pinned bottom:
+     🗑 (ghost, existing Pokémon) + **Save** (primary). Validator errors show under the form.
+   - **Pickers:** full-screen over the phone (team gradient + dots), back + title, search field (autofocus),
+     paper rows with a soft team edge; at most 60 rows, then "N more · keep typing". Species rows: sprite,
+     name, type chips, BST; species already on your team are disabled with "In your team". Moves: type
+     chip, name, category · power · accuracy, short description. Items: "No item" first, "For this
+     Pokémon" (Mega Stones, required items) before all items.
+   - **Nature picker (by effect, not by name):** card "▲ Raises" with 5 stat buttons (Atk, Def, SpA, SpD,
+     Spe; selected = ok-soft + green ring + ▲), card "▼ Lowers" with the same 5 (selected = scarlet tint +
+     red ring + ▼), a "Neutral nature" chip (the same stat twice also means neutral). A result card shows
+     the nature's name (Lilita 34 px) and its effect on this Pokémon with its current Stat Points
+     ("▲ Atk 182 → 200", "▼ SpA 100 → 90"). Pinned **Use Adamant** (primary) confirms; disabled until both
+     stats are picked.
+   - **Team options (sheet):** Import from text · Export as text (copy) · Save this team, then "Saved on this
+     phone" (name, mini sprites, **Load**, 🗑).
 4. **Battle (3DS lower-screen model):**
    - **Menu:** active Pokémon card (name, Lv, HP) + ally line in doubles · "What will X do?" ·
      **FIGHT** (wine) and **Pokémon** (gold) split **60 / 40** of the free height · small Forfeit link
@@ -212,7 +243,10 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
    - **Target (doubles, single-target moves only):** opponents row + your side (ally allowed but flagged ⚠,
      self disabled). Spread and self moves skip this step.
    - **Pokémon:** your share of the team with HP and tags (In battle / Fainted); tap → details sheet (item,
-     ability, nature, HP, moves) with **Switch in**.
+     ability, HP, nature "Jolly (▲ Spe · ▼ SpA)", one row per stat: name, value and a **Stat Points bar**
+     (0–32, team color) with "+32", so the player sees where the build is focused; the nature's raised
+     row is green with ▲, the lowered one red with ▼, neutral natures mark nothing; stat stages of the
+     active Pokémon as ▲/▼ tags; moves) with **Switch in**.
    - **Waiting:** summary of the choice (+ Mega tag), spinning brand ball, **Undo**.
 
 ## Implementation notes

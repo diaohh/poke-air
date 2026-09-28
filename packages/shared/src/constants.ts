@@ -30,6 +30,12 @@ export const TEAM_SIZE_LIMITS: Record<GameType, { min: number; max: number }> = 
 /** Max Pokémon a team brings, split across its players (docs/04-battle-modes.md). */
 export const POKEMON_PER_TEAM = 6;
 
+/**
+ * Pokémon on the field per side. A doubles side needs at least this many Pokémon: the simulator
+ * crashes with a one-Pokémon side in doubles (spike S2, docs/14-phase-3-plan.md).
+ */
+export const ACTIVE_PER_SIDE: Record<GameType, number> = { singles: 1, doubles: 2 };
+
 /** Champions Stat Points (docs/05-game-rules-and-mechanics.md): per Pokémon and per stat. */
 export const STAT_POINTS_TOTAL = 66;
 export const STAT_POINTS_MAX = 32;

@@ -56,6 +56,8 @@ export function TeamBuilder({ room, me }: Props) {
   const sets = slots.filter((set): set is PokemonSetData => !!set);
   const empty = slots.flatMap((set, i) => (set ? [] : [i]));
   const count = sets.length;
+  // Doubles: a side needs two Pokémon, so a solo player brings at least 2 (decision D-44).
+  const minimum = team?.minimum ?? 1;
 
   if (editing !== null) {
     return (
@@ -167,7 +169,7 @@ export function TeamBuilder({ room, me }: Props) {
       ) : (
         <Button
           variant="ok"
-          disabled={busy || count === 0}
+          disabled={busy || count < minimum}
           onClick={() => void setReady(true)}
           className="min-h-15 w-full text-[19px]"
         >
@@ -176,7 +178,13 @@ export function TeamBuilder({ room, me }: Props) {
         </Button>
       )}
       <p role="status" className="text-center text-[13px] font-semibold text-ink-2">
-        {count === 0 ? t('teamBuilder.emptyHint') : me.ready ? t('teamBuilder.waitingOthers') : ' '}
+        {count < minimum
+          ? minimum > 1
+            ? t('teamBuilder.minimumHint', { count: minimum })
+            : t('teamBuilder.emptyHint')
+          : me.ready
+            ? t('teamBuilder.waitingOthers')
+            : ' '}
       </p>
 
       {menuOpen && <TeamMenu sets={sets} onClose={() => setMenuOpen(false)} onNotice={setNotice} />}

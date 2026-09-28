@@ -30,6 +30,8 @@ export interface PokemonSetData {
 /** Owner-only team view (`team:state`): one entry per slot of the player's quota. */
 export interface TeamState {
   quota: number;
+  /** Pokémon needed to be Ready: 2 for a solo Doubles player (a side needs two), else 1. */
+  minimum: number;
   slots: (PokemonSetData | null)[];
 }
 

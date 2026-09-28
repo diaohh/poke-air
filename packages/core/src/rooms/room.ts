@@ -1,4 +1,5 @@
 import {
+  ACTIVE_PER_SIDE,
   MAX_PLAYERS_PER_ROOM,
   MAX_PLAYERS_PER_TEAM,
   POKEMON_PER_TEAM,
@@ -184,9 +185,19 @@ export class Room {
     return Math.floor(POKEMON_PER_TEAM / Math.max(1, this.teamSizes()[player.team]));
   }
 
+  /**
+   * Pokémon this player needs to be Ready. A doubles side needs two Pokémon (the sim crashes with
+   * one, decision D-44): a solo doubles player brings 2, each player of a pair at least 1.
+   */
+  minimumFor(playerId: string): number {
+    const player = this.requirePlayer(playerId);
+    const teammates = Math.max(1, this.teamSizes()[player.team]);
+    return Math.max(1, Math.ceil(ACTIVE_PER_SIDE[this.gameType] / teammates));
+  }
+
   teamState(playerId: string): TeamState {
     const slots = this.viewSlots(playerId);
-    return { quota: slots.length, slots };
+    return { quota: slots.length, minimum: this.minimumFor(playerId), slots };
   }
 
   /**
@@ -289,19 +300,24 @@ export class Room {
   setReady(playerId: string, ready: boolean): void {
     this.assertPhase('TEAM_BUILDING');
     const player = this.requirePlayer(playerId);
-    if (ready && this.teamCount(playerId) === 0) throw new RoomError('EMPTY_TEAM');
+    if (ready) {
+      const count = this.teamCount(playerId);
+      if (count === 0) throw new RoomError('EMPTY_TEAM');
+      const min = this.minimumFor(playerId);
+      if (count < min) throw new RoomError('TEAM_TOO_SMALL', { min });
+    }
     player.ready = ready;
     this.touch();
   }
 
-  /** Every player is ready with at least one Pokémon, and the composition is still valid. */
+  /** Every player is ready with enough Pokémon, and the composition is still valid. */
   allReady(): boolean {
     const players = this.listPlayers();
     return (
       this.phase === 'TEAM_BUILDING' &&
       players.length > 0 &&
       this.composition().valid &&
-      players.every((p) => p.ready && this.teamCount(p.id) > 0)
+      players.every((p) => p.ready && this.teamCount(p.id) >= this.minimumFor(p.id))
     );
   }
 

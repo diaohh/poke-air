@@ -355,7 +355,10 @@
     "INVALID_CHOICE": "That can't be chosen right now.",
     "CANT_UNDO": "That choice can't be undone anymore.",
     "RATE_LIMITED": "Too many attempts. Wait a moment and try again.",
-    "TOO_MANY_ROOMS": "Too many rooms are open from this network."
+    "TOO_MANY_ROOMS": "Too many rooms are open from this network.",
+    "INVALID_SET": "That Pokémon can't be used like this:",
+    "SPECIES_CLAUSE": "{{species}} is already on your side: one of each species per side.",
+    "INVALID_IMPORT": "No Pokémon found in that text."
   },
   "trainers": {
     "red": "Red",

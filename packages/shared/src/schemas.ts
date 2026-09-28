@@ -6,8 +6,10 @@ import {
   POKEMON_PER_TEAM,
   ROOM_CODE_ALPHABET,
   ROOM_CODE_LENGTH,
+  STAT_POINTS_MAX,
   SUPPORTED_LOCALES,
   TEAM_IDS,
+  TEAM_TEXT_MAX_LENGTH,
 } from './constants.js';
 
 /** Zod schemas for every client → server payload. The server validates all input with these. */
@@ -71,8 +73,44 @@ const slotIndexSchema = z
 export const teamRandomizeSchema = z.object({
   slots: z.array(slotIndexSchema).min(1).max(POKEMON_PER_TEAM).optional(),
 });
-/** Phase 1 only removes Pokémon (`set: null`); the Phase 2 editor will send whole sets. */
-export const teamSetSlotSchema = z.object({ slot: slotIndexSchema, set: z.null() });
+const statPointsSchema = z.number().int().min(0).max(STAT_POINTS_MAX);
+const dexNameSchema = z.string().trim().max(60);
+
+/**
+ * A set from the team editor. Only the shape and bounds are checked here: legality (species,
+ * learnsets, abilities, items, Stat Point total) is Showdown's `TeamValidator` job in core.
+ */
+export const pokemonSetSchema = z.object({
+  name: z.string().max(40),
+  species: dexNameSchema.min(1),
+  item: dexNameSchema,
+  ability: dexNameSchema,
+  moves: z.array(dexNameSchema.min(1)).min(1).max(4),
+  nature: dexNameSchema.optional(),
+  // Only 'M' / 'F' are kept (core); anything else lets the sim pick.
+  gender: z.string().max(1).optional(),
+  evs: z.object({
+    hp: statPointsSchema,
+    atk: statPointsSchema,
+    def: statPointsSchema,
+    spa: statPointsSchema,
+    spd: statPointsSchema,
+    spe: statPointsSchema,
+  }),
+  level: z.number().int().min(1).max(100),
+  shiny: z.boolean().optional(),
+});
+
+/** Saves an edited set in `slot`, or removes the Pokémon there (`set: null`). */
+export const teamSetSlotSchema = z.object({
+  slot: slotIndexSchema,
+  set: pokemonSetSchema.nullable(),
+});
+
+/** Replaces the team with a Showdown text paste (also how saved teams are loaded). */
+export const teamImportSchema = z.object({
+  text: z.string().trim().min(1).max(TEAM_TEXT_MAX_LENGTH),
+});
 
 /** Singles choices. Targets (`move 1 2`) arrive with doubles in Phase 3. */
 export const battleChoiceSchema = z.string().regex(/^(move [1-4]( mega)?|switch [1-6]|default)$/);
@@ -99,5 +137,6 @@ export type PlayerSwitchTeamPayload = z.input<typeof playerSwitchTeamSchema>;
 export type PlayerReadyPayload = z.input<typeof playerReadySchema>;
 export type TeamRandomizePayload = z.input<typeof teamRandomizeSchema>;
 export type TeamSetSlotPayload = z.input<typeof teamSetSlotSchema>;
+export type TeamImportPayload = z.input<typeof teamImportSchema>;
 export type BattleChoosePayload = z.input<typeof battleChooseSchema>;
 export type HostAnimatedPayload = z.input<typeof hostAnimatedSchema>;

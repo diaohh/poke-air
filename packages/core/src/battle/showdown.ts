@@ -36,6 +36,12 @@ export const SHOWDOWN_FORMATS = {
   doubles: 'gen9championsdoublescustomgame',
   /** Source of "meta" random sets for the randomizer (Champions sets; singles-oriented). */
   randomSets: 'gen9championsrandombattle',
+  /**
+   * Casual ruleset validator, used per set (spike S3): Champions NatDex Draft (NatDex learnsets for
+   * every species) minus its competitive clauses, plus Z-Move Clause (Mega Evolution only).
+   */
+  validator:
+    'gen9championsnatdexdraft@@@!Nickname Clause, !OHKO Clause, !Evasion Clause, !Sleep Clause Mod, Z-Move Clause',
 } as const;
 
 /**

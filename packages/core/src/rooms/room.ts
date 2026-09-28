@@ -206,19 +206,81 @@ export class Room {
     targets.forEach((slot, i) => {
       team[slot] = fresh[i] ?? null;
     });
+    compactSlots(team);
 
     player.ready = false;
     this.touch();
     return this.teamState(playerId);
   }
 
-  /** Phase 1: removes the Pokémon in `slot` (the Phase 2 editor will also set whole sets). */
+  /**
+   * Saves an edited set in `slot` (validated with the Casual ruleset) or removes the Pokémon there
+   * (`null`). Species Clause holds across the side: the player's other slots and their teammates'.
+   */
+  setSlot(playerId: string, slot: number, set: PokemonSetData | null): TeamState {
+    if (set === null) return this.clearSlot(playerId, slot);
+    this.assertPhase('TEAM_BUILDING');
+    const player = this.requirePlayer(playerId);
+    const team = this.slotsOf(playerId);
+    if (slot >= team.length) throw new RoomError('INVALID_SLOT');
+
+    const valid = this.teamService().validateSet(set);
+    const others = [
+      ...team.filter((other, i): other is PokemonSetData => !!other && i !== slot),
+      ...this.teammateSets(player),
+    ];
+    this.assertSpeciesFree(valid, others);
+
+    team[slot] = valid;
+    compactSlots(team);
+    player.ready = false;
+    this.touch();
+    return this.teamState(playerId);
+  }
+
+  /**
+   * Replaces the player's team with Showdown text (paste or saved team). Keeps the first `quota`
+   * Pokémon; Pokémon clashing with a teammate's (or an earlier one's) species are left out.
+   */
+  importTeam(playerId: string, text: string): { state: TeamState; count: number; skipped: number } {
+    this.assertPhase('TEAM_BUILDING');
+    const player = this.requirePlayer(playerId);
+    const team = this.slotsOf(playerId);
+    const sets = this.teamService().importTeam(text);
+
+    const kept: PokemonSetData[] = [];
+    const taken = this.teammateSets(player);
+    let clash: string | null = null;
+    for (const set of sets) {
+      if (kept.length >= team.length) break;
+      if (this.speciesTaken(set, [...taken, ...kept])) {
+        clash ??= set.species;
+        continue;
+      }
+      kept.push(set);
+    }
+    if (kept.length === 0) throw new RoomError('SPECIES_CLAUSE', { species: clash ?? '' });
+
+    team.forEach((_, i) => {
+      team[i] = kept[i] ?? null;
+    });
+    player.ready = false;
+    this.touch();
+    return {
+      state: this.teamState(playerId),
+      count: kept.length,
+      skipped: sets.length - kept.length,
+    };
+  }
+
+  /** Removes the Pokémon in `slot`; the ones below move up (empty slots stay at the bottom). */
   clearSlot(playerId: string, slot: number): TeamState {
     this.assertPhase('TEAM_BUILDING');
     const player = this.requirePlayer(playerId);
     const team = this.slotsOf(playerId);
     if (slot >= team.length) throw new RoomError('INVALID_SLOT');
     team[slot] = null;
+    compactSlots(team);
     player.ready = false;
     this.touch();
     return this.teamState(playerId);
@@ -376,6 +438,18 @@ export class Room {
       .flatMap((p) => this.viewSlots(p.id).filter((set): set is PokemonSetData => !!set));
   }
 
+  private speciesTaken(set: PokemonSetData, others: PokemonSetData[]): boolean {
+    const service = this.teamService();
+    const base = service.baseSpeciesId(set.species);
+    return others.some((other) => service.baseSpeciesId(other.species) === base);
+  }
+
+  private assertSpeciesFree(set: PokemonSetData, others: PokemonSetData[]): void {
+    if (this.speciesTaken(set, others)) {
+      throw new RoomError('SPECIES_CLAUSE', { species: set.species });
+    }
+  }
+
   private teamService(): TeamService {
     return this.deps.teamService ?? defaultTeamService();
   }
@@ -406,4 +480,15 @@ export class Room {
   private touch(): void {
     this.lastActivityAt = this.deps.now();
   }
+}
+
+/**
+ * Pokémon first, empty slots last, keeping their order: removing the middle one of three moves the
+ * third up, so the empty slots (where new Pokémon go) always sit at the bottom of the list.
+ */
+function compactSlots(team: (PokemonSetData | null)[]): void {
+  const sets = team.filter((set): set is PokemonSetData => !!set);
+  team.forEach((_, i) => {
+    team[i] = sets[i] ?? null;
+  });
 }

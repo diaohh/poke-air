@@ -14,6 +14,7 @@ import type {
   PlayerReadyPayload,
   PlayerSwitchTeamPayload,
   PlayerUpdatePayload,
+  TeamImportPayload,
   TeamRandomizePayload,
   TeamSetSlotPayload,
 } from './schemas.js';
@@ -37,6 +38,12 @@ export interface PlayerSession {
   playerId: string;
   reconnectToken: string;
   room: PublicRoomState;
+}
+
+/** `team:import` ack: Pokémon placed in the team and Pokémon left out (quota, Species Clause). */
+export interface TeamImportResult {
+  count: number;
+  skipped: number;
 }
 
 export type PlayerRemovedReason = 'kicked' | 'replaced' | 'roomClosed';
@@ -73,6 +80,7 @@ export interface PlayerClientToServerEvents {
   'player:ready': (payload: PlayerReadyPayload, ack: Ack) => void;
   'team:randomize': (payload: TeamRandomizePayload, ack: Ack) => void;
   'team:setSlot': (payload: TeamSetSlotPayload, ack: Ack) => void;
+  'team:import': (payload: TeamImportPayload, ack: Ack<TeamImportResult>) => void;
   'battle:choose': (payload: BattleChoosePayload, ack: Ack) => void;
   'battle:undo': (payload: EmptyPayload, ack: Ack) => void;
   'battle:forfeit': (payload: EmptyPayload, ack: Ack) => void;

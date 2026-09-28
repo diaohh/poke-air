@@ -11,6 +11,8 @@ export { evaluateComposition } from './rooms/composition.js';
 export { generateRoomCode } from './rooms/room-code.js';
 export { TeamService, defaultTeamService, type SetGenerator } from './team/team-service.js';
 export { battleRoster } from './team/roster.js';
+export { buildTeamBuilderData, TEAM_BUILDER_DATA_VERSION } from './team/dex-data.js';
+export { casualValidator, legalSpecies } from './team/legality.js';
 export {
   BattleSession,
   spectatorLines,

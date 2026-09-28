@@ -2,6 +2,8 @@ export * from './constants.js';
 export * from './avatars.js';
 export * from './errors.js';
 export * from './team.js';
+export * from './team-text.js';
+export * from './dex.js';
 export * from './battle.js';
 export * from './room-state.js';
 export * from './schemas.js';

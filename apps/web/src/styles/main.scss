@@ -19,6 +19,7 @@
   @include meta.load-css('components/sheet');
   @include meta.load-css('components/move');
   @include meta.load-css('components/tag');
+  @include meta.load-css('components/toggle');
   @include meta.load-css('screens/home');
   @include meta.load-css('screens/host');
   @include meta.load-css('screens/controller');

@@ -6,6 +6,7 @@ import { cn } from '../../lib/cn';
 import { typeStyle } from '../../lib/pokemon-types';
 import { local } from '../../lib/storage';
 import { formatSeconds, useCountdown } from '../../lib/use-countdown';
+import { useBattleAudio } from '../audio/use-host-audio';
 import { useHostStore } from '../host-store';
 import { ActiveSlot, type MonAnimation } from './ActiveSlot';
 import { BattleLog } from './BattleLog';
@@ -90,6 +91,7 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
   const waiting = useHostStore((s) => s.waiting);
   const frame = useBattlePlayback(battle, animated);
   const { scene, event, eventId, messages, log } = frame;
+  useBattleAudio(frame, battle.moves);
   const [showLog, setShowLog] = useState(() => local.get<boolean>(LOG_KEY) ?? true);
   const seconds = useCountdown(
     waiting?.waitingFor.length ? waiting.timerMs : null,

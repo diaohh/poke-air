@@ -4,6 +4,7 @@ import { Stage } from '../components/Stage';
 import { Logo } from '../components/ui/Logo';
 import { PokeBall } from '../components/ui/PokeBall';
 import { useRoomLocale } from '../lib/use-room-locale';
+import { useAudioUnlock, useRoomAudio } from './audio/use-host-audio';
 import { HostBattle } from './battle-scene/HostBattle';
 import { useHostStore } from './host-store';
 import { HostHeader } from './HostHeader';
@@ -17,9 +18,12 @@ export function HostScreen() {
   const start = useHostStore((s) => s.start);
   const room = useHostStore((s) => s.room);
   const connection = useHostStore((s) => s.connection);
+  const roomAt = useHostStore((s) => s.roomAt);
 
   useEffect(() => start(), [start]);
   useRoomLocale(room?.locale);
+  useAudioUnlock();
+  useRoomAudio(room, roomAt);
 
   if (!room) {
     return (

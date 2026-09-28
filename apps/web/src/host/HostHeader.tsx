@@ -5,6 +5,7 @@ import { IconButton } from '../components/ui/IconButton';
 import { Logo } from '../components/ui/Logo';
 import { toggleFullscreen } from '../lib/fullscreen';
 import { useHostStore } from './host-store';
+import { SoundMenu } from './SoundMenu';
 
 interface Props {
   room: PublicRoomState;
@@ -12,7 +13,7 @@ interface Props {
   showCode?: boolean;
 }
 
-/** Host header: logo · (room code) · language · fullscreen. No phase stepper. */
+/** Host header: logo · (room code) · language · sound · fullscreen. No phase stepper. */
 export function HostHeader({ room, showCode }: Props) {
   const { t } = useTranslation();
   const setLocale = useHostStore((s) => s.setLocale);
@@ -31,6 +32,7 @@ export function HostHeader({ room, showCode }: Props) {
         onChange={(locale) => void setLocale(locale)}
         className="h-15 gap-3 rounded-md pr-5.5 pl-5.5 text-[22px]"
       />
+      <SoundMenu />
       <IconButton
         icon="fullscreen"
         label={t('host.fullscreen')}

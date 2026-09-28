@@ -1,4 +1,11 @@
-import type { BattleMoveOption, BattlePokemon } from '@poke-air/shared';
+import {
+  STAT_IDS,
+  STAT_POINTS_MAX,
+  type BattleMoveOption,
+  type BattlePokemon,
+  type BoostId,
+  type StatId,
+} from '@poke-air/shared';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/ui/Button';
 import { HpBar } from '../../components/ui/HpBar';
@@ -81,10 +88,86 @@ interface PokemonSheetProps {
   onSwitch: () => void;
 }
 
-/** Item, ability, HP, moves + "Switch in". */
+/** Nature effect on one stat: raised (▲) or lowered (▼). */
+function natureMark(pokemon: BattlePokemon, stat: StatId): 'up' | 'down' | null {
+  if (pokemon.nature?.plus === stat) return 'up';
+  if (pokemon.nature?.minus === stat) return 'down';
+  return null;
+}
+
+/**
+ * One row per stat: name, computed value and a bar with the Stat Points invested in it (0–32), so
+ * the player sees where the build is focused. The stat the nature raises is green with ▲, the
+ * lowered one red with ▼ (state = icon + color, never color alone); neutral natures mark nothing.
+ */
+export function StatGrid({ pokemon }: { pokemon: BattlePokemon }) {
+  const { t } = useTranslation();
+  const points = pokemon.statPoints;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {points && (
+        <div className="flex justify-between px-2.5 text-[11px] font-extrabold tracking-widest text-muted uppercase">
+          <span>{t('battle.statsTitle')}</span>
+          <span>{t('battle.statPointsTitle')}</span>
+        </div>
+      )}
+      {STAT_IDS.map((stat) => {
+        const mark = natureMark(pokemon, stat);
+        const invested = points?.[stat] ?? 0;
+        return (
+          <div
+            key={stat}
+            className={cn(
+              'stat-box grid grid-cols-[2.8rem_3.2rem_minmax(0,1fr)_2rem] items-center gap-2 rounded-[14px] px-2.5 py-1.5',
+              mark && `stat-box--${mark}`,
+            )}
+          >
+            <small className="text-[12px] font-extrabold tracking-widest uppercase">
+              {mark && (
+                <span
+                  className="mr-0.5 text-[10px]"
+                  aria-label={t(`battle.nature${mark === 'up' ? 'Up' : 'Down'}`)}
+                >
+                  {mark === 'up' ? '▲' : '▼'}
+                </span>
+              )}
+              {t(`statsShort.${stat}`)}
+            </small>
+            <b className="text-right text-lg font-extrabold tabular-nums">{pokemon.stats[stat]}</b>
+            {points ? (
+              <>
+                <span
+                  className="sp-bar h-2.5 rounded-full"
+                  role="meter"
+                  aria-label={t('battle.statPointsOf', { stat: t(`stats.${stat}`) })}
+                  aria-valuemin={0}
+                  aria-valuemax={STAT_POINTS_MAX}
+                  aria-valuenow={invested}
+                >
+                  <span
+                    className="sp-bar__fill block h-full rounded-full"
+                    style={{ width: `${(invested / STAT_POINTS_MAX) * 100}%` }}
+                  />
+                </span>
+                <span className="text-right text-xs font-extrabold tabular-nums">
+                  {invested > 0 ? `+${invested}` : '0'}
+                </span>
+              </>
+            ) : (
+              <span className="col-span-2" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Item, ability, nature, HP, stats (+ stat stages when active), moves + "Switch in". */
 export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonSheetProps) {
   const { t } = useTranslation();
   const percent = pokemon.maxhp ? (pokemon.hp / pokemon.maxhp) * 100 : 0;
+  const boosts = Object.entries(pokemon.boosts ?? {}) as [BoostId, number][];
   const label = pokemon.active
     ? t('battle.inBattle')
     : pokemon.fainted
@@ -109,7 +192,38 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
         <dd className="font-bold">
           {t('battle.hpValue', { hp: pokemon.hp, maxhp: pokemon.maxhp })}
         </dd>
+        {pokemon.nature && (
+          <>
+            <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
+              {t('battle.nature')}
+            </dt>
+            <dd className="font-bold">
+              {pokemon.nature.plus && pokemon.nature.minus
+                ? t('battle.natureEffect', {
+                    nature: pokemon.nature.name,
+                    plus: t(`statsShort.${pokemon.nature.plus}`),
+                    minus: t(`statsShort.${pokemon.nature.minus}`),
+                  })
+                : t('battle.natureNeutral', { nature: pokemon.nature.name })}
+            </dd>
+          </>
+        )}
       </dl>
+      <StatGrid pokemon={pokemon} />
+      {boosts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="field-label text-[11px]">{t('battle.statStages')}</span>
+          {boosts.map(([stat, value]) => (
+            <span key={stat} className={cn('tag text-[11px]', value > 0 ? 'tag--up' : 'tag--down')}>
+              {value > 0 ? '▲' : '▼'}{' '}
+              {t('battle.boost', {
+                stat: t(`boostsShort.${stat}`),
+                amount: value > 0 ? `+${value}` : `${value}`,
+              })}
+            </span>
+          ))}
+        </div>
+      )}
       <ul className="grid grid-cols-2 gap-1.5">
         {pokemon.moves.map((move) => (
           <li

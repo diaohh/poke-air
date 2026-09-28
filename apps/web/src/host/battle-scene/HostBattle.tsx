@@ -14,6 +14,7 @@ import { activePokemon, weatherId, type SceneEvent } from './model';
 import { NarrationText } from './NarrationText';
 import type { NarrationLine } from './playback';
 import { SideCard } from './SideCard';
+import { useEffectLabel } from './use-effect-label';
 import { useBattlePlayback } from './use-playback';
 
 /** Which animation each side plays for the current event. */
@@ -91,6 +92,7 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
   const waiting = useHostStore((s) => s.waiting);
   const frame = useBattlePlayback(battle, animated);
   const { scene, event, eventId, messages, log } = frame;
+  const effectLabel = useEffectLabel();
   useBattleAudio(frame, battle.moves);
   const [showLog, setShowLog] = useState(() => local.get<boolean>(LOG_KEY) ?? true);
   const seconds = useCountdown(
@@ -115,11 +117,21 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
   const animations = animationsFor(event, meta?.category);
   const projectile = event?.kind === 'move' && meta?.category === 'Special' ? event : null;
   const playersOf = (side: SideId) => room.players.filter((p) => p.team === SIDE_TEAM[side]);
-  const weather = scene.weather ? weatherId(scene.weather) : null;
+  const weather = scene.weather ? weatherId(scene.weather.name) : null;
   const fieldChips = [
-    ...(scene.weather ? [weather ? t(`host.battle.weathers.${weather}`) : scene.weather] : []),
-    ...(scene.terrain ? [scene.terrain] : []),
-    ...scene.field,
+    ...(scene.weather
+      ? [
+          effectLabel(
+            weather ? t(`host.battle.weathers.${weather}`) : scene.weather.name,
+            scene.weather,
+            scene,
+            battle.effects[scene.weather.name],
+          ),
+        ]
+      : []),
+    ...[...(scene.terrain ? [scene.terrain] : []), ...scene.field].map((effect) =>
+      effectLabel(effect.name, effect, scene, battle.effects[effect.name]),
+    ),
   ];
   const { x1, y1, x2, y2 } = layout.orb;
   const orbPath = (side: SideId) =>
@@ -208,6 +220,7 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
             scene={scene}
             players={playersOf(side)}
             waitingFor={waiting?.waitingFor ?? []}
+            effects={battle.effects}
             compact={showLog}
             className={cn('z-4', side === 'p2' ? layout.p2Card : layout.p1Card)}
           />

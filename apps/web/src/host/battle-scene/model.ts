@@ -1,5 +1,5 @@
 import { Protocol } from '@pkmn/protocol';
-import type { SideId, StatusId } from '@poke-air/shared';
+import type { BoostId, EffectDuration, SideId, StatusId } from '@poke-air/shared';
 
 /**
  * HostBattleModel: a pure reducer over the public spectator log (decision D-18). Each protocol
@@ -7,7 +7,18 @@ import type { SideId, StatusId } from '@poke-air/shared';
  * narrates. Unknown lines are ignored. No dex data: everything comes from the lines themselves.
  */
 
-export type BoostId = 'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'accuracy' | 'evasion';
+export type { BoostId };
+
+/**
+ * A weather, terrain, field or side effect on the field. `since` is the first turn it counts for:
+ * effects set before turn 1 or after the turn's residuals (`|upkeep|`) start counting next turn.
+ * `layers` counts repeated `-sidestart` lines (Spikes ×3, Toxic Spikes ×2).
+ */
+export interface FieldEffect {
+  name: string;
+  since: number;
+  layers: number;
+}
 
 export interface ScenePokemon {
   /** Nickname (random sets use the species name). Unique per side (Species Clause). */
@@ -34,16 +45,19 @@ export interface SceneSide {
   /** Pokémon revealed so far, in order of appearance. */
   pokemon: ScenePokemon[];
   /** Side conditions: Reflect, Stealth Rock, Tailwind… */
-  conditions: string[];
+  conditions: FieldEffect[];
 }
 
 export interface SceneState {
   sides: Record<SideId, SceneSide>;
-  weather: string | null;
-  terrain: string | null;
+  /** Weather as the protocol names it ("RainDance", "Snowscape"…). */
+  weather: FieldEffect | null;
+  terrain: FieldEffect | null;
   /** Field-wide effects other than terrain: Trick Room, Gravity… */
-  field: string[];
+  field: FieldEffect[];
   turn: number;
+  /** The current turn's end-of-turn effects already ran (`|upkeep|`). */
+  upkeep: boolean;
   ended: boolean;
   /** Winner side name, `null` = tie (only meaningful when `ended`). */
   winner: string | null;
@@ -170,6 +184,7 @@ export function initialScene(): SceneState {
     terrain: null,
     field: [],
     turn: 0,
+    upkeep: false,
     ended: false,
     winner: null,
   };
@@ -178,6 +193,29 @@ export function initialScene(): SceneState {
 /** Applies a whole log at once (Host resync) — no events. */
 export function sceneFromLog(lines: readonly string[]): SceneState {
   return lines.reduce((state, line) => applyLine(state, line).state, initialScene());
+}
+
+/** A new effect starting now (see `FieldEffect.since`). */
+function startEffect(state: SceneState, name: string): FieldEffect {
+  return { name, since: state.upkeep || state.turn === 0 ? state.turn + 1 : state.turn, layers: 1 };
+}
+
+/**
+ * Turns an effect has left (the current one included) given its dex duration: `min < max` while an
+ * unseen item may extend it; once the base duration is outlived the extended value is certain.
+ * `null` when unknown (no duration, e.g. hazards).
+ */
+export function turnsLeft(
+  effect: FieldEffect,
+  state: Pick<SceneState, 'turn' | 'upkeep'>,
+  duration: EffectDuration | undefined,
+): { min: number; max: number } | null {
+  if (!duration) return null;
+  const elapsed = Math.max(0, state.turn - effect.since + (state.upkeep ? 1 : 0));
+  const min = duration.min - elapsed;
+  const max = duration.max - elapsed;
+  if (max <= 0) return null;
+  return min > 0 ? { min, max } : { min: max, max };
 }
 
 export function activePokemon(state: SceneState, side: SideId): ScenePokemon | undefined {
@@ -241,7 +279,12 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
     }
     case 'turn': {
       state.turn = Number(a1) || state.turn;
+      state.upkeep = false;
       return { kind: 'turn' };
+    }
+    case 'upkeep': {
+      state.upkeep = true;
+      return null;
     }
     case 'switch':
     case 'drag':
@@ -443,11 +486,9 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
         state.weather = null;
         return ended ? { kind: 'message', narration: { key: 'weatherEnd' } } : null;
       }
-      if (kwArgs.upkeep || state.weather === a1) {
-        state.weather = a1;
-        return null;
-      }
-      state.weather = a1;
+      if (state.weather?.name === a1) return null;
+      state.weather = startEffect(state, a1);
+      if (kwArgs.upkeep) return null;
       const key = weatherKey(a1);
       return {
         kind: 'message',
@@ -460,10 +501,12 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
       if (!effect) return null;
       const terrain = /Terrain$/.test(effect);
       if (command === '-fieldstart') {
-        if (terrain) state.terrain = effect;
-        else if (!state.field.includes(effect)) state.field.push(effect);
+        if (terrain) state.terrain = startEffect(state, effect);
+        else if (!state.field.some((f) => f.name === effect)) {
+          state.field.push(startEffect(state, effect));
+        }
       } else if (terrain) state.terrain = null;
-      else state.field = state.field.filter((f) => f !== effect);
+      else state.field = state.field.filter((f) => f.name !== effect);
       return {
         kind: 'message',
         narration: {
@@ -479,8 +522,10 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
       const side = state.sides[sideId];
       const effect = effectName(a2);
       if (command === '-sidestart') {
-        if (!side.conditions.includes(effect)) side.conditions.push(effect);
-      } else side.conditions = side.conditions.filter((c) => c !== effect);
+        const existing = side.conditions.find((c) => c.name === effect);
+        if (existing) existing.layers++;
+        else side.conditions.push(startEffect(state, effect));
+      } else side.conditions = side.conditions.filter((c) => c.name !== effect);
       return {
         kind: 'message',
         narration: {

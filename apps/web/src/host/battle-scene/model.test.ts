@@ -130,13 +130,13 @@ describe('HostBattleModel', () => {
       '|win|Ana',
     ]);
     expect(state).toMatchObject({
-      weather: 'RainDance',
-      terrain: 'Electric Terrain',
-      field: ['Trick Room'],
+      weather: { name: 'RainDance' },
+      terrain: { name: 'Electric Terrain' },
+      field: [{ name: 'Trick Room' }],
       ended: true,
       winner: 'Ana',
     });
-    expect(state.sides.p2.conditions).toEqual(['Stealth Rock']);
+    expect(state.sides.p2.conditions.map((c) => c.name)).toEqual(['Stealth Rock']);
     expect(state.sides.p1.conditions).toEqual([]);
 
     const narration = events(['|-weather|RainDance', '|-weather|RainDance|[upkeep]', '|tie']);

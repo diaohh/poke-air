@@ -1,6 +1,7 @@
 import type {
   BattleLogPayload,
   BattleWaiting,
+  EffectDuration,
   ErrorCode,
   GameType,
   Locale,
@@ -22,6 +23,8 @@ interface SavedHostSession {
 export interface HostBattleLog {
   lines: string[];
   moves: Record<string, MoveMeta>;
+  /** Dex durations of the timed effects seen in the log (weather, screens…). */
+  effects: Record<string, EffectDuration>;
   epoch: number;
   /** The current log was received as a resync (refresh mid-battle): don't animate the past. */
   resync: boolean;
@@ -63,13 +66,19 @@ export function mergeBattleLog(log: HostBattleLog, payload: BattleLogPayload): H
     return {
       lines: payload.lines,
       moves: payload.moves,
+      effects: payload.effects,
       epoch: log.epoch + 1,
       resync: Boolean(payload.resync),
     };
   }
   const fresh = payload.lines.slice(Math.max(0, log.lines.length - payload.from));
   if (fresh.length === 0) return log;
-  return { ...log, lines: [...log.lines, ...fresh], moves: { ...log.moves, ...payload.moves } };
+  return {
+    ...log,
+    lines: [...log.lines, ...fresh],
+    moves: { ...log.moves, ...payload.moves },
+    effects: { ...log.effects, ...payload.effects },
+  };
 }
 
 export const useHostStore = create<HostStore>((set, get) => {
@@ -81,7 +90,7 @@ export const useHostStore = create<HostStore>((set, get) => {
   return {
     connection: 'connecting',
     roomAt: 0,
-    battle: { lines: [], moves: {}, epoch: 0, resync: false },
+    battle: { lines: [], moves: {}, effects: {}, epoch: 0, resync: false },
 
     start: () => {
       const current = createHostSocket();
@@ -113,7 +122,15 @@ export const useHostStore = create<HostStore>((set, get) => {
         const { battle } = get();
         const cleared =
           room.phase !== 'BATTLE' && battle.lines.length > 0
-            ? { battle: { lines: [], moves: {}, epoch: battle.epoch + 1, resync: false } }
+            ? {
+                battle: {
+                  lines: [],
+                  moves: {},
+                  effects: {},
+                  epoch: battle.epoch + 1,
+                  resync: false,
+                },
+              }
             : {};
         set({ room, roomAt: Date.now(), ...cleared });
       });

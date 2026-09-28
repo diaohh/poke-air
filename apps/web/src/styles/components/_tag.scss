@@ -24,6 +24,17 @@
     color: color(muted);
   }
 
+  // Stat stages: raised (▲) / lowered (▼), same colors as the nature marks.
+  &--up {
+    background: color(ok-soft);
+    color: color(ok-deep);
+  }
+
+  &--down {
+    background: color(team-red-tint);
+    color: color(team-red-deep);
+  }
+
   &--mega {
     background: color(mega-soft);
     color: color(mega-deep);

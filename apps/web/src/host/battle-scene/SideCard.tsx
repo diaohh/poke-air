@@ -1,4 +1,4 @@
-import { SIDE_TEAM, type PublicPlayer, type SideId } from '@poke-air/shared';
+import { SIDE_TEAM, type EffectDuration, type PublicPlayer, type SideId } from '@poke-air/shared';
 import { useTranslation } from 'react-i18next';
 import { HpBar } from '../../components/ui/HpBar';
 import { PokeBall } from '../../components/ui/PokeBall';
@@ -6,6 +6,7 @@ import { StatusPill } from '../../components/ui/StatusPill';
 import { cn } from '../../lib/cn';
 import { TEAM_SCOPE } from '../../lib/team';
 import { activePokemon, type BoostId, type SceneState } from './model';
+import { useEffectLabel } from './use-effect-label';
 
 interface Props {
   side: SideId;
@@ -13,6 +14,8 @@ interface Props {
   players: PublicPlayer[];
   /** Player ids still choosing (from `battle:waiting`). */
   waitingFor: string[];
+  /** Dex durations of the timed effects in the log (turns left on the side condition chips). */
+  effects: Record<string, EffectDuration>;
   /** Narrower card (battle log panel open). */
   compact?: boolean;
   className?: string;
@@ -23,8 +26,9 @@ interface Props {
  * used), "Choosing…" while a player picks, then the Pokémon with its public HP %, status and
  * stat stages. Readable from 3 m.
  */
-export function SideCard({ side, scene, players, waitingFor, compact, className }: Props) {
+export function SideCard({ side, scene, players, waitingFor, effects, compact, className }: Props) {
   const { t } = useTranslation();
+  const effectLabel = useEffectLabel();
   const state = scene.sides[side];
   const mon = activePokemon(scene, side);
   const choosing = players.some((p) => waitingFor.includes(p.id));
@@ -95,8 +99,8 @@ export function SideCard({ side, scene, players, waitingFor, compact, className 
           </span>
         ))}
         {state.conditions.map((condition) => (
-          <span key={condition} className="tag">
-            {condition}
+          <span key={condition.name} className="tag">
+            {effectLabel(condition.name, condition, scene, effects[condition.name])}
           </span>
         ))}
       </div>

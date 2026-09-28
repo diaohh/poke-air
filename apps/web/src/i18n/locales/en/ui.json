@@ -64,6 +64,13 @@
     "ability": "Ability",
     "hp": "HP",
     "moves": "Moves",
+    "nature": "Nature",
+    "natureEffect": "{{nature}} (▲ {{plus}} · ▼ {{minus}})",
+    "natureNeutral": "{{nature}} (neutral)",
+    "natureUp": "Raised by the nature",
+    "natureDown": "Lowered by the nature",
+    "statStages": "Stat changes",
+    "boost": "{{stat}} {{amount}}",
     "yourChoice": "Your choice",
     "choiceMove": "{{pokemon}} · <b>{{move}}</b>",
     "choiceSwitch": "Switch to <b>{{pokemon}}</b>",
@@ -140,7 +147,10 @@
       "sideEnd": "{{effect}} wore off on {{trainer}}'s side.",
       "won": "{{name}} won the battle!",
       "tie": "The battle ended in a draw!"
-    }
+    },
+    "statsTitle": "Stats",
+    "statPointsTitle": "Stat Points",
+    "statPointsOf": "Stat Points in {{stat}}"
   },
   "formats": {
     "singles": "Singles",
@@ -213,6 +223,9 @@
         "DeltaStream": "Strong winds"
       },
       "boost": "{{stat}} {{amount}}",
+      "effectTurns": "{{effect}} · {{turns}}",
+      "effectLayers": "{{effect}} ×{{layers}}",
+      "turnsRange": "{{min}}–{{max}}",
       "log": {
         "title": "Battle log",
         "start": "Battle start",
@@ -288,6 +301,23 @@
     "spe": "Speed",
     "accuracy": "accuracy",
     "evasion": "evasiveness"
+  },
+  "statsShort": {
+    "hp": "HP",
+    "atk": "Atk",
+    "def": "Def",
+    "spa": "SpA",
+    "spd": "SpD",
+    "spe": "Spe"
+  },
+  "boostsShort": {
+    "atk": "Atk",
+    "def": "Def",
+    "spa": "SpA",
+    "spd": "SpD",
+    "spe": "Spe",
+    "accuracy": "Acc",
+    "evasion": "Eva"
   },
   "statuses": {
     "brn": "BRN",

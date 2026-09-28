@@ -145,6 +145,35 @@
   }
 }
 
+// Stat Points invested in a stat (0–32): team color, or the nature's green / red on marked rows.
+.sp-bar {
+  overflow: hidden;
+  background: color(line);
+
+  &__fill {
+    background: var(--c);
+  }
+
+  .stat-box--up &__fill {
+    background: color(ok);
+  }
+
+  .stat-box--down &__fill {
+    background: color(team-red);
+  }
+}
+
 .stat-box {
   background: color(paper-2);
+
+  // Nature: raised stat (▲ green) / lowered stat (▼ red). Always paired with the arrow icon.
+  &--up {
+    background: color(ok-soft);
+    color: color(ok-deep);
+  }
+
+  &--down {
+    background: color(team-red-tint);
+    color: color(team-red-deep);
+  }
 }

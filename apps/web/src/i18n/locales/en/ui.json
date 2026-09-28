@@ -122,7 +122,18 @@
     "WRONG_PHASE": "That can't be done right now.",
     "INVALID_COMPOSITION": "The teams are not valid for this format.",
     "INTERNAL_ERROR": "Unexpected server error.",
-    "CONNECTION": "Could not reach the server."
+    "CONNECTION": "Could not reach the server.",
+    "INVALID_SLOT": "That slot is not part of your team.",
+    "EMPTY_TEAM": "Add at least one Pokémon first.",
+    "PLAYERS_NOT_READY": "Not every trainer is ready.",
+    "NO_ACTIVE_BATTLE": "There is no battle going on.",
+    "NO_PENDING_REQUEST": "It's not your turn to choose.",
+    "STALE_REQUEST": "That menu was out of date. Try again.",
+    "ALREADY_CHOSEN": "You already chose. Undo first to change it.",
+    "INVALID_CHOICE": "That can't be chosen right now.",
+    "CANT_UNDO": "That choice can't be undone anymore.",
+    "RATE_LIMITED": "Too many attempts. Wait a moment and try again.",
+    "TOO_MANY_ROOMS": "Too many rooms are open from this network."
   },
   "trainers": {
     "red": "Red",

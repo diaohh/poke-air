@@ -1,16 +1,23 @@
+import type { BattleLogPayload, BattleRequestPayload, BattleWaiting } from './battle.js';
 import type { ErrorPayload, Result } from './errors.js';
 import type { PublicRoomState } from './room-state.js';
 import type {
+  BattleChoosePayload,
   EmptyPayload,
+  HostAnimatedPayload,
   HostCreateRoomPayload,
   HostKickPayload,
   HostResumeRoomPayload,
   HostSetFormatPayload,
   HostSetLocalePayload,
   PlayerJoinPayload,
+  PlayerReadyPayload,
   PlayerSwitchTeamPayload,
   PlayerUpdatePayload,
+  TeamRandomizePayload,
+  TeamSetSlotPayload,
 } from './schemas.js';
+import type { TeamState } from './team.js';
 
 /**
  * Socket.IO event contracts. Naming: `domain:action`.
@@ -43,10 +50,17 @@ export interface HostClientToServerEvents {
   'host:kick': (payload: HostKickPayload, ack: Ack) => void;
   'host:startTeamBuilding': (payload: EmptyPayload, ack: Ack) => void;
   'host:backToLobby': (payload: EmptyPayload, ack: Ack) => void;
+  /** The Host finished animating the spectator log up to `upTo` lines (releases phone menus). */
+  'host:animated': (payload: HostAnimatedPayload, ack: Ack) => void;
+  /** RESULTS → TEAM_BUILDING keeping every team. */
+  'host:rematch': (payload: EmptyPayload, ack: Ack) => void;
 }
 
 export interface HostServerToClientEvents {
   'room:state': (state: PublicRoomState) => void;
+  /** Public spectator log, append-only (`from: 0` replaces it: new battle or resume). */
+  'battle:log': (payload: BattleLogPayload) => void;
+  'battle:waiting': (payload: BattleWaiting) => void;
   error: (error: ErrorPayload) => void;
 }
 
@@ -56,11 +70,22 @@ export interface PlayerClientToServerEvents {
   'player:update': (payload: PlayerUpdatePayload, ack: Ack) => void;
   'player:switchTeam': (payload: PlayerSwitchTeamPayload, ack: Ack) => void;
   'player:leave': (payload: EmptyPayload, ack: Ack) => void;
+  'player:ready': (payload: PlayerReadyPayload, ack: Ack) => void;
+  'team:randomize': (payload: TeamRandomizePayload, ack: Ack) => void;
+  'team:setSlot': (payload: TeamSetSlotPayload, ack: Ack) => void;
+  'battle:choose': (payload: BattleChoosePayload, ack: Ack) => void;
+  'battle:undo': (payload: EmptyPayload, ack: Ack) => void;
+  'battle:forfeit': (payload: EmptyPayload, ack: Ack) => void;
 }
 
 export interface PlayerServerToClientEvents {
   'room:state': (state: PublicRoomState) => void;
   /** Sent right before the server disconnects a kicked player or a replaced session. */
   'player:removed': (reason: PlayerRemovedReason) => void;
+  /** Owner only: the player's own team slots. */
+  'team:state': (state: TeamState) => void;
+  /** Owner only: what this phone has to choose now (`request: null` = watch the big screen). */
+  'battle:request': (payload: BattleRequestPayload) => void;
+  'battle:waiting': (payload: BattleWaiting) => void;
   error: (error: ErrorPayload) => void;
 }

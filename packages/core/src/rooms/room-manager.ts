@@ -59,6 +59,10 @@ export class RoomManager {
     return this.rooms.size;
   }
 
+  list(): Room[] {
+    return [...this.rooms.values()];
+  }
+
   /** Removes rooms with no connected clients and no activity for `idleTtlMs`. Returns removed codes. */
   sweep(): string[] {
     const cutoff = this.deps.now() - this.deps.idleTtlMs;

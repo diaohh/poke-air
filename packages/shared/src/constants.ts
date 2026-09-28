@@ -30,6 +30,18 @@ export const TEAM_SIZE_LIMITS: Record<GameType, { min: number; max: number }> = 
 /** Max Pokémon a team brings, split across its players (docs/04-battle-modes.md). */
 export const POKEMON_PER_TEAM = 6;
 
+/** Simulator sides. One side per team: red → p1, blue → p2 (docs/04-battle-modes.md). */
+export const SIDE_IDS = ['p1', 'p2'] as const;
+export type SideId = (typeof SIDE_IDS)[number];
+export const TEAM_SIDE: Record<TeamId, SideId> = { red: 'p1', blue: 'p2' };
+export const SIDE_TEAM: Record<SideId, TeamId> = { p1: 'red', p2: 'blue' };
+
+/** Battle timings (docs/11-phase-1-plan.md). */
+export const BATTLE_COUNTDOWN_MS = 3_000;
+export const TURN_TIMER_MS = 60_000;
+/** Phones get their next menu once the Host has animated the turn, or after this long anyway. */
+export const ANIMATION_TIMEOUT_MS = 15_000;
+
 export const PLAYER_NAME_MAX_LENGTH = 16;
 
 /** A room without any connected client is deleted after this long. */

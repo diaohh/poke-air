@@ -1,13 +1,46 @@
 import { describe, expect, it } from 'vitest';
+import type { ShowdownSet } from '../battle/showdown.js';
+import { TeamService } from '../team/team-service.js';
 import { Room } from './room.js';
 import { RoomError } from './room-error.js';
+
+const SPECIES = [
+  'Pikachu',
+  'Garchomp',
+  'Dragonite',
+  'Rotom-Wash',
+  'Blissey',
+  'Gengar',
+  'Lucario',
+  'Scizor',
+];
+
+/** Cycles through SPECIES so every randomize call is deterministic. */
+function fakeTeamService() {
+  let offset = 0;
+  return new TeamService(() => {
+    const batch = Array.from({ length: 6 }, (_, i) => SPECIES[(offset + i) % SPECIES.length] ?? '');
+    offset += 1;
+    return batch.map(
+      (species) =>
+        ({
+          name: species,
+          species,
+          item: '',
+          ability: 'Static',
+          moves: ['tackle'],
+          evs: {},
+        }) as ShowdownSet,
+    );
+  });
+}
 
 function createRoom() {
   let clock = 1_000;
   let ids = 0;
   const room = new Room(
     { code: 'ABCD', hostToken: 'host-token', locale: 'en' },
-    { now: () => clock, newId: () => `id-${++ids}` },
+    { now: () => clock, newId: () => `id-${++ids}`, teamService: fakeTeamService() },
   );
   return {
     room,
@@ -138,5 +171,136 @@ describe('Room', () => {
     advance(10);
     room.addPlayer({ name: 'Second', avatar: 'red' });
     expect(room.listPlayers().map((p) => p.name)).toEqual(['First', 'Second']);
+  });
+});
+
+describe('Room teams and battle phases', () => {
+  function teamBuilding(gameType: 'singles' | 'doubles' = 'singles', extra = 0) {
+    const setup = createRoom();
+    const { room, advance } = setup;
+    if (gameType === 'doubles') room.setGameType('doubles');
+    const players = [];
+    for (let i = 0; i < 2 + extra; i++) {
+      players.push(room.addPlayer({ name: `P${i}`, avatar: 'red' }));
+      advance(1);
+    }
+    room.startTeamBuilding();
+    return { ...setup, players };
+  }
+
+  it('sizes teams by quota: 6 alone on a team, 3 with a teammate', () => {
+    const { room, players } = teamBuilding('doubles', 1); // red: P0, P2 · blue: P1
+    const [a, b, c] = players.map((p) => p.id) as [string, string, string];
+    expect(room.teamState(a).quota).toBe(3);
+    expect(room.teamState(c).quota).toBe(3);
+    expect(room.teamState(b).quota).toBe(6);
+    expect(room.teamState(b).slots).toEqual([null, null, null, null, null, null]);
+  });
+
+  it('randomizes whole teams or single slots without duplicating species on a side', () => {
+    const { room, players } = teamBuilding('doubles', 1);
+    const [a, , c] = players.map((p) => p.id) as [string, string, string];
+    room.randomizeTeam(a);
+    room.randomizeTeam(c);
+    const species = [a, c].flatMap((id) => room.teamState(id).slots.map((s) => s?.species));
+    expect(species.every(Boolean)).toBe(true);
+    expect(new Set(species).size).toBe(6);
+
+    const before = room.teamState(a).slots;
+    const after = room.randomizeTeam(a, [1]).slots;
+    expect(after[0]).toEqual(before[0]);
+    expect(after[2]).toEqual(before[2]);
+    expect(after[1]?.species).not.toBe(before[1]?.species);
+    expect(() => room.randomizeTeam(a, [3])).toThrowError('INVALID_SLOT');
+  });
+
+  it('shows only counts publicly, never species', () => {
+    const { room, players } = teamBuilding();
+    const id = players[0]?.id ?? '';
+    room.randomizeTeam(id);
+    room.clearSlot(id, 0);
+    const state = room.toPublicState();
+    expect(state.players[0]).toMatchObject({ teamCount: 5, quota: 6, ready: false });
+    expect(JSON.stringify(state)).not.toContain(room.teamState(id).slots[1]?.species ?? '?');
+  });
+
+  it('needs a Pokémon to be ready, and any team change un-readies', () => {
+    const { room, players } = teamBuilding();
+    const id = players[0]?.id ?? '';
+    expectRoomError(() => room.setReady(id, true), 'EMPTY_TEAM');
+    room.randomizeTeam(id, [0]);
+    room.setReady(id, true);
+    expect(room.getPlayer(id)?.ready).toBe(true);
+    room.clearSlot(id, 3);
+    expect(room.getPlayer(id)?.ready).toBe(false);
+  });
+
+  it('starts the battle only when everyone is ready', () => {
+    const { room, players } = teamBuilding();
+    const [a, b] = players.map((p) => p.id) as [string, string];
+    room.randomizeTeam(a);
+    room.randomizeTeam(b, [0, 1]);
+    room.setReady(a, true);
+    expect(room.allReady()).toBe(false);
+    expectRoomError(() => room.startBattle(), 'PLAYERS_NOT_READY');
+    room.setReady(b, true);
+    expect(room.allReady()).toBe(true);
+    room.startBattle();
+    expect(room.phase).toBe('BATTLE');
+    expectRoomError(() => room.randomizeTeam(a), 'WRONG_PHASE');
+
+    const sides = room.battleSides();
+    expect(sides.p1).toMatchObject({ team: 'red', name: 'P0' });
+    expect(sides.p1.players[0]?.sets).toHaveLength(6);
+    expect(sides.p2.players[0]?.sets).toHaveLength(2);
+  });
+
+  it('goes BATTLE → RESULTS → TEAM_BUILDING (rematch) keeping teams, or back to the lobby', () => {
+    const { room, players } = teamBuilding();
+    const [a, b] = players.map((p) => p.id) as [string, string];
+    for (const id of [a, b]) {
+      room.randomizeTeam(id);
+      room.setReady(id, true);
+    }
+    const team = room.teamState(a).slots;
+    room.startBattle();
+    const summary = { kos: 0, remaining: 6, total: 6 };
+    room.finishBattle({
+      winner: 'red',
+      reason: 'normal',
+      turns: 3,
+      teams: { red: summary, blue: summary },
+    });
+    expect(room.toPublicState()).toMatchObject({ phase: 'RESULTS', result: { winner: 'red' } });
+
+    room.rematch();
+    expect(room.phase).toBe('TEAM_BUILDING');
+    expect(room.result).toBeNull();
+    expect(room.getPlayer(a)?.ready).toBe(false);
+    expect(room.teamState(a).slots).toEqual(team);
+
+    room.backToLobby();
+    expect(room.phase).toBe('LOBBY');
+  });
+
+  it('keeps stored sets while players move in the lobby and trims them on team building', () => {
+    const { room, players, advance } = teamBuilding('doubles');
+    const [a] = players.map((p) => p.id) as [string, string];
+    room.randomizeTeam(a);
+    room.backToLobby();
+    advance(1);
+    const c = room.addPlayer({ name: 'C', avatar: 'red' }); // joins red: quota 3 while in LOBBY
+    expect(room.teamState(a).slots).toHaveLength(3);
+    room.switchTeam(c.id, 'blue');
+    expect(room.teamState(a).slots.filter(Boolean)).toHaveLength(6); // nothing was lost
+  });
+
+  it('exposes the countdown as remaining time', () => {
+    const { room, advance } = teamBuilding(); // clock is at 1_002 after two joins
+    room.setCountdown(1_002 + 3_000);
+    advance(1_000);
+    expect(room.toPublicState().battleCountdownMs).toBe(2_000);
+    advance(5_000);
+    expect(room.toPublicState().battleCountdownMs).toBe(0);
   });
 });

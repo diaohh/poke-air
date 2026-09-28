@@ -1,0 +1,62 @@
+# 08 — Decisions
+
+Lightweight ADR log. Open items have a **recommendation**; move them to "Decided" once confirmed.
+
+## Decided
+
+| #    | Decision                                                                                                                                                                                                                            | Date       |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-01 | Cloud-authoritative server; the PC is the screen (not a local server)                                                                                                                                                               | 2026-09-25 |
+| D-02 | Battle engine = Pokémon Showdown simulator (MIT, official `pokemon-showdown` npm package); never reimplement mechanics                                                                                                              | 2026-09-25 |
+| D-03 | Never copy code from `pokemon-showdown-client` (AGPLv3)                                                                                                                                                                             | 2026-09-25 |
+| D-04 | One sim side per team + OwnershipLayer for every mode (subject to spike S2; `multi` as 2v2 fallback)                                                                                                                                | 2026-09-25 |
+| D-05 | Quotas: 1 human → 6 Pokémon, 2 humans → 3 each; each active Pokémon acts once per turn; doubles rules (spread moves, immunities, redirection) handled by the sim                                                                    | 2026-09-25 |
+| D-06 | Everything in English (code, docs, default UI). i18n infrastructure from day one; `es-ES` as second locale; language is a room setting                                                                                              | 2026-09-25 |
+| D-07 | Champions-style mechanics via Showdown's `champions` mod: level 50, IVs fixed at 31, Stat Points, Mega Evolution only                                                                                                               | 2026-09-25 |
+| D-08 | Roster = all Pokémon fully implemented in the sim (Champions mod + NatDex Mod), no CAP/custom (subject to spike S3)                                                                                                                 | 2026-09-25 |
+| D-09 | Rulesets modeled internally, but v1 ships a single "Casual" ruleset with **no lobby selector**; extra restrictions are verbal agreements between players                                                                            | 2026-09-25 |
+| D-10 | $0 hosting: frontend on Vercel Hobby (or Cloudflare), backend on Render free web service; Vercel Functions not used for realtime                                                                                                    | 2026-09-25 |
+| D-11 | Transport-agnostic `packages/core` to keep the Host-authoritative option open                                                                                                                                                       | 2026-09-25 |
+| D-12 | **v1 scope: singles 1v1 and doubles 1v1 / 1v2 / 2v2.** Triples postponed as a future extension (the sim supports them; only a custom Champions triples format is missing)                                                           | 2026-09-25 |
+| D-13 | **Mega Evolution: one per player**, team parity in asymmetric games (1v2 → solo player gets 2), max one Mega per team per turn; policy enforced by the OwnershipLayer, sim made permissive via an instance override of `runMegaEvo` | 2026-09-25 |
+| D-14 | Legendaries and Mythicals allowed                                                                                                                                                                                                   | 2026-09-25 |
+| D-15 | No password or accounts: AirConsole-style access with the room code, name and trainer avatar                                                                                                                                        | 2026-09-25 |
+| D-16 | Node ≥ 22.22 (`.nvmrc`); TypeScript pinned to 6.0.x (TS 7 native not supported by typescript-eslint yet)                                                                                                                            | 2026-09-25 |
+| D-17 | `pokemon-showdown` pinned to an exact version (0.11.11) and imported only via `packages/core/src/battle/showdown.ts`                                                                                                                | 2026-09-25 |
+| D-18 | Host battle model = `@pkmn/protocol` + own reducer; `@pkmn/client` not used (its dex lacks the Champions mod)                                                                                                                       | 2026-09-25 |
+| D-19 | Socket.IO namespaces per role (`/host`, `/player`); every client event acks a `Result`; `room:state` full snapshot broadcast after each mutation                                                                                    | 2026-09-25 |
+| D-20 | v1 format ids: `gen9championscustomgame` / `gen9championsdoublescustomgame` + `@@@!Team Preview`; randomizer uses `gen9championsrandombattle` sets (level forced to 50) for both formats                                            | 2026-09-25 |
+| D-21 | Phase 1 battles start automatically when all players are Ready (3 s cancellable countdown on the Host)                                                                                                                              | 2026-09-25 |
+| D-22 | Server enriches battle requests with move metadata (type, category, power, accuracy) so phones need no dex data in Phase 1                                                                                                          | 2026-09-25 |
+| D-23 | CI/CD and first deploy deferred; focus on making the game work locally first                                                                                                                                                        | 2026-09-25 |
+| D-24 | UI design system **"Stadium Wine"** (`docs/12-design-system.md`, mockup `docs/design/ui-mockup.html`): light warm theme, wine brand, scarlet/blue reserved for teams, portrait-only phone with a 3DS-style battle menu              | 2026-09-27 |
+
+## Open
+
+| #    | Topic                                       | Options                                                                                   | Recommendation                                                                       |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| O-01 | **Two Megas on the same turn** for one team | Keep "max one per team per turn" · patch `Side.chooseMove` on the instance to lift it     | Keep in v1; revisit after playtesting                                                |
+| O-02 | **Turn timer**                              | None · fixed · configurable                                                               | Configurable, defaults 60/90 s, can be disabled                                      |
+| O-03 | **Can the Host play?**                      | No · yes with mouse/keyboard                                                              | No (the screen is public; breaks privacy)                                            |
+| O-04 | **Spectators on phones**                    | No · yes                                                                                  | Later phase                                                                          |
+| O-05 | **Team persistence**                        | Phone only (localStorage) · accounts                                                      | localStorage + Showdown text import/export; no accounts                              |
+| O-06 | **Audio**                                   | None · official cries/music · CC0 music                                                   | Simple SFX + CC0 music; official cries optional                                      |
+| O-07 | **Public or private repo**                  |                                                                                           | Private while defining; if public, no assets in git                                  |
+| O-08 | **Move animations**                         | Generic by category/type · per move                                                       | Generic (physical/special/status × type color) + ~20 iconic moves                    |
+| O-09 | **Host ↔ controller sync**                  | Controllers wait for Host animations · don't wait                                         | Wait, with timeout (`host:turnAnimated`)                                             |
+| O-10 | **Frontend host**                           | Vercel · Cloudflare                                                                       | Vercel; Cloudflare R2 for sprites if file/bandwidth limits bite                      |
+| O-11 | **Battle start** (conflicts with D-21)      | Auto-start with 3 s countdown (D-21) · Host presses "Battle!" once all are Ready (mockup) | Pending: the mockup follows the Host button; update D-21 + phase-1 plan if confirmed |
+
+## Additional topics to keep in mind
+
+- **Wake Lock & reconnection** on phones: iOS/Android kill WebSockets when the screen locks. Critical for UX.
+- **Audio autoplay:** the Host browser only allows sound after a user gesture → "Create room" / "Fullscreen"
+  doubles as that gesture.
+- **Fullscreen and scaling** of the Host stage (1080p/4K TVs, ultrawide monitors).
+- **Accessibility:** large text on phones, type colors with sufficient contrast, never rely on color alone.
+- **Quick rematch** keeping teams (the "one more!" use case).
+- **Replays:** the omniscient log + seed make replays trivial.
+- **Damage calculator** (`@smogon/calc`, MIT) hints on the phone: optional, can feel like cheating; only
+  against public information.
+- **Host robustness:** after a refresh mid-battle, rebuild the scene from the full spectator log.
+- **Name limits & sanitization:** names are shown on a TV; the Host can kick players (no password).

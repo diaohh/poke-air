@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-team-red: #ef4444;
+  --color-team-red-dark: #7f1d1d;
+  --color-team-blue: #3b82f6;
+  --color-team-blue-dark: #1e3a8a;
+  --color-surface: #0f172a;
+  --color-surface-raised: #1e293b;
+  --color-accent: #facc15;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-surface text-slate-100 antialiased;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Showdown sprites are pixel art. */
+.pixelated {
+  image-rendering: pixelated;
+}

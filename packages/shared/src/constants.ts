@@ -1,0 +1,40 @@
+/** Battle formats available in v1. Triples are a future extension (docs/04-battle-modes.md). */
+export const GAME_TYPES = ['singles', 'doubles'] as const;
+export type GameType = (typeof GAME_TYPES)[number];
+
+export const TEAM_IDS = ['red', 'blue'] as const;
+export type TeamId = (typeof TEAM_IDS)[number];
+
+export const ROOM_PHASES = ['LOBBY', 'TEAM_BUILDING', 'BATTLE', 'RESULTS'] as const;
+export type RoomPhase = (typeof ROOM_PHASES)[number];
+
+/** Locales the UI can be switched to. Add 'es-ES' when Phase 4 lands (docs/06-i18n.md). */
+export const SUPPORTED_LOCALES = ['en'] as const;
+export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const DEFAULT_LOCALE: Locale = 'en';
+
+/** Room codes: 4 letters, no ambiguous characters (I, O). 24^4 ≈ 331k combinations. */
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+export const ROOM_CODE_LENGTH = 4;
+
+/** v1 caps: doubles 2v2 is the largest composition. */
+export const MAX_PLAYERS_PER_TEAM = 2;
+export const MAX_PLAYERS_PER_ROOM = MAX_PLAYERS_PER_TEAM * TEAM_IDS.length;
+
+/** Min/max players per team for each format. */
+export const TEAM_SIZE_LIMITS: Record<GameType, { min: number; max: number }> = {
+  singles: { min: 1, max: 1 },
+  doubles: { min: 1, max: 2 },
+};
+
+/** Max Pokémon a team brings, split across its players (docs/04-battle-modes.md). */
+export const POKEMON_PER_TEAM = 6;
+
+export const PLAYER_NAME_MAX_LENGTH = 16;
+
+/** A room without any connected client is deleted after this long. */
+export const ROOM_IDLE_TTL_MS = 30 * 60 * 1000;
+
+/** Socket.IO namespaces. Each role has its own typed event set. */
+export const HOST_NAMESPACE = '/host';
+export const PLAYER_NAMESPACE = '/player';

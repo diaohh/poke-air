@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - esbuild
+
+# Native deps pulled in by pokemon-showdown for its chat server features. The simulator doesn't need them.
+ignoredBuiltDependencies:
+  - better-sqlite3
+  - sqlite3

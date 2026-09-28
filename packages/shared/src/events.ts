@@ -1,0 +1,66 @@
+import type { ErrorPayload, Result } from './errors.js';
+import type { PublicRoomState } from './room-state.js';
+import type {
+  EmptyPayload,
+  HostCreateRoomPayload,
+  HostKickPayload,
+  HostResumeRoomPayload,
+  HostSetFormatPayload,
+  HostSetLocalePayload,
+  PlayerJoinPayload,
+  PlayerSwitchTeamPayload,
+  PlayerUpdatePayload,
+} from './schemas.js';
+
+/**
+ * Socket.IO event contracts. Naming: `domain:action`.
+ * Every client → server event carries a payload object and an acknowledgement callback,
+ * so clients can always surface errors (translated from `ErrorPayload.code`).
+ */
+
+export type Ack<T = object> = (result: Result<T>) => void;
+
+export interface HostSession {
+  code: string;
+  hostToken: string;
+  room: PublicRoomState;
+}
+
+export interface PlayerSession {
+  playerId: string;
+  reconnectToken: string;
+  room: PublicRoomState;
+}
+
+export type PlayerRemovedReason = 'kicked' | 'replaced' | 'roomClosed';
+
+// ── /host namespace ────────────────────────────────────────────────
+export interface HostClientToServerEvents {
+  'host:createRoom': (payload: HostCreateRoomPayload, ack: Ack<HostSession>) => void;
+  'host:resumeRoom': (payload: HostResumeRoomPayload, ack: Ack<HostSession>) => void;
+  'host:setFormat': (payload: HostSetFormatPayload, ack: Ack) => void;
+  'host:setLocale': (payload: HostSetLocalePayload, ack: Ack) => void;
+  'host:kick': (payload: HostKickPayload, ack: Ack) => void;
+  'host:startTeamBuilding': (payload: EmptyPayload, ack: Ack) => void;
+  'host:backToLobby': (payload: EmptyPayload, ack: Ack) => void;
+}
+
+export interface HostServerToClientEvents {
+  'room:state': (state: PublicRoomState) => void;
+  error: (error: ErrorPayload) => void;
+}
+
+// ── /player namespace ──────────────────────────────────────────────
+export interface PlayerClientToServerEvents {
+  'player:join': (payload: PlayerJoinPayload, ack: Ack<PlayerSession>) => void;
+  'player:update': (payload: PlayerUpdatePayload, ack: Ack) => void;
+  'player:switchTeam': (payload: PlayerSwitchTeamPayload, ack: Ack) => void;
+  'player:leave': (payload: EmptyPayload, ack: Ack) => void;
+}
+
+export interface PlayerServerToClientEvents {
+  'room:state': (state: PublicRoomState) => void;
+  /** Sent right before the server disconnects a kicked player or a replaced session. */
+  'player:removed': (reason: PlayerRemovedReason) => void;
+  error: (error: ErrorPayload) => void;
+}

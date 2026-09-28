@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+apps/web/public/sprites
+apps/web/public/data
+
+# Design mockups (reference only, not app code)
+docs/design/

@@ -1,0 +1,21 @@
+{
+  "name": "@poke-air/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "sim:smoke": "tsx scripts/sim-smoke.ts"
+  },
+  "dependencies": {
+    "@poke-air/shared": "workspace:*",
+    "pokemon-showdown": "0.11.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.15"
+  }
+}

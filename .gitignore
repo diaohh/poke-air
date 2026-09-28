@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.vite/
+*.tsbuildinfo
+
+# Pokémon assets are never committed (see docs/03-data-sources-and-licensing.md)
+apps/web/public/sprites/
+# Generated data (packages/data output)
+apps/web/public/data/
+
+# Local-only working files (not versioned)
+context-temp.md
+docs/design/

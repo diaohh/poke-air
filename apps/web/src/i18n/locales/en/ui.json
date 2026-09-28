@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "Poke-Air",
+    "tagline": "Pokémon battles on the big screen. Your phone is the controller.",
+    "disclaimer": "Non-commercial fan project. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company."
+  },
+  "common": {
+    "connecting": "Connecting to the server…",
+    "wakingUp": "Warming up the stadium… this can take up to a minute.",
+    "retry": "Retry",
+    "back": "Back",
+    "players_one": "{{count}} player",
+    "players_other": "{{count}} players",
+    "disconnected": "Disconnected",
+    "you": "You"
+  },
+  "home": {
+    "host": "Host a game on this screen",
+    "join": "Join a game",
+    "codePlaceholder": "Room code",
+    "joinButton": "Join"
+  },
+  "formats": {
+    "singles": "Singles",
+    "doubles": "Doubles"
+  },
+  "teams": {
+    "red": "Red team",
+    "blue": "Blue team"
+  },
+  "locales": {
+    "en": "English"
+  },
+  "host": {
+    "roomCode": "Room code",
+    "scanToJoin": "Scan to join",
+    "orVisit": "or open {{url}}",
+    "format": "Format",
+    "language": "Language",
+    "startGame": "Start",
+    "kick": "Kick",
+    "waitingForPlayers": "Waiting for players…",
+    "emptyTeam": "No trainers yet",
+    "composition": {
+      "valid": "{{label}} {{format}}",
+      "TEAM_EMPTY": "The {{team}} needs at least one player",
+      "TEAM_TOO_LARGE": "{{format}} allows at most {{max}} per team ({{team}})"
+    },
+    "teamBuilding": {
+      "title": "Team building",
+      "comingSoon": "Players are building their teams on their phones. (Coming in Phase 1.)",
+      "backToLobby": "Back to lobby"
+    },
+    "hostDisconnectedWarning": "Keep this screen open: it is the game board."
+  },
+  "controller": {
+    "joinTitle": "Join room {{code}}",
+    "name": "Your name",
+    "namePlaceholder": "Trainer name",
+    "chooseTrainer": "Choose your trainer",
+    "randomTrainer": "Random",
+    "join": "Join",
+    "joining": "Joining…",
+    "yourTeam": "You are on the {{team}}",
+    "switchTo": "Move me to the {{team}}",
+    "leave": "Leave room",
+    "waitingForHost": "Waiting for the host to start…",
+    "hostOffline": "The game screen is offline. Waiting for it to come back…",
+    "teamBuildingSoon": "Team building is coming in Phase 1. Look at the big screen!",
+    "removed": {
+      "kicked": "You were removed from the room by the host.",
+      "replaced": "This room was opened on another tab or device.",
+      "roomClosed": "The room was closed."
+    },
+    "joinAgain": "Join again"
+  },
+  "errors": {
+    "INVALID_PAYLOAD": "Something in the request was not valid.",
+    "ROOM_NOT_FOUND": "That room does not exist. Check the code on the big screen.",
+    "ROOM_FULL": "This room is full.",
+    "TEAM_FULL": "That team is full.",
+    "INVALID_HOST_TOKEN": "This screen can no longer control that room.",
+    "INVALID_RECONNECT_TOKEN": "Your previous seat could not be restored.",
+    "PLAYER_NOT_FOUND": "Your seat in this room no longer exists.",
+    "NOT_IN_ROOM": "You are not in a room.",
+    "WRONG_PHASE": "That can't be done right now.",
+    "INVALID_COMPOSITION": "The teams are not valid for this format.",
+    "INTERNAL_ERROR": "Unexpected server error.",
+    "CONNECTION": "Could not reach the server."
+  },
+  "trainers": {
+    "red": "Red",
+    "blue": "Blue",
+    "lance": "Lance",
+    "misty": "Misty",
+    "brock": "Brock",
+    "sabrina": "Sabrina",
+    "giovanni": "Giovanni",
+    "ethan": "Ethan",
+    "lyra": "Lyra",
+    "kris": "Kris",
+    "karen": "Karen",
+    "may": "May",
+    "brendan": "Brendan",
+    "steven": "Steven",
+    "wallace": "Wallace",
+    "dawn": "Dawn",
+    "lucas": "Lucas",
+    "cynthia": "Cynthia",
+    "volo": "Volo",
+    "hilbert": "Hilbert",
+    "hilda": "Hilda",
+    "n": "N",
+    "iris": "Iris",
+    "serena": "Serena",
+    "calem": "Calem",
+    "diantha": "Diantha",
+    "elio": "Elio",
+    "selene": "Selene",
+    "kukui": "Kukui",
+    "lillie": "Lillie",
+    "gladion": "Gladion",
+    "victor": "Victor",
+    "gloria": "Gloria",
+    "leon": "Leon",
+    "hop": "Hop",
+    "marnie": "Marnie",
+    "raihan": "Raihan",
+    "geeta": "Geeta",
+    "penny": "Penny",
+    "kieran": "Kieran",
+    "carmine": "Carmine"
+  }
+}

@@ -10,12 +10,14 @@ import {
   type BattleResult,
   type BattleWaiting,
   type MoveMeta,
+  type PokemonSetData,
   type SideId,
 } from '@poke-air/shared';
 import { RoomError } from '../rooms/room-error.js';
 import type { Room } from '../rooms/room.js';
 import { systemScheduler, type Scheduler } from '../time.js';
 import { BattleSession, type BattleEnd, type BattleSideSummary } from './battle-session.js';
+import { effectsIn } from './effects.js';
 import { OwnershipLayer } from './ownership.js';
 import { enrichRequest, moveMeta, type RawRequest } from './request.js';
 import { BATTLE_FORMAT_IDS } from './showdown.js';
@@ -84,6 +86,8 @@ export class MatchController {
 
   private session: BattleSession | null = null;
   private ownership: OwnershipLayer | null = null;
+  /** Every Pokémon's set by side and nickname: nature + Stat Points for its owner (decision D-34). */
+  private sets: Record<SideId, Map<string, PokemonSetData>> = { p1: new Map(), p2: new Map() };
   private decisions: Partial<Record<SideId, Decision>> = {};
   private animatedUpTo = 0;
   private pendingEnd: PendingEnd | null = null;
@@ -174,7 +178,7 @@ export class MatchController {
   resyncLog(): BattleLogPayload | null {
     if (!this.session) return null;
     const lines = [...this.session.spectatorLog];
-    return { from: 0, lines, moves: movesIn(lines), resync: true };
+    return { from: 0, lines, moves: movesIn(lines), effects: effectsIn(lines), resync: true };
   }
 
   // ── Queries (rejoin) ─────────────────────────────────────────────
@@ -235,6 +239,11 @@ export class MatchController {
     this.decisions = {};
     this.animatedUpTo = 0;
     this.lastWaiting = '';
+    for (const side of SIDE_IDS) {
+      this.sets[side] = new Map(
+        sides[side].players.flatMap((p) => p.sets.map((set) => [set.name, set])),
+      );
+    }
 
     const input = (side: SideId) => {
       const setup = sides[side];
@@ -265,14 +274,18 @@ export class MatchController {
   private onSpectator(lines: string[]): void {
     if (!this.session || lines.length === 0) return;
     const from = this.session.spectatorLog.length - lines.length;
-    this.listener.battleLog({ from, lines, moves: movesIn(lines) });
+    this.listener.battleLog({ from, lines, moves: movesIn(lines), effects: effectsIn(lines) });
   }
 
   private onRequest(side: SideId, raw: RawRequest, rqid: number): void {
     const session = this.session;
     const ownership = this.ownership;
     if (!session || !ownership) return;
-    const request = enrichRequest(raw, rqid);
+    const sets = this.sets[side];
+    const request = enrichRequest(raw, rqid, {
+      setOf: (name) => sets.get(name),
+      boosts: session.activeBoosts(side),
+    });
     const previous = this.decisions[side];
 
     if (raw.update && previous && previous.request.rqid === rqid) {

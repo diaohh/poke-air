@@ -2,9 +2,13 @@ import type {
   BattleMoveOption,
   BattlePokemon,
   BattleRequest,
+  BoostId,
   MoveCategory,
   MoveMeta,
+  NatureInfo,
+  PokemonSetData,
   SideId,
+  StatTable,
   StatusId,
 } from '@poke-air/shared';
 import { getChampionsDex } from './showdown.js';
@@ -38,6 +42,8 @@ export interface RawSidePokemon {
   baseAbility: string;
   ability?: string;
   item: string;
+  /** Computed stats without HP (max HP is in `condition`). */
+  stats?: Partial<Record<Exclude<keyof StatTable, 'hp'>, number>>;
 }
 
 export interface RawRequest {
@@ -59,8 +65,35 @@ export function moveMeta(nameOrId: string): MoveMeta {
   return { type: move.type, category: move.category as MoveCategory };
 }
 
-/** Maps a raw sim request to the phone's model, adding move metadata (decision D-22). */
-export function enrichRequest(raw: RawRequest, rqid: number): BattleRequest {
+/** Owner-only data the raw request lacks (decision D-34). */
+export interface RequestExtras {
+  /** The owner's own set for the Pokémon with this nickname: nature and Stat Points. */
+  setOf?: (name: string) => Pick<PokemonSetData, 'nature' | 'evs'> | undefined;
+  /** Current non-zero stat stages of the side's active Pokémon, by nickname. */
+  boosts?: Record<string, Partial<Record<BoostId, number>>>;
+}
+
+/** A nature by name with the stats it raises / lowers (`undefined` for unknown names). */
+export function natureInfo(name: string | undefined): NatureInfo | undefined {
+  if (!name) return undefined;
+  const nature = getChampionsDex().natures.get(name);
+  if (!nature.exists) return undefined;
+  return {
+    name: nature.name,
+    ...(nature.plus ? { plus: nature.plus } : {}),
+    ...(nature.minus ? { minus: nature.minus } : {}),
+  };
+}
+
+/**
+ * Maps a raw sim request to the phone's model, adding move metadata (decision D-22) and the
+ * owner-only extras: nature and stat stages (decision D-34).
+ */
+export function enrichRequest(
+  raw: RawRequest,
+  rqid: number,
+  extras: RequestExtras = {},
+): BattleRequest {
   const dex = getChampionsDex();
   const kind = raw.wait ? 'wait' : raw.forceSwitch ? 'switch' : 'move';
 
@@ -94,11 +127,11 @@ export function enrichRequest(raw: RawRequest, rqid: number): BattleRequest {
           }))
         : [],
     forceSwitch: kind === 'switch' ? (raw.forceSwitch ?? []) : [],
-    pokemon: raw.side.pokemon.map(toPokemon),
+    pokemon: raw.side.pokemon.map((pokemon) => toPokemon(pokemon, extras)),
   };
 }
 
-function toPokemon(raw: RawSidePokemon): BattlePokemon {
+function toPokemon(raw: RawSidePokemon, extras: RequestExtras): BattlePokemon {
   const dex = getChampionsDex();
   const { species, level, gender, shiny } = parseDetails(raw.details);
   const { hp, maxhp, status, fainted } = parseCondition(raw.condition);
@@ -117,7 +150,21 @@ function toPokemon(raw: RawSidePokemon): BattlePokemon {
       const move = dex.moves.get(id);
       return { id, name: move.exists ? move.name : id, type: move.exists ? move.type : 'Normal' };
     }),
+    stats: {
+      hp: maxhp,
+      atk: raw.stats?.atk ?? 0,
+      def: raw.stats?.def ?? 0,
+      spa: raw.stats?.spa ?? 0,
+      spd: raw.stats?.spd ?? 0,
+      spe: raw.stats?.spe ?? 0,
+    },
   };
+  const set = extras.setOf?.(pokemon.name);
+  const nature = natureInfo(set?.nature);
+  if (nature) pokemon.nature = nature;
+  if (set) pokemon.statPoints = { ...set.evs };
+  const boosts = raw.active ? extras.boosts?.[pokemon.name] : undefined;
+  if (boosts && Object.keys(boosts).length > 0) pokemon.boosts = boosts;
   if (gender) pokemon.gender = gender;
   if (shiny) pokemon.shiny = true;
   if (status) pokemon.status = status;

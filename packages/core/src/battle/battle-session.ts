@@ -1,4 +1,10 @@
-import { SIDE_IDS, type BattleEndReason, type PokemonSetData, type SideId } from '@poke-air/shared';
+import {
+  SIDE_IDS,
+  type BattleEndReason,
+  type BoostId,
+  type PokemonSetData,
+  type SideId,
+} from '@poke-air/shared';
 import { TeamService } from '../team/team-service.js';
 import type { RawRequest } from './request.js';
 import { Battle, type ShowdownBattle } from './showdown.js';
@@ -131,6 +137,20 @@ export class BattleSession {
 
   currentRequest(side: SideId): { request: RawRequest; rqid: number } | undefined {
     return this.requests[side];
+  }
+
+  /** Non-zero stat stages of the side's active Pokémon, by nickname (owner-only request data). */
+  activeBoosts(side: SideId): Record<string, Partial<Record<BoostId, number>>> {
+    const boosts: Record<string, Partial<Record<BoostId, number>>> = {};
+    for (const pokemon of this.battle.getSide(side).active) {
+      if (!pokemon) continue;
+      const stages: Partial<Record<BoostId, number>> = {};
+      for (const [stat, value] of Object.entries(pokemon.boosts as Record<string, number>)) {
+        if (value) stages[stat as BoostId] = value;
+      }
+      boosts[pokemon.name] = stages;
+    }
+    return boosts;
   }
 
   summary(): Record<SideId, BattleSideSummary> {

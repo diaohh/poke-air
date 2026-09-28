@@ -1,4 +1,5 @@
 import type { SideId, TeamId } from './constants.js';
+import type { StatId, StatTable } from './team.js';
 
 /**
  * Battle payloads. Hand-written subset of the Showdown request/protocol shapes recorded in
@@ -44,6 +45,16 @@ export interface BattlePokemonMove {
   type: string;
 }
 
+/** What a stat stage (`-boost`) can change: the five computed stats plus accuracy and evasion. */
+export type BoostId = Exclude<StatId, 'hp'> | 'accuracy' | 'evasion';
+
+/** A nature and the stats it raises / lowers (both absent for neutral natures). */
+export interface NatureInfo {
+  name: string;
+  plus?: StatId;
+  minus?: StatId;
+}
+
 /** One of the player's own Pokémon, with exact HP (private data). */
 export interface BattlePokemon {
   /** e.g. "p1: Garchomp". */
@@ -62,6 +73,14 @@ export interface BattlePokemon {
   item: string;
   ability: string;
   moves: BattlePokemonMove[];
+  /** Computed stats (Lv 50, nature and Stat Points applied); `hp` = max HP. */
+  stats: StatTable;
+  /** From the owner's own set (the sim request has no nature). */
+  nature?: NatureInfo;
+  /** Stat Points invested per stat, from the owner's own set (where the build is focused). */
+  statPoints?: StatTable;
+  /** Current stat stages (active Pokémon only; only non-zero entries). */
+  boosts?: Partial<Record<BoostId, number>>;
 }
 
 /**
@@ -97,6 +116,15 @@ export interface BattleWaiting {
   timerMs: number | null;
 }
 
+/**
+ * Duration of a field / side effect in turns. `max > min` when an item the spectators can't see may
+ * extend it (Light Clay, weather rocks, Terrain Extender).
+ */
+export interface EffectDuration {
+  min: number;
+  max: number;
+}
+
 /** `battle:log` payload (Host only): public spectator protocol lines, append-only. */
 export interface BattleLogPayload {
   /** Index of the first line. `0` replaces the whole log. */
@@ -104,6 +132,8 @@ export interface BattleLogPayload {
   lines: string[];
   /** Type/category of every move used in `lines` (drives the generic move animations). */
   moves: Record<string, MoveMeta>;
+  /** Duration of every timed effect started in `lines` (weather, terrain, screens…), by name. */
+  effects: Record<string, EffectDuration>;
   /** True when the Host is catching up (resume): apply without animating. */
   resync?: boolean;
 }

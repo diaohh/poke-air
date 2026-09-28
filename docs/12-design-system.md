@@ -154,6 +154,11 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
 The phone is themed with the player's **team** colors; before joining it uses the neutral wine/blush theme.
 Primary action pinned to the bottom.
 
+**Fullscreen:** "Join room" enters fullscreen on touch devices. While seated, if the page is not
+fullscreen (back gesture, reload), a full-screen **"Tap to continue"** prompt (AirConsole-style) covers the
+phone; the tap re-enters fullscreen. Skipped where the API is missing (iPhone Safari) and on desktop.
+On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles it.
+
 1. **Join:** name input · scrollable 4-column grid of all trainers (selected = gold-soft + wine ring) ·
    dice button for a random trainer · **Join room**.
 2. **Teams:** Red card above Blue card, each with its players and a "Join Team X" button ("✓ You're on

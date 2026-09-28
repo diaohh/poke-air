@@ -10,6 +10,7 @@ import { TrainerSprite } from '../components/TrainerSprite';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { cn } from '../lib/cn';
+import { enterFullscreen, isTouchDevice } from '../lib/fullscreen';
 import { useControllerStore } from './controller-store';
 
 /** Join view: name · scrollable 4-column trainer grid · dice for a random trainer · Join room. */
@@ -21,7 +22,10 @@ export function JoinForm() {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (nameValid) void join();
+    if (!nameValid) return;
+    // Hide the browser bars on phones; the submit is the required user gesture.
+    if (isTouchDevice()) void enterFullscreen();
+    void join();
   };
 
   const pickRandom = () => {

@@ -7,11 +7,13 @@ import { Logo } from '../components/ui/Logo';
 import { PokeBall } from '../components/ui/PokeBall';
 import { TeamChip } from '../components/ui/TeamChip';
 import { cn } from '../lib/cn';
+import { enterFullscreen, isTouchDevice } from '../lib/fullscreen';
 import { TEAM_SCOPE } from '../lib/team';
 import { useRoomLocale } from '../lib/use-room-locale';
 import { useWakeLock } from '../lib/use-wake-lock';
 import { useControllerStore } from './controller-store';
 import { ControllerLobby } from './ControllerLobby';
+import { FullscreenPrompt } from './FullscreenPrompt';
 import { JoinForm } from './JoinForm';
 
 /**
@@ -29,6 +31,11 @@ export function ControllerScreen() {
   useEffect(() => open(code), [open, code]);
   useRoomLocale(room?.locale);
   useWakeLock(status === 'joined');
+
+  const rejoin = () => {
+    if (isTouchDevice()) void enterFullscreen();
+    void join();
+  };
 
   return (
     <div
@@ -84,11 +91,13 @@ export function ControllerScreen() {
               {t(`controller.removed.${removedReason ?? 'kicked'}`)}
             </p>
           </CenteredMessage>
-          <Button variant="primary" onClick={() => void join()} className="min-h-15 text-[19px]">
+          <Button variant="primary" onClick={rejoin} className="min-h-15 text-[19px]">
             {t('controller.joinAgain')}
           </Button>
         </>
       )}
+
+      <FullscreenPrompt active={status === 'joined'} />
     </div>
   );
 }

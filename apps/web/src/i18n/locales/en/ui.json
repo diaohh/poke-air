@@ -104,7 +104,11 @@
       "replaced": "This room was opened on another tab or device.",
       "roomClosed": "The room was closed."
     },
-    "joinAgain": "Join again"
+    "joinAgain": "Join again",
+    "fullscreen": {
+      "title": "Tap to continue",
+      "hint": "The controller works in full screen so the browser bars don't get in the way."
+    }
   },
   "errors": {
     "INVALID_PAYLOAD": "Something in the request was not valid.",

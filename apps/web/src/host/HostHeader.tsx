@@ -3,17 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from '../components/LanguageSelect';
 import { IconButton } from '../components/ui/IconButton';
 import { Logo } from '../components/ui/Logo';
+import { toggleFullscreen } from '../lib/fullscreen';
 import { useHostStore } from './host-store';
 
 interface Props {
   room: PublicRoomState;
   /** Small room-code pill (phases without the join panel). */
   showCode?: boolean;
-}
-
-function toggleFullscreen() {
-  if (document.fullscreenElement) void document.exitFullscreen();
-  else void document.documentElement.requestFullscreen().catch(() => undefined);
 }
 
 /** Host header: logo · (room code) · language · fullscreen. No phase stepper. */

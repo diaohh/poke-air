@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Logo } from '../components/ui/Logo';
 import { applyLocale } from '../i18n';
+import { enterFullscreen } from '../lib/fullscreen';
 import { HeroScene } from './HeroScene';
 
 /** `/` — landing page: host a room on this screen or join one with a code. */
@@ -48,7 +49,12 @@ export function HomeScreen() {
           </p>
 
           <div className="flex flex-wrap items-stretch gap-4">
-            <Link to="/host" className="btn btn--primary min-h-16 px-8 text-xl max-[520px]:w-full">
+            <Link
+              to="/host"
+              // The click is the user gesture fullscreen needs; it survives the SPA navigation.
+              onClick={() => void enterFullscreen()}
+              className="btn btn--primary min-h-16 px-8 text-xl max-[520px]:w-full"
+            >
               <Icon name="play" />
               {t('home.host')}
             </Link>

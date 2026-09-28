@@ -1,24 +1,40 @@
 {
   "app": {
     "name": "Poke-Air",
-    "tagline": "Pokémon battles on the big screen. Your phone is the controller.",
-    "disclaimer": "Non-commercial fan project. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company."
+    "disclaimer": "Non-commercial fan project. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names are trademarks of their respective owners.",
+    "tagline": "Pokémon battles on the big screen. Your phone is the controller."
   },
   "common": {
     "connecting": "Connecting to the server…",
     "wakingUp": "Warming up the stadium… this can take up to a minute.",
+    "reconnecting": "Connection lost. Reconnecting…",
+    "disconnected": "Disconnected",
+    "you": "You",
+    "language": "Language",
+    "roomCode": "Room code {{code}}",
     "retry": "Retry",
     "back": "Back",
     "players_one": "{{count}} player",
-    "players_other": "{{count}} players",
-    "disconnected": "Disconnected",
-    "you": "You"
+    "players_other": "{{count}} players"
+  },
+  "status": {
+    "ready": "Ready",
+    "building": "Building",
+    "pending": "Pending"
   },
   "home": {
-    "host": "Host a game on this screen",
-    "join": "Join a game",
-    "codePlaceholder": "Room code",
-    "joinButton": "Join"
+    "heroTitle": "Your <wine>phone</wine>.<br/>Your <red>team</red>.<br/><mark>Your battle.</mark>",
+    "lead": "Turn any TV into a Pokémon stadium. Friends scan a QR, build their teams on their phones and battle together on the big screen. No accounts, nothing to install.",
+    "host": "Host a battle",
+    "codeLabel": "Room code",
+    "codePlaceholder": "CODE",
+    "joinButton": "Join",
+    "sceneTurn": "Your turn!",
+    "join": "Join a game"
+  },
+  "battle": {
+    "fight": "FIGHT",
+    "pokemon": "Pokémon"
   },
   "formats": {
     "singles": "Singles",
@@ -32,37 +48,69 @@
     "en": "English"
   },
   "host": {
+    "fullscreen": "Fullscreen",
+    "room": "Room",
+    "lobby": {
+      "title": "Battle lobby",
+      "hint": "New trainers join the team with fewer players. They can switch from their phone.",
+      "format": "Format",
+      "vs": "VS"
+    },
+    "join": {
+      "title": "Join from your phone",
+      "orVisit": "or open <b>{{url}}</b>",
+      "stepScan": "Scan the QR with your camera",
+      "stepProfile": "Pick a name and a trainer",
+      "stepTeam": "Choose the red or blue team",
+      "seats": "{{count}} / {{max}} trainers"
+    },
+    "teamCount": "{{count}} / {{max}} trainers",
+    "openSlot": "Open slot · scan to join",
+    "kick": "Kick {{name}}",
+    "startGame": "Start game",
+    "composition": {
+      "waiting": "Waiting for trainers…",
+      "waitingHint": "Scan the QR code to join.",
+      "valid": "{{label}} {{format}} — ready to go!",
+      "validHint": "Everyone builds their team on their phone next.",
+      "TEAM_EMPTY": "The {{team}} needs at least one trainer",
+      "TEAM_TOO_LARGE": "{{format}} allows {{max}} trainer per team ({{team}})",
+      "hint": {
+        "TEAM_EMPTY": "Scan the QR code to join, or move a trainer to that team.",
+        "TEAM_TOO_LARGE": "Switch to Doubles or move a trainer to the other team."
+      }
+    },
+    "teamBuilding": {
+      "title": "Team building",
+      "subtitle": "Trainers are picking their Pokémon on their phones. Teams stay secret until the battle.",
+      "readyCount": "{{ready}} / {{total}} ready",
+      "waiting": "Waiting for trainers…",
+      "cancel": "Cancel",
+      "comingSoon": "Players are building their teams on their phones. (Coming in Phase 1.)",
+      "backToLobby": "Back to lobby"
+    },
     "roomCode": "Room code",
     "scanToJoin": "Scan to join",
     "orVisit": "or open {{url}}",
     "format": "Format",
     "language": "Language",
-    "startGame": "Start",
-    "kick": "Kick",
     "waitingForPlayers": "Waiting for players…",
     "emptyTeam": "No trainers yet",
-    "composition": {
-      "valid": "{{label}} {{format}}",
-      "TEAM_EMPTY": "The {{team}} needs at least one player",
-      "TEAM_TOO_LARGE": "{{format}} allows at most {{max}} per team ({{team}})"
-    },
-    "teamBuilding": {
-      "title": "Team building",
-      "comingSoon": "Players are building their teams on their phones. (Coming in Phase 1.)",
-      "backToLobby": "Back to lobby"
-    },
     "hostDisconnectedWarning": "Keep this screen open: it is the game board."
   },
   "controller": {
-    "joinTitle": "Join room {{code}}",
+    "joinTitle": "Join the battle",
     "name": "Your name",
     "namePlaceholder": "Trainer name",
-    "chooseTrainer": "Choose your trainer",
-    "randomTrainer": "Random",
-    "join": "Join",
+    "trainer": "Trainer",
+    "randomTrainer": "Random trainer",
+    "join": "Join room",
     "joining": "Joining…",
-    "yourTeam": "You are on the {{team}}",
-    "switchTo": "Move me to the {{team}}",
+    "chooseTeam": "Choose your team",
+    "teamSlots": "{{count}} / {{max}}",
+    "openSlot": "Open slot",
+    "joinTeam": "Join the {{team}}",
+    "onThisTeam": "You're on this team",
     "leave": "Leave room",
     "waitingForHost": "Waiting for the host to start…",
     "hostOffline": "The game screen is offline. Waiting for it to come back…",
@@ -72,7 +120,10 @@
       "replaced": "This room was opened on another tab or device.",
       "roomClosed": "The room was closed."
     },
-    "joinAgain": "Join again"
+    "joinAgain": "Join again",
+    "chooseTrainer": "Choose your trainer",
+    "yourTeam": "You are on the {{team}}",
+    "switchTo": "Move me to the {{team}}"
   },
   "errors": {
     "INVALID_PAYLOAD": "Something in the request was not valid.",

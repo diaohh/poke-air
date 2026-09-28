@@ -21,9 +21,9 @@ export function Stage({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-black">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-canvas-deep">
       <div
-        className="relative shrink-0 overflow-hidden bg-surface"
+        className="stage shrink-0"
         style={{
           width: STAGE_WIDTH,
           height: STAGE_HEIGHT,

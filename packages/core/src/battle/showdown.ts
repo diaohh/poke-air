@@ -46,9 +46,12 @@ export const SHOWDOWN_FORMATS = {
 
 /**
  * Format ids battles actually start with. Champions custom games enable Team Preview, which v1 has
- * no phase for (decision D-20).
+ * no phase for (decision D-20). `+Past` lets a Mega that needs a move instead of a Mega Stone
+ * (Rayquaza knowing Dragon Ascent) Mega Evolve: the sim only allows it with that tag in Gen 9
+ * (decision D-41). Custom rules are comma-separated with no spaces (`Battle` doesn't trim them).
  */
+const BATTLE_RULES = '@@@!Team Preview,+Past';
 export const BATTLE_FORMAT_IDS = {
-  singles: `${SHOWDOWN_FORMATS.singles}@@@!Team Preview`,
-  doubles: `${SHOWDOWN_FORMATS.doubles}@@@!Team Preview`,
+  singles: `${SHOWDOWN_FORMATS.singles}${BATTLE_RULES}`,
+  doubles: `${SHOWDOWN_FORMATS.doubles}${BATTLE_RULES}`,
 } as const;

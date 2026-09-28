@@ -12,7 +12,7 @@ import { getChampionsDex } from '../battle/showdown.js';
 import { learnableMoves, legalItems, legalSpecies } from './legality.js';
 
 /** Bump when the shape or the selection logic of the generated data changes. */
-export const TEAM_BUILDER_DATA_VERSION = 3;
+export const TEAM_BUILDER_DATA_VERSION = 4;
 
 /**
  * Builds the phone's team builder data from the Champions dex and the Casual ruleset
@@ -80,6 +80,11 @@ export function buildTeamBuilderData(stamp: string): TeamBuilderData {
         .map((other) => other.requiredItem as string)
         .filter((item) => itemNames.has(item));
       if (megaStones.length > 0) entry.megaStones = megaStones;
+      // Megas triggered by a move instead of a stone (Rayquaza → Dragon Ascent, decision D-41).
+      const megaMove = (forme.otherFormes ?? [])
+        .map((name) => dex.species.get(name))
+        .find((other) => other.exists && other.isMega && other.requiredMove)?.requiredMove;
+      if (megaMove) entry.megaMove = megaMove;
       const required = (
         forme.requiredItems ?? (forme.requiredItem ? [forme.requiredItem] : [])
       ).filter((item) => itemNames.has(item));

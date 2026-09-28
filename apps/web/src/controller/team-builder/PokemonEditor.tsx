@@ -231,6 +231,19 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
             {t('teamBuilder.editor.megaHint', { item: species.megaStones.join(' / ') })}
           </p>
         )}
+        {species.megaMove && (
+          <p className="-mt-1.5 flex flex-wrap items-center gap-1.5 px-1 text-[13px] font-semibold text-ink-2">
+            {draft.moves.includes(species.megaMove) ? (
+              <>
+                <span className="tag tag--mega text-[10px]">{t('battle.megaTag')}</span>
+                {t('teamBuilder.editor.megaMoveReady', { move: species.megaMove })}
+              </>
+            ) : (
+              t('teamBuilder.editor.megaMoveHint', { move: species.megaMove })
+            )}
+          </p>
+        )}
+
         <section className="phone-card flex shrink-0 flex-col gap-2 rounded-[22px] p-3.5">
           <h3 className="field-label text-xs">{t('teamBuilder.editor.ability')}</h3>
           <div className="flex flex-wrap gap-2" role="radiogroup">

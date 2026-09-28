@@ -305,6 +305,8 @@
       "item": "Item",
       "noItem": "No item",
       "megaHint": "Mega Evolves holding {{item}}.",
+      "megaMoveHint": "Mega Evolves knowing {{move}}: no Mega Stone needed.",
+      "megaMoveReady": "Knows {{move}}: it can Mega Evolve without a Mega Stone.",
       "ability": "Ability",
       "nature": "Nature",
       "moves": "Moves",

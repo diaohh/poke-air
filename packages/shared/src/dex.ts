@@ -28,6 +28,8 @@ export interface DexSpecies {
   learnset: number[];
   /** Mega Stones (item names) that Mega Evolve this species. */
   megaStones?: string[];
+  /** Move that Mega Evolves this species without a Mega Stone (Rayquaza: Dragon Ascent). */
+  megaMove?: string;
   /** Items this forme must hold (Arceus / Silvally formes, Ogerpon masks…). */
   requiredItems?: string[];
   /** Fixed max HP (Shedinja). */

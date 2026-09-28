@@ -69,6 +69,5 @@ export async function buildApp({ config, rooms = new RoomManager(), logger }: Ap
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces())
     .flat()
-    .filter((net) => net && net.family === 'IPv4' && !net.internal)
-    .map((net) => net!.address);
+    .flatMap((net) => (net && net.family === 'IPv4' && !net.internal ? [net.address] : []));
 }

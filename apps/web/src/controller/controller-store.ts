@@ -1,9 +1,12 @@
 import {
   randomTrainerAvatar,
+  type BattleRequestPayload,
+  type BattleWaiting,
   type ErrorCode,
   type PlayerRemovedReason,
   type PublicRoomState,
   type TeamId,
+  type TeamState,
   type TrainerAvatar,
 } from '@poke-air/shared';
 import { create } from 'zustand';
@@ -27,8 +30,17 @@ interface ControllerStore {
   status: ControllerStatus;
   online: boolean;
   room?: PublicRoomState;
+  /** When the last `room:state` arrived (local clock), for its countdown. */
+  roomAt: number;
   playerId?: string;
   profile: Profile;
+  /** Own team (owner-only `team:state`). */
+  team?: TeamState;
+  /** Current battle menu; `null` until the first `battle:request` of a battle. */
+  battle: BattleRequestPayload | null;
+  waiting?: BattleWaiting & { receivedAt: number };
+  /** A team/battle action is waiting for its ack. */
+  busy: boolean;
   error?: ErrorCode | 'CONNECTION';
   removedReason?: PlayerRemovedReason;
   /** Opens the socket for a room code; auto-rejoins a saved seat. Returns a cleanup function. */
@@ -37,6 +49,13 @@ interface ControllerStore {
   join: () => Promise<void>;
   switchTeam: (team: TeamId) => Promise<void>;
   leave: () => Promise<void>;
+  randomize: (slots?: number[]) => Promise<void>;
+  clearSlot: (slot: number) => Promise<void>;
+  setReady: (ready: boolean) => Promise<void>;
+  choose: (choice: string) => Promise<void>;
+  undo: () => Promise<void>;
+  forfeit: () => Promise<void>;
+  clearError: () => void;
 }
 
 const PROFILE_KEY = 'profile';
@@ -45,6 +64,15 @@ let socket: PlayerSocket | undefined;
 
 function initialProfile(): Profile {
   return local.get<Profile>(PROFILE_KEY) ?? { name: '', avatar: randomTrainerAvatar() };
+}
+
+/** A short buzz when the phone has something new to decide (ignored where unsupported). */
+function buzz(): void {
+  try {
+    navigator.vibrate?.(60);
+  } catch {
+    // Not critical.
+  }
 }
 
 export const useControllerStore = create<ControllerStore>((set, get) => {
@@ -69,24 +97,43 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
         playerId: result.playerId,
         reconnectToken: result.reconnectToken,
       });
-      set({ status: 'joined', playerId: result.playerId, room: result.room });
+      set({
+        status: 'joined',
+        playerId: result.playerId,
+        room: result.room,
+        roomAt: Date.now(),
+      });
       return;
     }
     if (seat) local.set(seatKey(code), undefined); // Stale seat: fall back to a fresh join.
     set({ status: 'form', error: result.error.code });
   };
 
+  /** Sends a team/battle action; stores the error code on failure. Returns success. */
+  const act = async (
+    send: (s: PlayerSocket) => Promise<{ ok: boolean; error?: { code: ErrorCode } }>,
+  ) => {
+    if (!socket) return false;
+    set({ busy: true, error: undefined });
+    const result = await send(socket);
+    set({ busy: false, ...(result.ok ? {} : { error: result.error?.code }) });
+    return result.ok;
+  };
+
   return {
     status: 'connecting',
     online: false,
+    roomAt: 0,
     profile: initialProfile(),
+    battle: null,
+    busy: false,
 
     open: (rawCode) => {
       const code = rawCode.toUpperCase();
       const current = createPlayerSocket();
       socket = current;
       const hasSeat = Boolean(local.get<Seat>(seatKey(code)));
-      set({ code, status: 'connecting', room: undefined, error: undefined });
+      set({ code, status: 'connecting', room: undefined, error: undefined, battle: null });
 
       current.on('connect', () => {
         set({ online: true });
@@ -97,7 +144,21 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
       });
       current.on('disconnect', () => set({ online: false }));
       current.on('connect_error', () => set({ online: false }));
-      current.on('room:state', (room) => set({ room }));
+      current.on('room:state', (room) => {
+        // Leaving the battle phase forgets the old battle menu.
+        const battle = room.phase === 'BATTLE' ? get().battle : null;
+        set({ room, roomAt: Date.now(), battle });
+      });
+      current.on('team:state', (team) => set({ team }));
+      current.on('battle:request', (payload) => {
+        const previous = get().battle?.request;
+        const fresh = payload.request && payload.request.rqid !== previous?.rqid;
+        if (fresh && payload.request?.kind !== 'wait' && !payload.choice) buzz();
+        set({ battle: payload });
+      });
+      current.on('battle:waiting', (waiting) =>
+        set({ waiting: { ...waiting, receivedAt: Date.now() } }),
+      );
       current.on('player:removed', (reason) => {
         local.set(seatKey(code), undefined);
         set({ status: 'removed', removedReason: reason, room: undefined, playerId: undefined });
@@ -120,21 +181,48 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
     join: sendJoin,
 
     switchTeam: async (team) => {
-      if (!socket) return;
-      const result = await socket.emitWithAck('player:switchTeam', { team });
-      if (!result.ok) set({ error: result.error.code });
+      await act((s) => s.emitWithAck('player:switchTeam', { team }));
     },
 
     leave: async () => {
       const { code } = get();
-      if (!socket || !code) return;
-      const result = await socket.emitWithAck('player:leave', {});
-      if (!result.ok) {
-        set({ error: result.error.code });
-        return;
-      }
+      if (!code) return;
+      if (!(await act((s) => s.emitWithAck('player:leave', {})))) return;
       local.set(seatKey(code), undefined);
-      set({ status: 'form', room: undefined, playerId: undefined });
+      set({ status: 'form', room: undefined, playerId: undefined, team: undefined });
     },
+
+    randomize: async (slots) => {
+      await act((s) => s.emitWithAck('team:randomize', slots ? { slots } : {}));
+    },
+    clearSlot: async (slot) => {
+      await act((s) => s.emitWithAck('team:setSlot', { slot, set: null }));
+    },
+    setReady: async (ready) => {
+      await act((s) => s.emitWithAck('player:ready', { ready }));
+    },
+
+    choose: async (choice) => {
+      const battle = get().battle;
+      const request = battle?.request;
+      if (!battle || !request) return;
+      // Optimistic: show the waiting view right away (UI must react < 200 ms).
+      set({ battle: { ...battle, choice } });
+      const ok = await act((s) => s.emitWithAck('battle:choose', { choice, rqid: request.rqid }));
+      const now = get().battle;
+      if (!ok && now?.request?.rqid === request.rqid) set({ battle: { ...now, choice: null } });
+    },
+    undo: async () => {
+      const battle = get().battle;
+      if (!battle) return;
+      if (await act((s) => s.emitWithAck('battle:undo', {}))) {
+        const now = get().battle;
+        if (now) set({ battle: { ...now, choice: null } });
+      }
+    },
+    forfeit: async () => {
+      await act((s) => s.emitWithAck('battle:forfeit', {}));
+    },
+    clearError: () => set({ error: undefined }),
   };
 });

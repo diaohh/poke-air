@@ -250,7 +250,6 @@
     "leave": "Leave room",
     "waitingForHost": "Waiting for the host to start…",
     "hostOffline": "The game screen is offline. Waiting for it to come back…",
-    "teamBuildingSoon": "Team building is coming in Phase 1. Look at the big screen!",
     "removed": {
       "kicked": "You were removed from the room by the host.",
       "replaced": "This room was opened on another tab or device.",

@@ -11,10 +11,14 @@ import { enterFullscreen, isTouchDevice } from '../lib/fullscreen';
 import { TEAM_SCOPE } from '../lib/team';
 import { useRoomLocale } from '../lib/use-room-locale';
 import { useWakeLock } from '../lib/use-wake-lock';
+import { ControllerBattle } from './battle/ControllerBattle';
+import { TurnTimerChip } from './battle/TurnTimerChip';
 import { useControllerStore } from './controller-store';
 import { ControllerLobby } from './ControllerLobby';
+import { ControllerResults } from './ControllerResults';
 import { FullscreenPrompt } from './FullscreenPrompt';
 import { JoinForm } from './JoinForm';
+import { TeamBuilder } from './team-builder/TeamBuilder';
 
 /**
  * `/j/:code` — the phone controller (portrait). Themed with the player's team colors once joined;
@@ -50,7 +54,7 @@ export function ControllerScreen() {
         ) : (
           <Logo ballSize={26} className="gap-2 text-xl" />
         )}
-        <CodeChip code={roomCode} />
+        {joined && room.phase === 'BATTLE' ? <TurnTimerChip /> : <CodeChip code={roomCode} />}
       </header>
 
       {!online && status !== 'removed' && status !== 'connecting' && (
@@ -75,13 +79,11 @@ export function ControllerScreen() {
 
       {joined && room.phase === 'LOBBY' && <ControllerLobby room={room} me={me} />}
 
-      {joined && room.phase !== 'LOBBY' && (
-        // Phase 1 replaces this with the team builder and, later, the battle controls.
-        <CenteredMessage>
-          <PokeBall size={72} tone="team" animation="bounce" />
-          <p className="text-base font-semibold text-ink-2">{t('controller.teamBuildingSoon')}</p>
-        </CenteredMessage>
-      )}
+      {joined && room.phase === 'TEAM_BUILDING' && <TeamBuilder room={room} me={me} />}
+
+      {joined && room.phase === 'BATTLE' && <ControllerBattle />}
+
+      {joined && room.phase === 'RESULTS' && <ControllerResults room={room} me={me} />}
 
       {status === 'removed' && (
         <>

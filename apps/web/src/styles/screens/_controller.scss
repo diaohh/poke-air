@@ -56,3 +56,95 @@
       0 3px 0 color(wine-deep);
   }
 }
+
+// ── Team builder ───────────────────────────────────────────────────
+
+// Empty slot: dashed "add a random Pokémon" button.
+.slot-empty {
+  border: 3px dashed color-mix(in srgb, var(--c) 50%, transparent);
+  background: alpha(paper, 50%);
+  color: var(--deep);
+  cursor: pointer;
+
+  &:hover {
+    background: alpha(paper, 80%);
+  }
+}
+
+.mon-card {
+  &__chip {
+    background: color(paper-2);
+    color: color(ink-2);
+
+    b {
+      color: color(ink);
+    }
+  }
+
+  &__move {
+    background: var(--tint);
+  }
+}
+
+// ── Battle (3DS lower-screen model) ────────────────────────────────
+
+// FIGHT: the big wine button (60% of the free height).
+.big-fight {
+  --edge: #{color(wine-deep)};
+
+  @include pressable(8px);
+
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 120%, color(wine-2), color(wine) 60%);
+  color: color(paper);
+
+  &::before {
+    @include deco-ball(240px, 0.14, $light: true);
+
+    right: -70px;
+    bottom: -80px;
+  }
+}
+
+// Party row / Pokémon card on the phone.
+.party-row {
+  background: color(paper);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--deep) 28%, transparent);
+
+  &--fainted {
+    opacity: 0.55;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.phone-timer {
+  background: color(paper);
+  box-shadow: var(--shadow-lift);
+  font-variant-numeric: tabular-nums;
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: color(warn);
+  }
+
+  &--urgent {
+    background: color(team-red-tint);
+    color: color(team-red-deep);
+
+    &::before {
+      background: color(team-red);
+      animation: blink 0.6s infinite;
+    }
+  }
+}
+
+.stat-box {
+  background: color(paper-2);
+}

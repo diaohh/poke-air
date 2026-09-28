@@ -72,7 +72,7 @@ export function useBattleAudio(
     if (sfx) playSfx(sfx);
 
     if ((event.kind === 'switch' || event.kind === 'faint') && event.side) {
-      const pokemon = activePokemon(scene, event.side);
+      const pokemon = activePokemon(scene, event.side, event.position);
       // The cry follows the Poké Ball pop; a fainting Pokémon cries lower.
       const pitch = event.kind === 'faint' ? 0.8 : 1;
       if (pokemon) setTimeout(() => playCry(pokemon.species, pitch), 280);

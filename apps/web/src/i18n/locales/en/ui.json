@@ -107,6 +107,7 @@
     "log": {
       "sentOut": "{{trainer}} sent out {{pokemon}}!",
       "dragged": "{{pokemon}} was dragged out!",
+      "swapped": "{{pokemon}} switched places with its ally!",
       "used": "{{pokemon}} used <b>{{move}}</b>!",
       "superEffective": "It's super effective!",
       "resisted": "It's not very effective…",

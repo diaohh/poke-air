@@ -56,8 +56,8 @@ function events(lines: string[]): SceneEvent[] {
 describe('HostBattleModel', () => {
   it('tracks players, team sizes, active Pokémon, Mega, boosts, status and faints', () => {
     const state = sceneFromLog(LOG);
-    expect(state.sides.p1).toMatchObject({ name: 'Ana', teamSize: 1, active: 'Garchomp' });
-    expect(state.sides.p2).toMatchObject({ name: 'Ben', teamSize: 3, active: 'Gengar' });
+    expect(state.sides.p1).toMatchObject({ name: 'Ana', teamSize: 1, active: ['Garchomp'] });
+    expect(state.sides.p2).toMatchObject({ name: 'Ben', teamSize: 3, active: ['Gengar'] });
     expect(state.turn).toBe(3);
 
     const garchomp = activePokemon(state, 'p1');

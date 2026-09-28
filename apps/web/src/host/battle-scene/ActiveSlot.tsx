@@ -33,23 +33,33 @@ const ANIMATIONS: MonAnimation[] = [
   'faint',
 ];
 
+/** A slot's box on the battle field, in field pixels. */
+export interface SlotBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 interface Props {
   side: SideId;
   pokemon: ScenePokemon | undefined;
   /** Animation to play now; `animationId` changes to replay the same one. */
   animation: MonAnimation | null;
   animationId: number;
-  /** Narrower platforms (battle log panel open). */
-  compact?: boolean;
-  className?: string;
+  box: SlotBox;
+  /** Sprite size multiplier (smaller in doubles). */
+  scale: number;
+  /** Platform ellipse size. */
+  platform: { width: number; height: number };
 }
 
 /**
- * One side's Pokémon on its team-tinted platform: back sprite for red (near), front sprite for
- * blue (far). Animations are restarted imperatively on an inner element whose className React
+ * One position's Pokémon on its team-tinted platform: back sprite for red (near), front sprite
+ * for blue (far). Animations are restarted imperatively on an inner element whose className React
  * never changes, so a re-render can't cut them short.
  */
-export function ActiveSlot({ side, pokemon, animation, animationId, compact, className }: Props) {
+export function ActiveSlot({ side, pokemon, animation, animationId, box, scale, platform }: Props) {
   const mon = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -65,11 +75,8 @@ export function ActiveSlot({ side, pokemon, animation, animationId, compact, cla
 
   return (
     <div
-      className={cn(
-        'absolute flex flex-col items-center justify-end',
-        TEAM_SCOPE[SIDE_TEAM[side]],
-        className,
-      )}
+      className={cn('absolute flex flex-col items-center justify-end', TEAM_SCOPE[SIDE_TEAM[side]])}
+      style={box}
     >
       <div
         className={cn(
@@ -84,19 +91,13 @@ export function ActiveSlot({ side, pokemon, animation, animationId, compact, cla
               key={pokemon.name}
               species={pokemon.species}
               facing={near ? 'back' : 'front'}
-              scale={near ? 3.5 : 3}
+              scale={scale}
               decorative
             />
           )}
         </div>
       </div>
-      <div
-        className={cn(
-          'field-platform',
-          near ? 'h-[130px]' : 'h-[110px]',
-          near ? (compact ? 'w-[480px]' : 'w-[560px]') : compact ? 'w-[380px]' : 'w-[440px]',
-        )}
-      />
+      <div className="field-platform" style={platform} />
     </div>
   );
 }

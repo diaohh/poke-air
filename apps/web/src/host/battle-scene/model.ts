@@ -40,8 +40,11 @@ export interface SceneSide {
   id: SideId;
   name: string;
   teamSize: number;
-  /** Name of the Pokémon on the field (`null` before the first switch-in; kept after a faint). */
-  active: string | null;
+  /**
+   * Name of the Pokémon in each position (index 0 = `p1a`, 1 = `p1b` in doubles): `null` before
+   * the first switch-in; a fainted Pokémon stays until its replacement arrives.
+   */
+  active: (string | null)[];
   /** Pokémon revealed so far, in order of appearance. */
   pokemon: ScenePokemon[];
   /** Side conditions: Reflect, Stealth Rock, Tailwind… */
@@ -49,6 +52,8 @@ export interface SceneSide {
 }
 
 export interface SceneState {
+  /** Positions per side: 1 singles, 2 doubles (`|gametype|`). */
+  activePerSide: number;
   sides: Record<SideId, SceneSide>;
   /** Weather as the protocol names it ("RainDance", "Snowscape"…). */
   weather: FieldEffect | null;
@@ -72,6 +77,7 @@ export interface Narration {
 export type NarrationKey =
   | 'sentOut'
   | 'dragged'
+  | 'swapped'
   | 'used'
   | 'superEffective'
   | 'resisted'
@@ -137,10 +143,14 @@ export interface SceneEvent {
   kind: SceneEventKind;
   /** Side the event happens to (attacker for `move`). */
   side?: SideId;
+  /** Position on that side (doubles: 0 = left `a`, 1 = right `b`). */
+  position?: number;
   /** `move`: the move name (type/category come from the log's move metadata). */
   move?: string;
   /** `move`: the side being targeted. */
   target?: SideId;
+  /** `move`: the targeted position (the first target of a spread move). */
+  targetPosition?: number;
   narration?: Narration;
 }
 
@@ -179,11 +189,12 @@ export function initialScene(): SceneState {
     id,
     name: '',
     teamSize: 0,
-    active: null,
+    active: [null],
     pokemon: [],
     conditions: [],
   });
   return {
+    activePerSide: 1,
     sides: { p1: side('p1'), p2: side('p2') },
     weather: null,
     terrain: null,
@@ -223,19 +234,36 @@ export function turnsLeft(
   return min > 0 ? { min, max } : { min: max, max };
 }
 
-export function activePokemon(state: SceneState, side: SideId): ScenePokemon | undefined {
+/** The Pokémon in a position (the first one by default: singles). */
+export function activePokemon(
+  state: SceneState,
+  side: SideId,
+  position = 0,
+): ScenePokemon | undefined {
   const { active, pokemon } = state.sides[side];
-  return active ? pokemon.find((p) => p.name === active) : undefined;
+  const name = active[position];
+  return name ? pokemon.find((p) => p.name === name) : undefined;
 }
 
 type Args = readonly string[];
 type KwArgs = Record<string, string | true | undefined>;
 
-/** "p1a: Garchomp" → { side: 'p1', name: 'Garchomp' } */
-function ident(value: string | undefined): { side: SideId; name: string } | null {
+/**
+ * "p1a: Garchomp" → { side: 'p1', position: 0, name: 'Garchomp' }. Idents without a position
+ * (e.g. `|-mega|` sometimes, `|detailschange|`) have `position: null`.
+ */
+function ident(
+  value: string | undefined,
+): { side: SideId; position: number | null; name: string } | null {
   if (!value || !/^p[12][a-c]?: /.test(value)) return null;
-  const { player, name } = Protocol.parsePokemonIdent(value as Protocol.PokemonIdent);
-  return { side: player as SideId, name };
+  const { player, position, name } = Protocol.parsePokemonIdent(value as Protocol.PokemonIdent);
+  return { side: player as SideId, position: position ? 'abc'.indexOf(position) : null, name };
+}
+
+/** Where this Pokémon stands now (by name), when the ident doesn't say. */
+function positionOf(state: SceneState, side: SideId, name: string): number | undefined {
+  const index = state.sides[side].active.indexOf(name);
+  return index >= 0 ? index : undefined;
 }
 
 /** "item: Leftovers" / "ability: Rough Skin" / "Stealth Rock" → display name. */
@@ -264,14 +292,33 @@ export function applyLine(previous: SceneState, line: string): SceneStep {
   return { state, event };
 }
 
-/** One flat switch over the protocol commands we render (docs/11-phase-1-plan.md WP5). */
+/** Reduces one line, then tags the event with the position of the Pokémon it happens to. */
 function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | null {
+  const event = reduceLine(state, args, kwArgs);
+  if (event?.side && event.position === undefined) {
+    const who = ident(args[1]);
+    const position = who && (who.position ?? positionOf(state, who.side, who.name));
+    if (who?.side === event.side && typeof position === 'number') event.position = position;
+  }
+  return event;
+}
+
+/** One flat switch over the protocol commands we render (docs/11-phase-1-plan.md WP5). */
+function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | null {
   const [command = '', a1, a2, a3] = args;
   const who = ident(a1);
   const mon = who ? findPokemon(state, who.side, who.name) : undefined;
   const pokemon = mon?.name ?? who?.name ?? '';
 
   switch (command) {
+    case 'gametype': {
+      const positions = a1 === 'doubles' ? 2 : a1 === 'triples' ? 3 : 1;
+      state.activePerSide = positions;
+      for (const side of Object.values(state.sides)) {
+        side.active = Array.from({ length: positions }, (_, i) => side.active[i] ?? null);
+      }
+      return null;
+    }
     case 'player': {
       if (a1 === 'p1' || a1 === 'p2') {
         if (a2) state.sides[a1].name = a2;
@@ -296,14 +343,17 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
     case 'replace': {
       if (!who || !a2) return null;
       const side = state.sides[who.side];
+      const position = who.position ?? 0;
+      while (side.active.length <= position) side.active.push(null);
       const next = upsertPokemon(state, who.side, who.name, a2);
       if (a3) applyHealth(next, a3);
       if (command !== 'replace') {
-        const leaving = side.active && findPokemon(state, who.side, side.active);
+        const leavingName = side.active[position];
+        const leaving = leavingName ? findPokemon(state, who.side, leavingName) : undefined;
         if (leaving && leaving !== next) leaving.boosts = {};
         next.boosts = {};
       }
-      side.active = next.name;
+      side.active[position] = next.name;
       if (command === 'replace') return null;
       return {
         kind: 'switch',
@@ -332,12 +382,34 @@ function reduce(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent | nul
     case 'move': {
       if (!who || !a2) return null;
       const target = ident(a3);
+      const targetPosition = target
+        ? (target.position ?? positionOf(state, target.side, target.name))
+        : undefined;
       return {
         kind: 'move',
         side: who.side,
         move: a2,
         target: target?.side ?? (who.side === 'p1' ? 'p2' : 'p1'),
+        ...(targetPosition === undefined ? {} : { targetPosition }),
         narration: { key: 'used', params: { pokemon, move: a2 } },
+      };
+    }
+    case 'swap': {
+      // Ally Switch: `|swap|p1a: X|1` moves X to position 1, the Pokémon there takes its place.
+      if (!who || a2 === undefined) return null;
+      const side = state.sides[who.side];
+      const from = who.position ?? positionOf(state, who.side, who.name);
+      const to = Number(a2);
+      if (from === undefined || !Number.isInteger(to) || from === to) return null;
+      while (side.active.length <= Math.max(from, to)) side.active.push(null);
+      const moving = side.active[from] ?? null;
+      side.active[from] = side.active[to] ?? null;
+      side.active[to] = moving;
+      return {
+        kind: 'effect',
+        side: who.side,
+        position: to,
+        narration: { key: 'swapped', params: { pokemon } },
       };
     }
     case '-damage':

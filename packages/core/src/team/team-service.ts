@@ -8,6 +8,7 @@ import {
 import { RoomError } from '../rooms/room-error.js';
 import { getChampionsDex, SHOWDOWN_FORMATS, Teams, type ShowdownSet } from '../battle/showdown.js';
 import { casualValidator } from './legality.js';
+import { championsRandomSet, generatedSet } from './random-set.js';
 
 export { BATTLE_LEVEL };
 
@@ -46,6 +47,37 @@ export class TeamService {
       }
     }
     return picked;
+  }
+
+  /**
+   * A new set for this species (decision D-52): moves, ability, item, nature and Stat Points.
+   * Showdown's Champions random set when the species (or its Mega) has one, else a set generated
+   * from its legal movepool. Always validated; `INVALID_SET` for unknown or illegal species.
+   */
+  randomSetFor(speciesName: string, random: () => number = Math.random): PokemonSetData {
+    const species = getChampionsDex().species.get(speciesName);
+    if (!species.exists) {
+      throw new RoomError('INVALID_SET', { details: `${speciesName} is not a Pokémon` });
+    }
+    const champions = championsRandomSet(species, random);
+    if (champions) {
+      try {
+        // Random sets use Level Clause levels: `toSetData` forces level 50; a Mega set comes back
+        // as the base species holding its stone.
+        return this.validateSet(this.toSetData(champions));
+      } catch {
+        // Fall through to a generated set.
+      }
+    }
+    let problem: unknown;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        return this.validateSet(generatedSet(species, random));
+      } catch (error) {
+        problem = error;
+      }
+    }
+    throw problem instanceof RoomError ? problem : new RoomError('INVALID_SET');
   }
 
   /**

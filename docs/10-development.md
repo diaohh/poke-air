@@ -20,7 +20,7 @@ pnpm dev              # builds the team builder data if needed, then server :300
 Open `http://localhost:5173/host` on the PC. The QR automatically points to the PC's **LAN IP**
 (the Host asks the backend's `/api/info` for it), so phones on the same Wi-Fi can scan and join.
 
-Sprites: trainers, the item icon sheet (`sprites/itemicons-sheet.png`, D-42) and Pokémon (front + back
+Sprites: trainers, the item icon sheet (`sprites/itemicons-sheet.png`, D-42), the Substitute doll and Pokémon (front + back
 for every legal species — the team builder allows 1234 — plus the randomizer's species and their Mega /
 Primal / battle-only formes) are downloaded once from Showdown and never committed. The script prefers
 `gen5ani`, then `ani`, then static `gen5`, and writes `apps/web/public/sprites/pokemon-manifest.json`; the
@@ -33,6 +33,12 @@ items, abilities, natures for the Casual ruleset, ~157 KB gzip, git-ignored). `p
 first; it takes ≈ 9 s and is skipped while the file matches the installed Showdown version + generator
 version (`TEAM_BUILDER_DATA_VERSION` in `core/team/dex-data.ts`: bump it when the data shape or selection
 changes). `--force` rebuilds: `pnpm --filter @poke-air/data build:data -- --force`.
+
+Localized names and descriptions (Phase 4): `pnpm build:locales` also downloads PokeAPI's flavor-text CSVs
+(~13 MB, once) for `desc.es-ES.json`. `pnpm build:locales` (run by `pnpm dev` / `pnpm build` after `build:data`) downloads
+Showdown's `data/text/es` tables once at a pinned commit into `packages/data/.cache/` (git-ignored, needs
+network the first time) and writes `apps/web/public/data/names.es-ES.json` (~28 KB gzip). Offline without a
+cache it only warns and the names stay English. `--force` rebuilds.
 
 LAN notes:
 
@@ -56,6 +62,7 @@ LAN notes:
 | `pnpm check`                                 | typecheck + lint + format:check + test (run before handing work back)                     |
 | `pnpm build`                                 | `build:data`, then web → `apps/web/dist`; server → `apps/server/dist` (tsup bundle)       |
 | `pnpm build:data`                            | Team builder JSON → `apps/web/public/data/teambuilder.json` (skipped when up to date)     |
+| `pnpm build:locales`                         | Localized names → `apps/web/public/data/names.<locale>.json` (skipped when up to date)    |
 | `pnpm fetch:sprites`                         | Download missing sprites + write `pokemon-manifest.json` (idempotent, sequential, polite) |
 | `pnpm fetch:audio`                           | Optional: Pokémon cries + `audio/cries-manifest.json` (git-ignored, ~4 MB)                |
 | `pnpm test:e2e`                              | Playwright: 1 Host + 2 phones play a battle (reuses `pnpm dev`, system Edge)              |
@@ -221,6 +228,12 @@ Example: a new player action `player:foo`.
   browser only sees the phone Home in the devtools device mode (or Playwright `hasTouch` + `isMobile`).
 - **The standalone team builder `/teams`** opens its own `/player` socket and never joins a room; its
   teams are saved teams (localStorage, D-39/D-53) shared with the in-room Team menu.
+- **`@pkmn/protocol` renames some lines:** `-activate … move: Protect` arrives as `-block`; check
+  `Protocol.parseBattleLine` output (not the raw line) when a protocol line seems ignored by the model.
+- **Localized names are display-only (Phase 4):** the server, the simulator and the Showdown text format
+  use English names; show them through `useDexNames()` and never send a localized name back. Every
+  `ui.json` key must exist in every locale (the typecheck enforces it); narration stats use
+  `battle.log.stats.*` (they carry the article in Spanish).
 - **Doubles (Phase 3):** a one-Pokémon side crashes the sim (hence `Room.minimumFor`); `default` inside a
   comma-separated choice completes every remaining position (the OwnershipLayer builds explicit actions);
   the merged side choice needs every position, `pass` included; `side.pokemon` in requests is reordered by

@@ -327,4 +327,3 @@ chips now never break inside and the row wraps whole chips.
 7. Host battle: Rain / Sun / Sand / Snow overlays; Electric / Grassy / Misty / Psychic terrain tint;
    Trick Room; Reflect / Light Screen / Aurora Veil / Tailwind in front of the right side; Stealth Rock,
    Spikes ×1–3, Toxic Spikes ×1–2, Sticky Web on the right side's ground; all disappear when they end.
-

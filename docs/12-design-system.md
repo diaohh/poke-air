@@ -161,6 +161,10 @@ Importing more than 6 Pokémon asks which to keep (see below).
 ### Host (1920×1080 `Stage`, scaled)
 
 - **Header:** logo left; right: language pill, fullscreen, close room. No phase stepper.
+- **Language pill (Home and Host):** globe + language name + ▾ opening our own menu (paper card,
+  float shadow, options in their own language, active row wine-tint, ✓ on the current one); never the
+  native `<select>` list. Spanish labels are kept short so headers and buttons never wrap ("Equipo red",
+  "2 / 2", "Espacio libre").
 - **Lobby:** left = title + format segmented control (Singles / Doubles) · two team panels with a gold
   "VS" burst between them (112 px, above the panels) · open slots shown dashed · footer = composition status card + **Start game**
   (disabled while invalid). Right = **wine join panel** (560 px): room code as 4 tiles, QR on white, URL,
@@ -190,6 +194,11 @@ Importing more than 6 Pokémon asks which to keep (see below).
   of that side's Pokémon, Tailwind streaks, hazards on that side's ground (Stealth Rock rocks, Spikes and
   Toxic Spikes one set per layer, a Sticky Web). Decorative only: the chips keep the turns left. Top chips
   never break inside; the row wraps whole chips.
+- **Substitute:** the doll (self-hosted Showdown gen5 sprite, 1.6×, base on the platform) replaces the
+  Pokémon while it lasts; "Substitute" tag (grass-green tint) on the side card and on the phone.
+- **Stat changes:** floating badge over the Pokémon ("▲ Attack +2" ok colors / "▼ Defense −1" scarlet,
+  30 px, rises and fades in 1.4 s) + green / red glow on the boost / unboost animation; stages on the
+  side card and the phone's active card as ▲ green / ▼ red tags with short stat names.
 - **Doubles (Phase 3, D-48):** two platforms per side with smaller sprites and trainers; the far side is
   mirrored (p2a on the right, facing p1a), so "left / right" on the TV is what the phones' target picker
   shows. Side cards get narrower and list one compact row per position (name, HP bar, %, then status /

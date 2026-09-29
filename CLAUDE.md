@@ -37,9 +37,11 @@ phones are the controllers).
   team builder `/teams` (stateless `builder:*` events), editor 🎲 = new set for the same species, "choose which
   Pokémon to keep" on oversized imports, Host field effect visuals, smaller lobby VS, effect chips as "left/total", close room / back home (D-50…D-57,
   docs 14).
-- ✅ Spike S4 done; **Phase 4 (Spanish) planned** in `docs/15-phase-4-plan.md` (not implemented).
-- Unit tests for Phases 2–3 are deliberately deferred until after validation (lists in docs 13 and 14).
-- 👉 **Next:** manual validation → those tests → Phase 4 (Spanish; plan in `docs/15-phase-4-plan.md`).
+- ✅ **Phase 4 implemented** (pending manual validation): Spanish (es-ES) UI and Pokémon names
+  (`pnpm build:locales` from Showdown `data/text/es` at a pinned commit, `useDexNames()`, bilingual search).
+  Plan, spike S4 results and checklist: `docs/15-phase-4-plan.md`.
+- Unit tests for Phases 2–4 are deliberately deferred until after validation (lists in docs 13, 14 and 15).
+- 👉 **Next:** manual validation of Phases 2–4 → the tests listed in docs 13–15 → Phase 5 (polish).
 - Not done on purpose: CI/CD and deployment (decision D-23).
 
 ## Documents
@@ -53,14 +55,14 @@ phones are the controllers).
 | `docs/05-game-rules-and-mechanics.md`   | Champions format, ruleset presets, randomizer, **verified simulator facts**        |
 | `docs/06-i18n.md`                       | i18n: language availability in sources, per-room locale                            |
 | `docs/07-hosting-and-deployment.md`     | $0 hosting strategy and alternatives                                               |
-| `docs/08-decisions.md`                  | Decision log (D-01…D-57) + open questions                                          |
+| `docs/08-decisions.md`                  | Decision log (D-01…D-63) + open questions                                          |
 | `docs/09-roadmap.md`                    | Status, spikes, phases, risks                                                      |
 | `docs/10-development.md`                | **Setup, commands, env vars, feature recipe, testing, pitfalls**                   |
 | `docs/11-phase-1-plan.md`               | Phase 1 plan + **what was actually built** (§ Status)                              |
 | `docs/12-design-system.md`              | **UI design system** (tokens, components, screen specs) — read before any UI work  |
 | `docs/13-phase-2-plan.md`               | Battle-info iteration + Phase 2 (team builder): analysis, S3 results, status       |
 | `docs/14-phase-3-plan.md`               | Phase 3 (doubles, OwnershipLayer, item icons) + feedback round 1: S2, decisions    |
-| `docs/15-phase-4-plan.md`               | Phase 4 (Spanish) plan: spike S4 coverage results, proposed decisions, TODO        |
+| `docs/15-phase-4-plan.md`               | Phase 4 (Spanish): spike S4 coverage, decisions, what was built, checklist         |
 | `docs/design/ui-mockup.html`            | Interactive HTML mockup (~70 KB; open only for a specific screen, the .md wins)    |
 
 ## Commands
@@ -71,7 +73,8 @@ pnpm install
 pnpm fetch:sprites     # trainer + Pokémon sprites + item icon sheet → apps/web/public/sprites (git-ignored, never commit)
 pnpm fetch:audio       # optional Pokémon cries → apps/web/public/audio/cries (git-ignored, never commit)
 pnpm build:data        # team builder JSON → apps/web/public/data (git-ignored; dev/build run it, skips if current)
-pnpm dev               # build:data + server :3001 + web :5173 → open http://localhost:5173/host
+pnpm build:locales     # localized Pokémon names (Showdown data/text at a pinned commit) → apps/web/public/data
+pnpm dev               # build:data + build:locales + server :3001 + web :5173 → open http://localhost:5173/host
 pnpm check             # typecheck + lint (ESLint + Stylelint) + format:check + test — run before handing work back
 pnpm test:e2e          # Playwright: 1 Host + 2 phones play a battle (system Edge; reuses pnpm dev)
 pnpm lint:fix          # ESLint + Stylelint autofix; `pnpm format` for Prettier
@@ -97,7 +100,8 @@ pnpm --filter @poke-air/core sim:smoke   # simulator benchmark
    in any phase; the Host resumes with `hostToken` (sessionStorage).
 7. **No hardcoded Pokémon data.** Everything comes from the Showdown dex (and its `data/text/<lang>` tables
    for translations, built by `packages/data`).
-8. **i18n from day one.** No user-facing string literals: typed keys in `apps/web/src/i18n/locales/en/ui.json`.
+8. **i18n from day one.** No user-facing string literals: typed keys in `apps/web/src/i18n/locales/en/ui.json`
+   (every key also in `es-ES`); Pokémon names are shown through `useDexNames()` (the server speaks English).
    The server sends error **codes**, never prose.
 
 ## Protocol conventions

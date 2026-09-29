@@ -18,7 +18,16 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 | $0 hosting                                        | Low–Medium                                      | Render cold start handled by UX; memory limits to be measured                              |
 | Legal                                             | Low risk without monetization or mass promotion | See `03`                                                                                   |
 
-## Current status (2026-09-28, Phase 3)
+## Current status (2026-09-28, Phase 4)
+
+- ✅ **Phase 4 implemented** (pending manual validation): the whole UI and every Pokémon name in Spanish
+  (Spain) — `pnpm build:locales` (Showdown `data/text/es` at a pinned commit), `useDexNames()`, es-ES UI
+  file, bilingual search, rooms created in the Host screen's language (D-58…D-61, `15-phase-4-plan.md`).
+- ✅ **Phase 3 feedback round 2**: effect chips as "left/total", close room / back to Home (D-56, D-57).
+- 👉 **Next:** manual validation of Phases 2–4 (checklists in `13`, `14`, `15`) → the tests listed there
+  (§ Tests to add) → **Phase 5** (polish) and, when convenient, the first deploy (D-23, spike S6).
+
+### Status on 2026-09-28 (Phase 3)
 
 - ✅ **Phase 3 implemented** (pending manual validation; unit tests after it, as with Phase 2): spike S2,
   doubles 1v1 / 1v2 / 2v2 with the OwnershipLayer (per-player requests, per-position merge, forced-switch
@@ -30,7 +39,7 @@ used as a library. Even Spanish names and most battle messages exist. What remai
   standalone team builder `/teams`, editor 🎲 = new set for the same species, "choose which Pokémon to
   keep" when a team exceeds the slots, field effect visuals on the Host, smaller lobby VS burst
   (D-50…D-55, `14-phase-3-plan.md` § Feedback round 1).
-- ✅ **Spike S4 (i18n)** done; Phase 4 planned in `docs/15-phase-4-plan.md` (not implemented).
+- ✅ **Spike S4 (i18n)** done; Phase 4 planned in `docs/15-phase-4-plan.md`.
 - 👉 **Next:** manual validation of Phases 2–3 and the feedback round (checklists in `13` and `14`) →
   the tests listed in `13` and `14` § Tests to add → **Phase 4** (Spanish, plan in `15`).
 
@@ -145,7 +154,7 @@ Showdown text import/export, saved teams on the phone. Spike S3 done; S4 is redu
 OwnershipLayer, target selection, Mega per player with team parity, doubles 1v1 / 1v2 / 2v2. Also item
 icons (D-42). Known gap: Revival Blessing (picking a fainted Pokémon) is left to the turn timer.
 
-### Phase 4 — Spanish (es-ES) — next (planned in `docs/15-phase-4-plan.md`)
+### Phase 4 — Spanish (es-ES) ✅ (pending manual validation) — see `docs/15-phase-4-plan.md`
 
 Locale tables from Showdown + our overrides, localized UI and battle narration, bilingual search.
 Spike S4 done (coverage: moves / abilities / natures / types 100 %, species 81 %, items 78 %,
@@ -153,18 +162,18 @@ descriptions 0 %). TODO:
 
 - [x] **Spike S4 (i18n part):** Showdown `data/text/es` at a pinned commit, coverage measured, own
       narration keys instead of a template engine (proposed D-58), names JSON ≈ 58 KB.
-- [ ] `packages/data`: `build:locales` → `names.es-ES.json` (species / moves / abilities / items / types /
+- [x] `packages/data`: `build:locales` → `names.es-ES.json` (species / moves / abilities / items / types /
       natures / stats by Showdown id), forme suffix table + overrides, English fallback (proposed D-59).
-- [ ] `SUPPORTED_LOCALES` adds `es-ES`; the Host language selector enables it; default to the Host
+- [x] `SUPPORTED_LOCALES` adds `es-ES`; the Host language selector enables it; default to the Host
       browser language; phones follow the room locale (`room:state`).
-- [ ] `apps/web`: `locales/es-ES/ui.json` (every key, typed like `en`, narration included), trainer
+- [x] `apps/web`: `locales/es-ES/ui.json` (every key, typed like `en`, narration included), trainer
       names, lazy-loaded names per locale (`useDexNames()`).
-- [ ] Localize by id everywhere a dex name is shown: team builder (pickers, cards, editor, `/teams`),
+- [x] Localize by id everywhere a dex name is shown: team builder (pickers, cards, editor, `/teams`),
       phone battle (moves, Pokémon, items, abilities, targets), Host (side cards, narration, battle log,
       field chips, results).
-- [ ] Bilingual search in the pickers (localized + English name); Showdown import / export stays English;
+- [x] Bilingual search in the pickers (localized + English name); Showdown import / export stays English;
       descriptions and `INVALID_SET` details stay English (proposed D-60, D-38).
-- [ ] Docs: `06` (measured coverage, final architecture), `02`, `10`, `12`, `CLAUDE.md`, `15`.
+- [x] Docs: `06` (measured coverage, final architecture), `02`, `10`, `12`, `CLAUDE.md`, `15`.
 
 ### Phase 5 — Polish
 

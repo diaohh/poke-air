@@ -240,10 +240,11 @@ poke-air/
 │     │  ├─ ItemIcon.tsx          ✅ item icon from the self-hosted sheet (D-42)
 │     │  └─ ui/                   ✅ design-system primitives: Button, IconButton, Icon, PokeBall,
 │     │                              StatusPill, TeamChip, HpBar, Logo, CodeChip, Sheet
-│     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en/ui.json
+│     ├─ i18n/                    ✅ i18next setup, typed keys, locales/en + es-ES/ui.json
 │     └─ lib/                     ✅ backend URL/QR URL, sockets, storage, wake lock, room locale, cn, team,
 │                                    pokemon-sprites (manifest), pokemon-types, use-countdown,
-│                                    team-dex (builder data), stats (Champions formula), saved-teams
+│                                    team-dex (builder data), stats (Champions formula), saved-teams,
+│                                    dex-names (localized Pokémon names, Phase 4)
 ├─ packages/
 │  ├─ shared/src/                 ✅ constants, avatars, errors, team, team-text (Showdown export), dex
 │  │                                 (builder data types), battle, room-state, schemas (zod), events
@@ -258,7 +259,7 @@ poke-air/
 │  │  │                              effects (dex durations)
 │  │  └─ time.ts                  ✅ injectable Scheduler (fake one in testing/)
 │  └─ data/scripts/               ✅ build-dex.ts (team builder JSON), fetch-sprites.ts (trainers + Pokémon +
-│                                    manifest), fetch-audio.ts (cries) · 🔜 locales
+│                                    manifest), fetch-audio.ts (cries), build-locales.ts (names.<locale>.json)
 ├─ e2e/                          ✅ Playwright: 1 Host + 2 phones play a battle (`pnpm test:e2e`)
 └─ docs/
 ```

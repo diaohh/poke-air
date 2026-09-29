@@ -66,6 +66,7 @@ export async function buildApp({
     for (const code of removed) realtime.forgetRoom(code);
     realtime.joinLimiter.prune();
     realtime.createLimiter.prune();
+    realtime.builderLimiter.prune();
     if (removed.length > 0) app.log.info({ removed }, 'Idle rooms removed');
   }, config.roomSweepIntervalMs);
   sweepTimer.unref();

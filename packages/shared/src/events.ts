@@ -3,6 +3,9 @@ import type { ErrorPayload, Result } from './errors.js';
 import type { PublicRoomState } from './room-state.js';
 import type {
   BattleChoosePayload,
+  BuilderParseTeamPayload,
+  BuilderRandomSetPayload,
+  BuilderValidateSetPayload,
   EmptyPayload,
   HostAnimatedPayload,
   HostCreateRoomPayload,
@@ -18,7 +21,7 @@ import type {
   TeamRandomizePayload,
   TeamSetSlotPayload,
 } from './schemas.js';
-import type { TeamState } from './team.js';
+import type { PokemonSetData, TeamState } from './team.js';
 
 /**
  * Socket.IO event contracts. Naming: `domain:action`.
@@ -81,6 +84,19 @@ export interface PlayerClientToServerEvents {
   'team:randomize': (payload: TeamRandomizePayload, ack: Ack) => void;
   'team:setSlot': (payload: TeamSetSlotPayload, ack: Ack) => void;
   'team:import': (payload: TeamImportPayload, ack: Ack<TeamImportResult>) => void;
+  /** Team builder without a room (D-51): no seat needed. */
+  'builder:validateSet': (
+    payload: BuilderValidateSetPayload,
+    ack: Ack<{ set: PokemonSetData }>,
+  ) => void;
+  'builder:randomSet': (
+    payload: BuilderRandomSetPayload,
+    ack: Ack<{ set: PokemonSetData }>,
+  ) => void;
+  'builder:parseTeam': (
+    payload: BuilderParseTeamPayload,
+    ack: Ack<{ sets: PokemonSetData[] }>,
+  ) => void;
   'battle:choose': (payload: BattleChoosePayload, ack: Ack) => void;
   'battle:undo': (payload: EmptyPayload, ack: Ack) => void;
   'battle:forfeit': (payload: EmptyPayload, ack: Ack) => void;

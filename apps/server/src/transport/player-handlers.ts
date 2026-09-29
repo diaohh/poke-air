@@ -11,6 +11,7 @@ import {
   type PlayerSession,
 } from '@poke-air/shared';
 import { registerPlayerBattleHandlers, resyncPlayer } from './battle-handlers.js';
+import { registerBuilderHandlers } from './builder-handlers.js';
 import type { PlayerSocket, Realtime } from './realtime.js';
 import { withValidation, type On } from './with-validation.js';
 
@@ -156,6 +157,7 @@ export function registerPlayerHandlers(rt: Realtime): void {
     );
 
     registerPlayerBattleHandlers(rt, socket, on, currentSeat);
+    registerBuilderHandlers(rt, socket, on);
 
     socket.on('disconnect', () => detach());
   });

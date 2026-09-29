@@ -55,6 +55,9 @@ export interface RealtimeLimits {
   createPerSecond: number;
   /** Rooms one IP may keep open at the same time. */
   maxRoomsPerIp: number;
+  /** Team builder requests (`builder:*`: validate, random set, parse) burst and refill per IP. */
+  builderBurst: number;
+  builderPerSecond: number;
 }
 
 export const DEFAULT_LIMITS: RealtimeLimits = {
@@ -63,6 +66,8 @@ export const DEFAULT_LIMITS: RealtimeLimits = {
   createBurst: 5,
   createPerSecond: 1 / 30,
   maxRoomsPerIp: 5,
+  builderBurst: 30,
+  builderPerSecond: 5,
 };
 
 export interface RealtimeOptions {
@@ -89,6 +94,7 @@ export class Realtime {
   readonly limits: RealtimeLimits;
   readonly joinLimiter: RateLimiter;
   readonly createLimiter: RateLimiter;
+  readonly builderLimiter: RateLimiter;
   private readonly matches = new Map<string, MatchController>();
 
   constructor(
@@ -107,6 +113,10 @@ export class Realtime {
     this.createLimiter = new RateLimiter({
       capacity: this.limits.createBurst,
       refillPerSecond: this.limits.createPerSecond,
+    });
+    this.builderLimiter = new RateLimiter({
+      capacity: this.limits.builderBurst,
+      refillPerSecond: this.limits.builderPerSecond,
     });
   }
 

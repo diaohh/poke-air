@@ -112,6 +112,20 @@ export const teamImportSchema = z.object({
   text: z.string().trim().min(1).max(TEAM_TEXT_MAX_LENGTH),
 });
 
+// ── Team builder without a room (decision D-51): stateless, no seat needed ──
+/** Validates one set with the Casual ruleset and returns it normalized. */
+export const builderValidateSetSchema = z.object({ set: pokemonSetSchema });
+/**
+ * A random set: for `species` (its moves, ability, item, nature, Stat Points), or a random Pokémon
+ * whose base species is not in `exclude`.
+ */
+export const builderRandomSetSchema = z.object({
+  species: dexNameSchema.min(1).optional(),
+  exclude: z.array(dexNameSchema).max(POKEMON_PER_TEAM).optional(),
+});
+/** Parses and validates Showdown team text without touching any room. */
+export const builderParseTeamSchema = teamImportSchema;
+
 /**
  * One action per position the player decides, comma-separated (decision D-43):
  * `move N [target] [mega]` (target: foe 1 / 2, own -1 / -2) · `switch <slot>`; or `default`.
@@ -144,5 +158,8 @@ export type PlayerReadyPayload = z.input<typeof playerReadySchema>;
 export type TeamRandomizePayload = z.input<typeof teamRandomizeSchema>;
 export type TeamSetSlotPayload = z.input<typeof teamSetSlotSchema>;
 export type TeamImportPayload = z.input<typeof teamImportSchema>;
+export type BuilderValidateSetPayload = z.input<typeof builderValidateSetSchema>;
+export type BuilderRandomSetPayload = z.input<typeof builderRandomSetSchema>;
+export type BuilderParseTeamPayload = z.input<typeof builderParseTeamSchema>;
 export type BattleChoosePayload = z.input<typeof battleChooseSchema>;
 export type HostAnimatedPayload = z.input<typeof hostAnimatedSchema>;

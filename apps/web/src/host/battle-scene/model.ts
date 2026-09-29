@@ -217,21 +217,21 @@ function startEffect(state: SceneState, name: string): FieldEffect {
 }
 
 /**
- * Turns an effect has left (the current one included) given its dex duration: `min < max` while an
- * unseen item may extend it; once the base duration is outlived the extended value is certain.
+ * Turns an effect has left (the current one included) out of its total duration, e.g. Rain 1 of 4.
+ * The total is the dex's base duration; if the effect outlives it, an item the spectators can't
+ * see (Light Clay, weather rocks…) extended it, so the extended duration becomes the total.
  * `null` when unknown (no duration, e.g. hazards).
  */
 export function turnsLeft(
   effect: FieldEffect,
   state: Pick<SceneState, 'turn' | 'upkeep'>,
   duration: EffectDuration | undefined,
-): { min: number; max: number } | null {
+): { left: number; total: number } | null {
   if (!duration) return null;
   const elapsed = Math.max(0, state.turn - effect.since + (state.upkeep ? 1 : 0));
-  const min = duration.min - elapsed;
-  const max = duration.max - elapsed;
-  if (max <= 0) return null;
-  return min > 0 ? { min, max } : { min: max, max };
+  if (duration.min - elapsed > 0) return { left: duration.min - elapsed, total: duration.min };
+  if (duration.max - elapsed > 0) return { left: duration.max - elapsed, total: duration.max };
+  return null;
 }
 
 /** The Pokémon in a position (the first one by default: singles). */

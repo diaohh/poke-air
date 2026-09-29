@@ -248,9 +248,8 @@
         "DeltaStream": "Strong winds"
       },
       "boost": "{{stat}} {{amount}}",
-      "effectTurns": "{{effect}} · {{turns}}",
+      "effectTurns": "{{effect}} · {{left}}/{{total}}",
       "effectLayers": "{{effect}} ×{{layers}}",
-      "turnsRange": "{{min}}–{{max}}",
       "log": {
         "title": "Battle log",
         "start": "Battle start",

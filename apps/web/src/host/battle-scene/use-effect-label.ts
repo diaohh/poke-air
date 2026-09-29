@@ -1,5 +1,6 @@
 import type { EffectDuration } from '@poke-air/shared';
 import { useTranslation } from 'react-i18next';
+import { useDexNames } from '../../lib/dex-names';
 import { turnsLeft, type FieldEffect, type SceneState } from './model';
 
 /**
@@ -8,12 +9,15 @@ import { turnsLeft, type FieldEffect, type SceneState } from './model';
  */
 export function useEffectLabel() {
   const { t } = useTranslation();
+  const names = useDexNames();
   return (
-    name: string,
+    rawName: string,
     effect: FieldEffect,
     scene: SceneState,
     duration: EffectDuration | undefined,
   ): string => {
+    // Effects are named after their move ("Trampa Rocas"); weathers arrive already translated.
+    const name = names.effect(rawName);
     const turns = turnsLeft(effect, scene, duration);
     if (turns) {
       return t('host.battle.effectTurns', { effect: name, left: turns.left, total: turns.total });

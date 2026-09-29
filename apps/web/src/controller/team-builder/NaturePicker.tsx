@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { cn } from '../../lib/cn';
+import { useDexNames } from '../../lib/dex-names';
 import { calcStat } from '../../lib/stats';
 import { NavRow } from './NavRow';
 
@@ -30,6 +31,7 @@ interface Props {
  */
 export function NaturePicker({ natures, current, species, points, onPick, onClose }: Props) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const neutralNow = current && !current.plus;
   const [plus, setPlus] = useState<NatureStat | null>(
     (current?.plus as NatureStat | undefined) ?? null,
@@ -136,7 +138,9 @@ export function NaturePicker({ natures, current, species, points, onPick, onClos
               <span className="field-label text-[11px]">
                 {t('teamBuilder.natureSelector.result')}
               </span>
-              <strong className="font-display text-[34px] leading-tight">{result.name}</strong>
+              <strong className="font-display text-[34px] leading-tight">
+                {names.nature(result.name)}
+              </strong>
               {isNeutral || !result.plus || !result.minus ? (
                 <span className="text-sm font-bold text-ink-2">
                   {t('teamBuilder.natureSelector.neutralEffect')}
@@ -175,7 +179,7 @@ export function NaturePicker({ natures, current, species, points, onPick, onClos
       >
         <Icon name="check" />
         {result
-          ? t('teamBuilder.natureSelector.confirm', { nature: result.name })
+          ? t('teamBuilder.natureSelector.confirm', { nature: names.nature(result.name) })
           : t('teamBuilder.natureSelector.confirmEmpty')}
       </Button>
     </div>

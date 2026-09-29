@@ -29,7 +29,7 @@
     "joinButton": "Join",
     "sceneTurn": "Your turn!",
     "phoneLead": "Scan the QR on the big screen or type its room code. You can also build and save teams here before you play.",
-    "teamBuilder": "Team builder"
+    "teamBuilder": "Manage teams"
   },
   "battle": {
     "fight": "FIGHT",
@@ -171,7 +171,16 @@
       "itemLost": "{{pokemon}} lost its <b>{{item}}</b>!",
       "itemUsed": "{{pokemon}}'s <b>{{item}}</b> was used up!",
       "itemRevealed": "{{pokemon}} is holding <b>{{item}}</b>!",
-      "itemObtained": "{{pokemon}} obtained <b>{{item}}</b>!"
+      "itemObtained": "{{pokemon}} obtained <b>{{item}}</b>!",
+      "stats": {
+        "atk": "Attack",
+        "def": "Defense",
+        "spa": "Sp. Atk",
+        "spd": "Sp. Def",
+        "spe": "Speed",
+        "accuracy": "accuracy",
+        "evasion": "evasiveness"
+      }
     },
     "statsTitle": "Stats",
     "statPointsTitle": "Stat Points",
@@ -186,7 +195,8 @@
     "blue": "Blue team"
   },
   "locales": {
-    "en": "English"
+    "en": "English",
+    "es-ES": "Español"
   },
   "host": {
     "fullscreen": "Fullscreen",

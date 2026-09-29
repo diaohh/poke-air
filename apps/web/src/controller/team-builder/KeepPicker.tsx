@@ -5,6 +5,7 @@ import { PokemonSprite } from '../../components/PokemonSprite';
 import { Button } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { cn } from '../../lib/cn';
+import { useDexNames } from '../../lib/dex-names';
 
 interface Props {
   /** The team's Pokémon, one Showdown text block each (`splitTeamText`). */
@@ -23,6 +24,7 @@ interface Props {
  */
 export function KeepPicker({ blocks, max, busy, onBack, onConfirm }: Props) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const [picked, setPicked] = useState<number[]>(() => blocks.slice(0, max).map((_, i) => i));
 
   const toggle = (index: number) =>
@@ -63,7 +65,7 @@ export function KeepPicker({ blocks, max, busy, onBack, onConfirm }: Props) {
                   <PokemonSprite species={block.species} decorative fit />
                 </span>
                 <strong className="min-w-0 flex-1 truncate text-base font-extrabold">
-                  {block.species}
+                  {names.species(block.species)}
                 </strong>
                 {on && <Icon name="check" className="size-5 shrink-0" />}
               </button>

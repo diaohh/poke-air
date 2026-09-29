@@ -4,6 +4,7 @@ import { HpBar } from '../../components/ui/HpBar';
 import { PokeBall } from '../../components/ui/PokeBall';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { cn } from '../../lib/cn';
+import { useDexNames } from '../../lib/dex-names';
 import { TEAM_SCOPE } from '../../lib/team';
 import { activePokemon, type BoostId, type ScenePokemon, type SceneState } from './model';
 import { useEffectLabel } from './use-effect-label';
@@ -122,11 +123,14 @@ export function SideCard({
 /** Singles: the active Pokémon's name, level and a big HP bar. */
 function BigRow({ mon }: { mon: ScenePokemon | undefined }) {
   const { t } = useTranslation();
+  const names = useDexNames();
   if (!mon) return <p className="mt-4 text-[30px] font-bold text-muted">…</p>;
   return (
     <>
       <div className="mt-4 flex items-baseline justify-between gap-4">
-        <span className="truncate text-[44px] leading-tight font-extrabold">{mon.name}</span>
+        <span className="truncate text-[44px] leading-tight font-extrabold">
+          {names.species(mon.name)}
+        </span>
         <span className="shrink-0 text-2xl font-bold text-muted">
           {t('battle.level', { level: mon.level })}
         </span>
@@ -141,12 +145,13 @@ function BigRow({ mon }: { mon: ScenePokemon | undefined }) {
 
 /** Doubles: one line per position — name, HP bar and %, then its status / Mega / stat stages. */
 function CompactRow({ mon }: { mon: ScenePokemon | undefined }) {
+  const names = useDexNames();
   if (!mon) return <p className="text-2xl font-bold text-muted">…</p>;
   return (
     <div className={cn(mon.fainted && 'opacity-50')}>
       <div className="flex items-center gap-3">
         <span className="w-[190px] shrink-0 truncate text-[28px] leading-tight font-extrabold">
-          {mon.name}
+          {names.species(mon.name)}
         </span>
         <HpBar percent={mon.hp} className="h-4 flex-1" />
         <span className="w-20 text-right text-2xl font-extrabold tabular-nums">{mon.hp}%</span>

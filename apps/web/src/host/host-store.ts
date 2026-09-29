@@ -10,6 +10,7 @@ import type {
 } from '@poke-air/shared';
 import { create } from 'zustand';
 import { createHostSocket, type HostSocket } from '../lib/socket';
+import { currentLocale } from '../i18n';
 import { session } from '../lib/storage';
 
 type ConnectionStatus = 'connecting' | 'online' | 'offline';
@@ -109,7 +110,8 @@ export const useHostStore = create<HostStore>((set, get) => {
             return;
           }
         }
-        const created = await current.emitWithAck('host:createRoom', {});
+        // A new room starts in the language this screen shows (the Host can change it).
+        const created = await current.emitWithAck('host:createRoom', { locale: currentLocale() });
         if (!created.ok) {
           set({ error: created.error.code });
           return;

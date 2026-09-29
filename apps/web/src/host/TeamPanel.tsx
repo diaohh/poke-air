@@ -38,7 +38,9 @@ export function TeamPanel({
     >
       <div className="flex items-center justify-between">
         <TeamChip team={team} large ballSize={34} className="text-4xl" />
-        <span className="text-[26px] font-extrabold text-(color:--deep)">{count}</span>
+        <span className="text-[26px] font-extrabold whitespace-nowrap text-(color:--deep)">
+          {count}
+        </span>
       </div>
       <div className="flex flex-col gap-4.5">
         {players.map((player) => (

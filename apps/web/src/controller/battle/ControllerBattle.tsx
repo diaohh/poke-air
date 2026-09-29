@@ -7,6 +7,7 @@ import { HpBar } from '../../components/ui/HpBar';
 import { Icon } from '../../components/ui/Icon';
 import { PokeBall } from '../../components/ui/PokeBall';
 import { cn } from '../../lib/cn';
+import { useDexNames } from '../../lib/dex-names';
 import { isLightType, typeStyle } from '../../lib/pokemon-types';
 import { useControllerStore } from '../controller-store';
 import {
@@ -89,6 +90,7 @@ function OthersChoosing({ request }: { request: BattleRequest }) {
 
 function WaitingView({ request, choice }: { request: BattleRequest; choice: string }) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const { undo, busy, error } = useControllerStore();
   const teammate = useHasTeammate();
   const summaries = summarize(request, choice);
@@ -106,23 +108,26 @@ function WaitingView({ request, choice }: { request: BattleRequest; choice: stri
                   <Trans
                     i18nKey="battle.choiceMoveTarget"
                     values={{
-                      pokemon: summary.pokemon,
-                      move: summary.move,
-                      target: summary.target,
+                      pokemon: names.species(summary.pokemon),
+                      move: names.move(summary.move),
+                      target: names.species(summary.target),
                     }}
                     components={bold}
                   />
                 ) : (
                   <Trans
                     i18nKey="battle.choiceMove"
-                    values={{ pokemon: summary.pokemon, move: summary.move }}
+                    values={{
+                      pokemon: names.species(summary.pokemon),
+                      move: names.move(summary.move),
+                    }}
                     components={bold}
                   />
                 ))}
               {summary.kind === 'switch' && (
                 <Trans
                   i18nKey="battle.choiceSwitch"
-                  values={{ pokemon: summary.pokemon }}
+                  values={{ pokemon: names.species(summary.pokemon) }}
                   components={bold}
                 />
               )}
@@ -162,6 +167,7 @@ type OpenSheet =
 
 function Decision({ request }: { request: BattleRequest }) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const { choose, forfeit, busy, error } = useControllerStore();
   const teammate = useHasTeammate();
   const steps = stepsOf(request);
@@ -239,7 +245,7 @@ function Decision({ request }: { request: BattleRequest }) {
                 {t('battle.stepOf', { step: stepIndex + 1, total: steps.length })}
               </span>
             )}
-            {t('battle.prompt', { pokemon: step.pokemon.name })}
+            {t('battle.prompt', { pokemon: names.species(step.pokemon.name) })}
           </p>
           <button
             type="button"
@@ -263,7 +269,9 @@ function Decision({ request }: { request: BattleRequest }) {
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-ink-2 hover:bg-paper/70"
               >
                 <Icon name="back" />
-                {t('battle.previousStep', { pokemon: steps[stepIndex - 1]?.pokemon?.name ?? '' })}
+                {t('battle.previousStep', {
+                  pokemon: names.species(steps[stepIndex - 1]?.pokemon?.name ?? ''),
+                })}
               </button>
             ) : (
               <span />
@@ -328,7 +336,9 @@ function Decision({ request }: { request: BattleRequest }) {
                 {selected === index && (
                   <span className="move-btn__again">{t('battle.tapAgain')}</span>
                 )}
-                <strong className="flex-1 text-xl leading-tight font-extrabold">{move.name}</strong>
+                <strong className="flex-1 text-xl leading-tight font-extrabold">
+                  {names.move(move.name)}
+                </strong>
                 <span className="move-btn__type">
                   {t(`types.${move.type as 'Normal'}`, { defaultValue: move.type })}
                 </span>
@@ -354,7 +364,7 @@ function Decision({ request }: { request: BattleRequest }) {
               ) : (
                 <Trans
                   i18nKey="battle.useHint"
-                  values={{ move: moves[selected]?.name ?? '' }}
+                  values={{ move: names.move(moves[selected]?.name ?? '') }}
                   components={{ b: <b /> }}
                 />
               )}
@@ -365,7 +375,7 @@ function Decision({ request }: { request: BattleRequest }) {
 
       {view === 'target' && targetMove !== null && moves[targetMove] && (
         <TargetView
-          move={moves[targetMove]?.name ?? ''}
+          move={names.move(moves[targetMove]?.name ?? '')}
           choices={targetChoices(request, step.position, moves[targetMove])}
           onBack={() => setView('fight')}
           onPick={(loc) => complete(moveAction(targetMove, loc, mega))}
@@ -453,6 +463,7 @@ function StatusTag({ pokemon }: { pokemon: BattlePokemon }) {
 /** The acting Pokémon (exact HP) + in doubles the other Pokémon on the player's side (public %). */
 function ActiveCard({ pokemon, ally }: { pokemon: BattlePokemon; ally: BattleFieldSlot | null }) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const percent = pokemon.maxhp ? Math.round((pokemon.hp / pokemon.maxhp) * 100) : 0;
   return (
     <div className="phone-card flex flex-col gap-2 rounded-[22px] px-3.5 py-3">
@@ -462,7 +473,9 @@ function ActiveCard({ pokemon, ally }: { pokemon: BattlePokemon; ally: BattleFie
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <strong className="truncate text-[19px] font-extrabold">{pokemon.name}</strong>
+            <strong className="truncate text-[19px] font-extrabold">
+              {names.species(pokemon.name)}
+            </strong>
             <span className="flex shrink-0 items-center gap-1.5 text-xs font-extrabold text-muted">
               <StatusTag pokemon={pokemon} />
               {t('battle.level', { level: pokemon.level })}
@@ -481,7 +494,7 @@ function ActiveCard({ pokemon, ally }: { pokemon: BattlePokemon; ally: BattleFie
             <PokemonSprite species={ally.species} decorative fit />
           </span>
           <span className="min-w-0 flex-1 truncate">
-            {t('battle.allyLine', { pokemon: ally.name })}
+            {t('battle.allyLine', { pokemon: names.species(ally.name) })}
           </span>
           <span className="tabular-nums">{ally.fainted ? t('battle.fainted') : `${ally.hp}%`}</span>
         </p>
@@ -504,6 +517,7 @@ interface TargetViewProps {
  */
 function TargetView({ move, choices, onBack, onPick }: TargetViewProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const rows = [
     { key: 'foe', title: t('battle.targetFoes'), choices: choices.filter((c) => c.side === 'foe') },
     { key: 'own', title: t('battle.targetOwn'), choices: choices.filter((c) => c.side === 'own') },
@@ -535,7 +549,7 @@ function TargetView({ move, choices, onBack, onPick }: TargetViewProps) {
                       {slot && <PokemonSprite species={slot.species} decorative fit />}
                     </span>
                     <strong className="w-full truncate text-base font-extrabold">
-                      {slot?.name ?? '—'}
+                      {slot ? names.species(slot.name) : '—'}
                     </strong>
                     {slot && !slot.fainted && <HpBar percent={slot.hp} className="h-2 w-full" />}
                     {choice.side === 'own' && slot && !slot.fainted && (
@@ -567,6 +581,7 @@ interface PartyListProps {
 
 function PartyList({ step, request, options, onBack, onOpen }: PartyListProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const forced = step.kind === 'switch';
   const trapped = step.kind === 'move' && step.option?.trapped;
   const doubles = request.activePerSide > 1;
@@ -578,7 +593,7 @@ function PartyList({ step, request, options, onBack, onOpen }: PartyListProps) {
           {trapped
             ? t('battle.trapped')
             : doubles && step.pokemon
-              ? t('battle.replaceHint', { pokemon: step.pokemon.name })
+              ? t('battle.replaceHint', { pokemon: names.species(step.pokemon.name) })
               : t('battle.forcedSwitchHint')}
         </p>
       )}
@@ -601,7 +616,7 @@ function PartyList({ step, request, options, onBack, onOpen }: PartyListProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <strong className="block truncate text-[17px] font-extrabold">
-                  {pokemon.name}
+                  {names.species(pokemon.name)}
                 </strong>
                 <HpBar percent={percent} className="mt-1.5 h-2.5" />
                 <span className="mt-1 block text-xs font-bold text-ink-2">

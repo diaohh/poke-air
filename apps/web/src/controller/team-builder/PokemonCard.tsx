@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ItemIcon } from '../../components/ItemIcon';
 import { PokemonSprite } from '../../components/PokemonSprite';
 import { IconButton } from '../../components/ui/IconButton';
+import { useDexNames } from '../../lib/dex-names';
 
 interface CardProps {
   set: PokemonSetData;
@@ -15,6 +16,8 @@ interface CardProps {
 /** Icon, name, @ item, ability, nature, the 4 moves (no type chips) + edit / remove. */
 export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
+  const species = names.species(set.species);
   return (
     <article className="phone-card shrink-0 rounded-[22px] p-3 pb-3.5">
       <div className="flex items-center gap-3">
@@ -28,11 +31,13 @@ export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardP
             <PokemonSprite species={set.species} decorative fit />
           </span>
           <span className="min-w-0 flex-1">
-            <strong className="block truncate text-lg font-extrabold">{set.species}</strong>
+            <strong className="block truncate text-lg font-extrabold">{species}</strong>
             <span className="flex min-w-0 items-center gap-1 text-[13px] text-ink-2">
               <ItemIcon icon={itemIcon} />
               <span className="truncate">
-                {set.item ? t('teamBuilder.item', { item: set.item }) : t('teamBuilder.noItem')}
+                {set.item
+                  ? t('teamBuilder.item', { item: names.item(set.item) })
+                  : t('teamBuilder.noItem')}
               </span>
             </span>
           </span>
@@ -40,7 +45,7 @@ export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardP
         <div className="flex gap-1.5">
           <IconButton
             icon="edit"
-            label={t('teamBuilder.edit', { name: set.species })}
+            label={t('teamBuilder.edit', { name: species })}
             disabled={disabled}
             onClick={onEdit}
             className="size-10 text-lg"
@@ -48,7 +53,7 @@ export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardP
           <IconButton
             icon="x"
             danger
-            label={t('teamBuilder.remove', { name: set.species })}
+            label={t('teamBuilder.remove', { name: species })}
             disabled={disabled}
             onClick={onRemove}
             className="size-10 text-lg"
@@ -57,11 +62,11 @@ export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardP
       </div>
       <div className="mt-2.5 mb-2 flex flex-wrap gap-1.5 text-xs">
         <span className="mon-card__chip rounded-full px-2.5 py-1 font-semibold">
-          {t('teamBuilder.ability')} <b className="font-extrabold">{set.ability}</b>
+          {t('teamBuilder.ability')} <b className="font-extrabold">{names.ability(set.ability)}</b>
         </span>
         {set.nature && (
           <span className="mon-card__chip rounded-full px-2.5 py-1 font-semibold">
-            {t('teamBuilder.nature')} <b className="font-extrabold">{set.nature}</b>
+            {t('teamBuilder.nature')} <b className="font-extrabold">{names.nature(set.nature)}</b>
           </span>
         )}
       </div>
@@ -71,7 +76,7 @@ export function PokemonCard({ set, itemIcon, disabled, onEdit, onRemove }: CardP
             key={move}
             className="mon-card__move truncate rounded-[10px] px-2.5 py-1.75 text-[13px] font-bold"
           >
-            {move}
+            {names.move(move)}
           </li>
         ))}
       </ul>

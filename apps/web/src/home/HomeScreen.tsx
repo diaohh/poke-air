@@ -79,7 +79,7 @@ export function HomeScreen() {
                 autoCapitalize="characters"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-[150px] min-w-0 rounded-sm bg-paper-2 px-2.5 py-3 text-center font-display text-[26px] tracking-[0.3em] uppercase outline-none placeholder:text-muted focus:ring-3 focus:ring-wine max-[520px]:w-auto max-[520px]:flex-1"
+                className="w-[170px] min-w-0 rounded-sm bg-paper-2 px-2.5 py-3 text-center font-display text-[26px] tracking-[0.3em] uppercase outline-none placeholder:tracking-[0.12em] placeholder:text-muted focus:ring-3 focus:ring-wine max-[520px]:w-auto max-[520px]:flex-1"
               />
               <Button
                 type="submit"

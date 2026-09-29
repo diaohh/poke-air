@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { HpBar } from '../../components/ui/HpBar';
 import { Sheet } from '../../components/ui/Sheet';
 import { cn } from '../../lib/cn';
+import { useDexDescriptions, useDexNames } from '../../lib/dex-names';
 import { isLightType, typeStyle } from '../../lib/pokemon-types';
 
 export function TypeChip({ type, className }: { type: string; className?: string }) {
@@ -46,8 +47,11 @@ interface MoveSheetProps {
 /** Type, category, power, accuracy, PP, description + "Use move". */
 export function MoveSheet({ move, onClose, onUse }: MoveSheetProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
+  const descriptions = useDexDescriptions();
+  const description = descriptions.move(move.name, move.description);
   return (
-    <Sheet title={move.name} onClose={onClose}>
+    <Sheet title={names.move(move.name)} onClose={onClose}>
       <div className="flex flex-wrap gap-1.5">
         <TypeChip type={move.type} className="px-3 py-1.5 text-xs" />
         <span className="rounded-full bg-paper-2 px-3 py-1.5 text-xs font-extrabold text-ink-2">
@@ -62,9 +66,7 @@ export function MoveSheet({ move, onClose, onUse }: MoveSheetProps) {
         />
         <Stat label={t('battle.pp')} value={move.maxpp ? `${move.pp}/${move.maxpp}` : '—'} />
       </div>
-      {move.description && (
-        <p className="text-[15px] leading-normal text-ink-2">{move.description}</p>
-      )}
+      {description && <p className="text-[15px] leading-normal text-ink-2">{description}</p>}
       <div className="sheet__actions">
         <Button variant="ghost" onClick={onClose} className="min-h-13.5 text-[17px]">
           {t('common.close')}
@@ -167,6 +169,7 @@ export function StatGrid({ pokemon }: { pokemon: BattlePokemon }) {
 /** Item, ability, nature, HP, stats (+ stat stages when active), moves + "Switch in". */
 export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonSheetProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
   const percent = pokemon.maxhp ? (pokemon.hp / pokemon.maxhp) * 100 : 0;
   const boosts = Object.entries(pokemon.boosts ?? {}) as [BoostId, number][];
   const label = pokemon.active
@@ -176,7 +179,7 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
       : t('battle.switchIn');
 
   return (
-    <Sheet title={pokemon.name} onClose={onClose}>
+    <Sheet title={names.species(pokemon.name)} onClose={onClose}>
       <HpBar percent={percent} />
       <dl className="grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-[15px]">
         <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
@@ -184,12 +187,12 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
         </dt>
         <dd className="flex items-center gap-1.5 font-bold">
           {pokemon.item && <ItemIcon icon={pokemon.itemIcon} />}
-          {pokemon.item || '—'}
+          {pokemon.item ? names.item(pokemon.item) : '—'}
         </dd>
         <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
           {t('battle.ability')}
         </dt>
-        <dd className="font-bold">{pokemon.ability}</dd>
+        <dd className="font-bold">{names.ability(pokemon.ability)}</dd>
         <dt className="self-center text-xs font-extrabold tracking-widest text-muted uppercase">
           {t('battle.hp')}
         </dt>
@@ -204,11 +207,11 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
             <dd className="font-bold">
               {pokemon.nature.plus && pokemon.nature.minus
                 ? t('battle.natureEffect', {
-                    nature: pokemon.nature.name,
+                    nature: names.nature(pokemon.nature.name),
                     plus: t(`statsShort.${pokemon.nature.plus}`),
                     minus: t(`statsShort.${pokemon.nature.minus}`),
                   })
-                : t('battle.natureNeutral', { nature: pokemon.nature.name })}
+                : t('battle.natureNeutral', { nature: names.nature(pokemon.nature.name) })}
             </dd>
           </>
         )}
@@ -238,7 +241,7 @@ export function PokemonSheet({ pokemon, canSwitch, onClose, onSwitch }: PokemonS
               isLightType(move.type) && 'type-chip--light',
             )}
           >
-            {move.name}
+            {names.move(move.name)}
           </li>
         ))}
       </ul>

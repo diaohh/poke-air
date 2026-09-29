@@ -19,6 +19,7 @@ import { Icon } from '../../components/ui/Icon';
 import { IconButton } from '../../components/ui/IconButton';
 import { PokeBall } from '../../components/ui/PokeBall';
 import { cn } from '../../lib/cn';
+import { useDexDescriptions, useDexNames } from '../../lib/dex-names';
 import { isLightType, typeStyle } from '../../lib/pokemon-types';
 import { EMPTY_POINTS, totalPoints } from '../../lib/stats';
 import { learnsetOf, useTeamDex, type TeamDex } from '../../lib/team-dex';
@@ -114,6 +115,8 @@ function EditorForm({
   clearError,
 }: Props & { dex: TeamDex }) {
   const { t } = useTranslation();
+  const names = useDexNames();
+  const descriptions = useDexDescriptions();
   const [draft, setDraft] = useState<PokemonSetData | null>(initial);
   // A new Pokémon (or one whose species the data doesn't know) starts at the species list.
   const [picker, setPicker] = useState<PickerKind | null>(
@@ -219,7 +222,7 @@ function EditorForm({
   if (!draft || !species) return null;
 
   const moveRows = Array.from({ length: 4 }, (_, i) => draft.moves[i]);
-  const abilityDesc = dex.data.abilities[draft.ability];
+  const abilityDesc = descriptions.ability(draft.ability, dex.data.abilities[draft.ability] ?? '');
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -246,7 +249,9 @@ function EditorForm({
             <PokemonSprite species={species.name} decorative fit />
           </div>
           <div className="min-w-0 flex-1">
-            <strong className="block truncate text-xl font-extrabold">{species.name}</strong>
+            <strong className="block truncate text-xl font-extrabold">
+              {names.species(species.name)}
+            </strong>
             <span className="mt-1 flex flex-wrap gap-1">
               {species.types.map((type) => (
                 <TypeChip key={type} type={type} className="px-2.5 py-1 text-[11px]" />
@@ -263,13 +268,15 @@ function EditorForm({
           <span className="flex min-w-0 items-center gap-2">
             {draft.item && <ItemIcon icon={dex.itemById.get(toId(draft.item))?.icon} />}
             <span className={cn('truncate', !draft.item && 'text-muted')}>
-              {draft.item || t('teamBuilder.editor.noItem')}
+              {draft.item ? names.item(draft.item) : t('teamBuilder.editor.noItem')}
             </span>
           </span>
         </Field>
         {species.megaStones && !species.megaStones.includes(draft.item) && (
           <p className="-mt-1.5 px-1 text-[13px] font-semibold text-ink-2">
-            {t('teamBuilder.editor.megaHint', { item: species.megaStones.join(' / ') })}
+            {t('teamBuilder.editor.megaHint', {
+              item: species.megaStones.map(names.item).join(' / '),
+            })}
           </p>
         )}
         {species.megaMove && (
@@ -277,10 +284,10 @@ function EditorForm({
             {draft.moves.includes(species.megaMove) ? (
               <>
                 <span className="tag tag--mega text-[10px]">{t('battle.megaTag')}</span>
-                {t('teamBuilder.editor.megaMoveReady', { move: species.megaMove })}
+                {t('teamBuilder.editor.megaMoveReady', { move: names.move(species.megaMove) })}
               </>
             ) : (
-              t('teamBuilder.editor.megaMoveHint', { move: species.megaMove })
+              t('teamBuilder.editor.megaMoveHint', { move: names.move(species.megaMove) })
             )}
           </p>
         )}
@@ -301,7 +308,7 @@ function EditorForm({
                 )}
               >
                 {draft.ability === ability && <Icon name="check" />}
-                {ability}
+                {names.ability(ability)}
               </button>
             ))}
           </div>
@@ -329,7 +336,7 @@ function EditorForm({
                     isLightType(move.type) && 'type-chip--light',
                   )}
                 >
-                  <span className="truncate">{move.name}</span>
+                  <span className="truncate">{names.move(move.name)}</span>
                   <small className="shrink-0 text-[11px] opacity-80">
                     {t(`battle.categories.${move.category}`)}
                     {move.basePower ? ` · ${move.basePower}` : ''}
@@ -338,7 +345,7 @@ function EditorForm({
                 <IconButton
                   icon="x"
                   danger
-                  label={t('teamBuilder.editor.clearMove', { move: move.name })}
+                  label={t('teamBuilder.editor.clearMove', { move: names.move(move.name) })}
                   onClick={() => setMove(index, null)}
                   className="size-11 text-lg"
                 />
@@ -413,7 +420,7 @@ function Field({
       onClick={onClick}
       className="phone-card flex min-h-14 shrink-0 items-center gap-3 rounded-[22px] px-3.5 py-2.5 text-left"
     >
-      <span className="field-label w-20 shrink-0 text-xs">{label}</span>
+      <span className="field-label min-w-20 shrink-0 text-xs">{label}</span>
       <span className="flex min-w-0 flex-1 text-base font-extrabold">{children}</span>
       <Icon name="edit" className="size-[1em] shrink-0 text-muted" />
     </button>
@@ -422,12 +429,13 @@ function Field({
 
 function NatureText({ nature }: { nature: DexNature }) {
   const { t } = useTranslation();
+  const names = useDexNames();
   if (!nature.plus || !nature.minus) {
-    return <>{t('battle.natureNeutral', { nature: nature.name })}</>;
+    return <>{t('battle.natureNeutral', { nature: names.nature(nature.name) })}</>;
   }
   return (
     <>
-      {nature.name}{' '}
+      {names.nature(nature.name)}{' '}
       <span className="ml-1.5 font-bold text-ok-deep">▲ {t(`statsShort.${nature.plus}`)}</span>
       <span className="ml-1.5 font-bold text-team-red-deep">
         ▼ {t(`statsShort.${nature.minus}`)}
@@ -452,7 +460,12 @@ interface PickerForProps {
 
 function PickerFor(props: PickerForProps) {
   const { t } = useTranslation();
+  const names = useDexNames();
+  const descriptions = useDexDescriptions();
   const { kind, dex, draft, species, learnset, takenBaseSpecies, onClose } = props;
+  /** Search matches the localized and the English names (players often know both). */
+  const typeNames = (types: string[]) =>
+    types.map((type) => `${type} ${t(`types.${type as 'Normal'}`, { defaultValue: type })}`);
 
   if (kind === 'species') {
     const current = species ? toId(species.baseSpecies) : '';
@@ -461,7 +474,7 @@ function PickerFor(props: PickerForProps) {
         title={t('teamBuilder.picker.species')}
         sections={[{ items: dex.species }]}
         keyOf={(s) => s.id}
-        searchText={(s) => `${s.name} ${s.types.join(' ')}`}
+        searchText={(s) => `${names.species(s.name)} ${s.name} ${typeNames(s.types).join(' ')}`}
         isDisabled={(s) =>
           toId(s.baseSpecies) !== current && takenBaseSpecies.has(toId(s.baseSpecies))
         }
@@ -476,7 +489,9 @@ function PickerFor(props: PickerForProps) {
                 <PokemonSprite species={s.name} decorative fit />
               </span>
               <span className="min-w-0 flex-1">
-                <strong className="block truncate text-base font-extrabold">{s.name}</strong>
+                <strong className="block truncate text-base font-extrabold">
+                  {names.species(s.name)}
+                </strong>
                 <span className="mt-0.5 flex gap-1">
                   {s.types.map((type) => (
                     <TypeChip key={type} type={type} className="px-2 py-0.5 text-[10px]" />
@@ -513,7 +528,7 @@ function PickerFor(props: PickerForProps) {
           { title: t('teamBuilder.picker.allItems'), items: dex.items },
         ]}
         keyOf={(item) => item.id}
-        searchText={(item) => item.name}
+        searchText={(item) => `${names.item(item.name)} ${item.name}`}
         onPick={props.onItem}
         onClose={onClose}
         first={
@@ -533,10 +548,12 @@ function PickerFor(props: PickerForProps) {
             </span>
             <span className="min-w-0 flex-1">
               <strong className="flex items-center gap-2 text-base font-extrabold">
-                {item.name}
+                {names.item(item.name)}
                 {draft?.item === item.name && <Icon name="check" />}
               </strong>
-              <small className="line-clamp-2 text-xs text-ink-2">{item.desc}</small>
+              <small className="line-clamp-2 text-xs text-ink-2">
+                {descriptions.item(item.name, item.desc)}
+              </small>
             </span>
           </>
         )}
@@ -565,7 +582,9 @@ function PickerFor(props: PickerForProps) {
       title={t('teamBuilder.picker.move')}
       sections={[{ items: learnset }]}
       keyOf={(move) => move.id}
-      searchText={(move) => `${move.name} ${move.type} ${move.category}`}
+      searchText={(move) =>
+        `${names.move(move.name)} ${move.name} ${typeNames([move.type]).join(' ')} ${move.category} ${t(`battle.categories.${move.category}`)}`
+      }
       isDisabled={(move) => chosen.has(move.name)}
       onPick={(move) => props.onMove(index, move)}
       onClose={onClose}
@@ -574,7 +593,7 @@ function PickerFor(props: PickerForProps) {
           <span className="flex items-center gap-2">
             <TypeChip type={move.type} className="px-2 py-0.5 text-[10px]" />
             <strong className="min-w-0 flex-1 truncate text-base font-extrabold">
-              {move.name}
+              {names.move(move.name)}
             </strong>
             <small className="shrink-0 text-xs font-bold text-ink-2 tabular-nums">
               {t(`battle.categories.${move.category}`)}
@@ -582,7 +601,9 @@ function PickerFor(props: PickerForProps) {
               {typeof move.accuracy === 'number' ? ` · ${move.accuracy}%` : ''}
             </small>
           </span>
-          <small className="mt-0.5 line-clamp-2 block text-xs text-ink-2">{move.desc}</small>
+          <small className="mt-0.5 line-clamp-2 block text-xs text-ink-2">
+            {descriptions.move(move.name, move.desc)}
+          </small>
         </span>
       )}
     />

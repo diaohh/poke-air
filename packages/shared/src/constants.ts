@@ -8,8 +8,8 @@ export type TeamId = (typeof TEAM_IDS)[number];
 export const ROOM_PHASES = ['LOBBY', 'TEAM_BUILDING', 'BATTLE', 'RESULTS'] as const;
 export type RoomPhase = (typeof ROOM_PHASES)[number];
 
-/** Locales the UI can be switched to. Add 'es-ES' when Phase 4 lands (docs/06-i18n.md). */
-export const SUPPORTED_LOCALES = ['en'] as const;
+/** Locales the UI can be switched to (docs/06-i18n.md, docs/15-phase-4-plan.md). */
+export const SUPPORTED_LOCALES = ['en', 'es-ES'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
 

@@ -225,3 +225,106 @@ data the TV shows), no hardcoded data, every string an i18n key.
 7. Host: two slots per side, attacks fly to the right target slot, side cards list both actives, Ally
    Switch swaps the slots.
 8. Singles still works as before (regression: `pnpm test:e2e`).
+
+## Feedback round 1 (2026-09-28) — implemented, pending manual validation
+
+Requested after the Phase 3 build, before Phase 4 (Spanish). Scope agreed with the team: these
+adjustments now; for Phase 4 only spike S4 and its plan (`docs/15-phase-4-plan.md`). No new unit tests,
+no commits until manual validation.
+
+Verified while building it: `pnpm check` green (76 tests) and throwaway Playwright runs (not committed)
+on a touch phone context and the Host: phone Home without Host, `/teams` (3 random slots, editor 🎲
+keeping the species, save, import of 7 → keep 6, save), room 2v2 loading a 6-Pokémon saved team → keep
+3, the VS burst between the panels, and a scripted doubles battle showing rain, Trick Room, Misty
+Terrain, Reflect / Light Screen walls, Tailwind, Stealth Rock, Spikes and Toxic Spikes on the right
+sides. `randomSetFor` was probed on Champions species (Garchomp, Charizard → Mega Stone), formes
+(Rotom-Wash, Arceus-Fire keeps its Plate) and fallback species (Furret, Smeargle, Shedinja).
+
+Also fixed on the way: with several field effects the top chips wrapped their text ("Rain · 2–" / "5");
+chips now never break inside and the row wraps whole chips.
+
+### Analysis
+
+| Request                                                 | Today                                                                                                          | Viability / approach                                                                                                                                                                                                             |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home on phones: Join only, no Host                      | Home shows Host + Join on every device                                                                         | Simple: phones (coarse pointer, same `isTouchDevice()` the fullscreen logic uses) get Join + Team builder; `/host` stays reachable by URL                                                                                        |
+| Editor 🎲 randomizes the set, not the Pokémon           | 🎲 = `team:randomize` for the slot (new species) and leaves the editor                                         | Server generates a set **for the chosen species**: Champions random set when it (or its Mega) has one (311 of ~1250 formes), else a generated one from its legal movepool. Returned as a draft; Save validates                   |
+| Field effect visuals (Showdown-like)                    | Only chips / tags with turns left                                                                              | **Viable, implemented:** own CSS layers (no Showdown client code or images): weather overlays, terrain ground tint, Trick Room, screens / Tailwind in front of each side, hazards drawn on each side's ground                    |
+| VS burst hidden behind the blue team list               | 150 px burst in a 120 px column, painted under the next panel                                                  | Simple: smaller burst (112 px) above the panels                                                                                                                                                                                  |
+| Team builder from Home, before any room                 | The editor only exists inside TEAM_BUILDING (server-validated through the room); saved teams only via the room | New phone page `/teams`: saved teams list, create / edit up to 6 Pokémon, random slot, import / export, save (Showdown text in localStorage, D-39). Needs server validation without a room → stateless `builder:*` socket events |
+| Importing more Pokémon than the quota (e.g. 6 in a 2v2) | Handled silently: the server keeps the first `quota` Pokémon and reports how many were left out                | Better UX: when the pasted / saved team is bigger than the quota the phone asks **which** Pokémon to keep (split by the text's blank-line blocks, no server round trip), then imports only those                                 |
+
+### Decisions
+
+- **D-50** Phones get a phone Home: Join + Team builder, no Host button (the Host UI is for a PC / TV).
+- **D-51** Stateless team builder events on `/player` (no seat needed, rate-limited per IP):
+  `builder:validateSet { set }` → `{ set }`, `builder:randomSet { species?, exclude? }` → `{ set }`,
+  `builder:parseTeam { text }` → `{ sets }`. Used by `/teams` and by the room editor's 🎲.
+- **D-52** The editor's 🎲 randomizes moves, ability, nature, Stat Points (and the item when the random
+  set has one) for the current species; picking another Pokémon stays with the list's 🎲 / Randomize.
+  Generated fallback for species without Champions random sets: 2 STAB attacks + coverage in the better
+  attacking category, one self-targeting status move, nature and SP on that stat and Speed (or HP when
+  slow); the species' Mega Stone / required item when it has one.
+- **D-53** Standalone team builder `/teams` on the phone; teams are saved as named Showdown texts (same
+  store as the in-room "Save this team", D-39), so any saved team loads in a room.
+- **D-54** Loading or importing a team bigger than the slots available asks which Pokémon to keep
+  (preselects the first ones); the server still trims to the quota as a safety net.
+- **D-55** Field effect visuals on the Host are our own CSS (weather, terrain, Trick Room, screens,
+  Tailwind, hazards with layers); nothing from `pokemon-showdown-client`. Reduced motion stops the
+  animations.
+
+### Specific plan
+
+1. **shared:** `builder:*` schemas + events + ack types; `splitTeamText()` / `teamTextSpecies()` in
+   `team-text.ts` (pure).
+2. **core:** `TeamService.randomSetFor(species)` (Champions random set → fallback generator → validated).
+3. **server:** register `builder:*` handlers (no seat) with a per-IP token bucket (`builderBurst`,
+   `builderPerSecond` in `RealtimeLimits`).
+4. **web / editor:** `PokemonEditor` takes callbacks (`onSave`, `onRemove`, `onRandomSet`, `busy`,
+   `error`) instead of reading the room store; the room passes socket actions, `/teams` its own.
+   `PokemonCard` moves to its own file.
+5. **web / room:** controller store `randomSet(species)`; `TeamMenu` import / load → keep picker when the
+   text has more Pokémon than the quota (`KeepPicker`).
+6. **web / `/teams`:** `teams/TeamsScreen` (list, new, import, edit, delete), `teams/TeamDraft` (name,
+   up to 6 slots, random slot, export, save, discard), `teams/teams-store` (own player socket, builder
+   events, busy / error).
+7. **web / Home:** phone layout (Join + Team builder).
+8. **web / Host:** `battle-scene/FieldEffects.tsx` + styles; VS burst size.
+9. **Docs:** 02 (events), 08 (D-50…D-55), 09, 10, 12, CLAUDE.md, this section's status.
+
+### Tests to add (feedback round 1, after manual validation)
+
+- shared: `splitTeamText` / `teamTextSpecies` (nicknames, gender, `===` headers, CRLF).
+- core: `TeamService.randomSetFor` (Champions species, Mega → base + stone, fallback species, required
+  items, unknown species → `INVALID_SET`).
+- server: `builder:validateSet` / `builder:randomSet` / `builder:parseTeam` without a seat, rate limit.
+- web: `KeepPicker` (max, preselection, order kept), `saveTeam` replacing by id, phone Home.
+
+### Feedback round 2 (2026-09-28) — implemented, pending manual validation
+
+- **Effect chips as "left/total" (D-56):** "Rain · 1/4" = 1 turn left of 4. The total is the dex base
+  duration; if the effect outlives it (an unseen Light Clay / weather rock), the total switches to the
+  extended duration ("Reflect · 2/8"). Replaces the "3–6" ranges.
+- **Ways back home (D-57):** Host header exit icon → "Close this room?" → `host:closeRoom` (phones are told
+  the room was closed, the room is deleted, the Host goes Home and can open a new room). Phones: "Back to
+  the home page" under the join form (after Leave room) and on the removed / room closed screen.
+- Verified with a throwaway Playwright run: leave → home link; close room → Host Home, the other phone
+  shows "The room was closed." and goes Home; a new room gets a new code; chips "Rain · 4/5",
+  "Reflect · 4/5".
+
+### Manual validation checklist (feedback round 1)
+
+1. Phone Home: only the room code join + "Team builder"; the PC Home is unchanged.
+2. `/teams`: create a team (add by search, 🎲 random slot, edit, remove), save it, reopen and edit it,
+   export text, import a text with 7+ Pokémon (asks which 6), delete a team.
+3. In a room (2v2, quota 3): Team menu → load that saved team → asks which 3 to keep → imports them.
+   Pasting a 6-Pokémon text does the same.
+4. Editor 🎲 on an existing Pokémon: same species, new moves / ability / nature / SP (also for a
+   species without Champions random sets, e.g. Furret); Save keeps it.
+5. Host lobby: the VS burst sits between the panels, not under the blue list.
+6. Host (round 2): effect chips read "Rain · 3/5"; the exit icon closes the room (phones see "The room
+   was closed." with a way home); after Leave room the phone offers "Back to the home page".
+7. Host battle: Rain / Sun / Sand / Snow overlays; Electric / Grassy / Misty / Psychic terrain tint;
+   Trick Room; Reflect / Light Screen / Aurora Veil / Tailwind in front of the right side; Stealth Rock,
+   Spikes ×1–3, Toxic Spikes ×1–2, Sticky Web on the right side's ground; all disappear when they end.
+

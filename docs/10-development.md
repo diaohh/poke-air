@@ -215,6 +215,12 @@ Example: a new player action `player:foo`.
 - **The sim renames a set named after its species to its base species** (`Rotom-Wash` → idents
   `p1: Rotom`). Anything matching sim idents to our sets must use `battleName(set)` (core
   `battle/request.ts`), never `set.name`.
+- **Stateless `builder:*` events (D-51)** run without a seat: never call `currentSeat()` in
+  `builder-handlers.ts`; they only use `defaultTeamService()` and the per-IP `builderLimiter`.
+- **Phone detection** (Home without Host, fullscreen) is `isTouchDevice()` = `(pointer: coarse)`: a desktop
+  browser only sees the phone Home in the devtools device mode (or Playwright `hasTouch` + `isMobile`).
+- **The standalone team builder `/teams`** opens its own `/player` socket and never joins a room; its
+  teams are saved teams (localStorage, D-39/D-53) shared with the in-room Team menu.
 - **Doubles (Phase 3):** a one-Pokémon side crashes the sim (hence `Room.minimumFor`); `default` inside a
   comma-separated choice completes every remaining position (the OwnershipLayer builds explicit actions);
   the merged side choice needs every position, `pass` included; `side.pokemon` in requests is reordered by

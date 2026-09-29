@@ -146,11 +146,23 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
 **Host a battle** (primary) + inline room-code join (gold) · TV + phones illustration on the right (hidden
 < 520 px) · legal disclaimer at the bottom (mandatory). No feature chips, no "how it works" section.
 
+**On phones (D-50, coarse pointer):** no Host button — the lead talks about scanning the big screen's QR,
+then the room-code join and a full-width ghost **Team builder** button (→ `/teams`).
+
+### Team builder page `/teams` (phone, D-53)
+
+Same phone shell as the controller, neutral wine theme. **List:** back + logo, "My teams" + hint, saved
+teams as cards (name, mini sprites, ✏️ edit, 🗑 delete), **Import from text** (ghost) and **New team**
+(primary) pinned at the bottom. **Team:** back (asks "Discard changes?" when edited) + "New team" / "Edit
+team" · team name field · "N / 6 Pokémon" · the same Pokémon cards and dashed "+ Add Pokémon" / 🎲 row as
+in a room · export (📋 icon, sheet with Copy) + **Save team**. Editing a Pokémon opens the same editor.
+Importing more than 6 Pokémon asks which to keep (see below).
+
 ### Host (1920×1080 `Stage`, scaled)
 
 - **Header:** logo left; right: language pill, fullscreen, close room. No phase stepper.
 - **Lobby:** left = title + format segmented control (Singles / Doubles) · two team panels with a gold
-  "VS" burst between them · open slots shown dashed · footer = composition status card + **Start game**
+  "VS" burst between them (112 px, above the panels) · open slots shown dashed · footer = composition status card + **Start game**
   (disabled while invalid). Right = **wine join panel** (560 px): room code as 4 tiles, QR on white, URL,
   3 join steps, seat counter.
 - **Team building:** no join panel; small room-code pill in the header. Centered title "Team building" ·
@@ -165,11 +177,19 @@ Logo + language chip · hero title "Your phone. Your team. Your battle." · one 
   blue (p2) is far: front sprite top-right on a blue-tint platform, trainer top-right.
 - **Side cards:** paper with a team ring + deep bottom edge: trainer name, Mega stone mark (available /
   used, greyed), Poké Ball row (fainted = grey), Pokémon name + Lv, HP bar with **percent only** (the
-  public value), status tag (type-colored), Mega tag, stat stages, side conditions with turns left
-  ("Reflect · 3", "Reflect · 3–6" while an unseen Light Clay may extend it) or hazard layers
+  public value), status tag (type-colored), Mega tag, stat stages, side conditions with turns left of
+  their total ("Reflect · 3/5"; "… · 2/8" once an unseen Light Clay visibly extended it, D-56) or hazard layers
   ("Spikes ×2"), "● Choosing" pill.
-- **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects with turns left
-  ("Rain · 4", "Trick Room · 2").
+- **Top center chips:** turn, turn timer (blinking dot), weather / terrain / field effects with turns left of
+  their total ("Rain · 1/4" = 1 turn left of 4, "Trick Room · 2/5").
+- **Close room (D-57):** exit icon at the right of the header → confirmation dialog ("Close this room?") →
+  the room ends for everyone and the Host goes back to Home.
+- **Field effects (D-55, own CSS):** weather over the whole field (rain streaks, sun glow, sand haze,
+  snow flakes, wind), terrain as a tint over the grass (Electric / Grassy / Misty / Psychic type colors),
+  Trick Room as a faint psychic grid, Reflect / Light Screen / Aurora Veil as translucent walls in front
+  of that side's Pokémon, Tailwind streaks, hazards on that side's ground (Stealth Rock rocks, Spikes and
+  Toxic Spikes one set per layer, a Sticky Web). Decorative only: the chips keep the turns left. Top chips
+  never break inside; the row wraps whole chips.
 - **Doubles (Phase 3, D-48):** two platforms per side with smaller sprites and trainers; the far side is
   mirrored (p2a on the right, facing p1a), so "left / right" on the TV is what the phones' target picker
   shows. Side cards get narrower and list one compact row per position (name, HP bar, %, then status /
@@ -218,7 +238,8 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
    team) · **I'm ready** (green; disabled below the minimum: a solo doubles player needs 2 Pokémon, with
    the hint under it). The list is always compact: Pokémon first, empty slots at the bottom
    (removing one moves the ones below up).
-   - **Editor (full view, Phase 2):** back + title + 🎲 (random Pokémon for the slot) · species card
+   - **Editor (full view, Phase 2):** back + title + 🎲 (a random **set** for this species: moves,
+     ability, nature, SP, item — D-52; a random Pokémon is the list's 🎲) · species card
      (sprite, name, type chips, "Change ✏️") · rows Item / Nature (tap → picker) with a Mega Stone hint ·
      Ability as radio chips (selected = team color + ✓) with its description · Moves: one type-colored row
      per move (category · power) + ✕, dashed "+ Add a move" · **Stat Points** card: "N / 66 left", per stat
@@ -239,6 +260,9 @@ On the Host, "Host a battle" (Home) enters fullscreen; the header button toggles
      stats are picked.
    - **Team options (sheet):** Import from text · Export as text (copy) · Save this team, then "Saved on this
      phone" (name, mini sprites, **Load**, 🗑).
+   - **Choose your Pokémon (D-54):** when a pasted or saved team has more Pokémon than the slots, the
+     sheet lists them (sprite + name, checkbox rows, the first ones preselected, "2 / 3 chosen") and
+     **Import N Pokémon** imports only those.
 4. **Battle (3DS lower-screen model):**
    - **Steps (doubles, Phase 3):** one step per position the player controls (a solo doubles player has
      two): a "1 / 2" chip before the prompt, "← Back to X" to redo the previous position; the last step

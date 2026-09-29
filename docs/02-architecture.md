@@ -111,6 +111,7 @@ Conventions:
 | `/host`   | `host:backToLobby`       | `{}` (TEAM_BUILDING or RESULTS)                                                                                                        | —                                    |
 | `/host`   | `host:animated`          | `{ upTo }` — log lines the scene has shown                                                                                             | —                                    |
 | `/host`   | `host:rematch`           | `{}` (RESULTS → TEAM_BUILDING, teams kept)                                                                                             | —                                    |
+| `/host`   | `host:closeRoom`         | `{}` — ends the room: phones get `player:removed: roomClosed` (D-57)                                                                   | —                                    |
 | `/player` | `player:join`            | `{ code, name, avatar, playerId?, reconnectToken? }`                                                                                   | `{ playerId, reconnectToken, room }` |
 | `/player` | `player:update`          | `{ name?, avatar? }`                                                                                                                   | —                                    |
 | `/player` | `player:switchTeam`      | `{ team: 'red' \| 'blue' }`                                                                                                            | —                                    |
@@ -119,6 +120,9 @@ Conventions:
 | `/player` | `team:randomize`         | `{ slots? }` — no slots = whole team                                                                                                   | —                                    |
 | `/player` | `team:setSlot`           | `{ slot, set }` — edited set (validated) or `null` = remove                                                                            | —                                    |
 | `/player` | `team:import`            | `{ text }` — Showdown team text, replaces the team                                                                                     | `{ count, skipped }`                 |
+| `/player` | `builder:validateSet`    | `{ set }` — no seat needed (D-51): validate one set                                                                                    | `{ set }` (normalized)               |
+| `/player` | `builder:randomSet`      | `{ species?, exclude? }` — a set for `species` (D-52) or a random Pokémon                                                              | `{ set }`                            |
+| `/player` | `builder:parseTeam`      | `{ text }` — parse + validate Showdown text, nothing stored                                                                            | `{ sets }`                           |
 | `/player` | `battle:choose`          | `{ choice, rqid? }` — one action per position the player decides, comma-separated: `move N [target] [mega]` · `switch N`; or `default` | —                                    |
 | `/player` | `battle:undo`            | `{}`                                                                                                                                   | —                                    |
 | `/player` | `battle:forfeit`         | `{}`                                                                                                                                   | —                                    |
@@ -214,6 +218,7 @@ poke-air/
 │  │     ├─ with-validation.ts    ✅ zod validation + Result ack + RoomError mapping
 │  │     ├─ host-handlers.ts      ✅ /host events
 │  │     ├─ player-handlers.ts    ✅ /player events
+│  │     ├─ builder-handlers.ts   ✅ stateless builder:* events (no seat, rate-limited)
 │  │     ├─ battle-handlers.ts    ✅ battle events → core MatchController
 │  │     └─ rate-limit.ts         ✅ token bucket (joins, rooms per IP)
 │  └─ web/src/
@@ -226,6 +231,7 @@ poke-air/
 │     │  ├─ audio/                ✅ ZzFX sounds + event mapping, music, cries, settings store
 │     │  └─ battle-scene/         ✅ model (HostBattleModel reducer), playback (animation queue), HostBattle,
 │     │                              SideCard, ActiveSlot, BattleLog, NarrationText
+│     ├─ teams/                   ✅ standalone team builder `/teams` (TeamsScreen, TeamDraft, store)
 │     ├─ controller/              ✅ ControllerScreen, JoinForm, ControllerLobby, ControllerResults, store
 │     │  ├─ team-builder/         ✅ TeamBuilder (list, randomizer, ready), PokemonEditor, Picker,
 │     │  │                           StatPointsEditor, TeamMenu (import / export / saved teams)
@@ -262,6 +268,7 @@ poke-air/
 - 4-letter room codes (24-letter alphabet without I/O → ~331k combinations). ✅ Rate limiting on
   `player:join` per IP (token bucket).
 - Max 4 players per room in v1 (2 per team). ✅ Max 5 open rooms per IP (`x-forwarded-for` in production).
+- ✅ The stateless team builder events (`builder:*`, D-51) are rate-limited per IP (token bucket).
 - The server never trusts clients: validates ownership of every position, choices against the current
   `request`, and teams with `TeamValidator`.
 - No passwords or accounts (AirConsole-style): the room code is the only key. Rooms are ephemeral and

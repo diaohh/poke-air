@@ -33,8 +33,13 @@ phones are the controllers).
   (OwnershipLayer: per-player requests, per-position merge, forced-switch hand-over, timer defaults),
   target selection, one Mega per player, doubles Host scene, item icons. v1 scope is feature-complete.
   Plan, S2 results and checklist: `docs/14-phase-3-plan.md`.
+- ✅ **Phase 3 feedback round 1** (pending manual validation): phone Home (Join + Team builder), standalone
+  team builder `/teams` (stateless `builder:*` events), editor 🎲 = new set for the same species, "choose which
+  Pokémon to keep" on oversized imports, Host field effect visuals, smaller lobby VS, effect chips as "left/total", close room / back home (D-50…D-57,
+  docs 14).
+- ✅ Spike S4 done; **Phase 4 (Spanish) planned** in `docs/15-phase-4-plan.md` (not implemented).
 - Unit tests for Phases 2–3 are deliberately deferred until after validation (lists in docs 13 and 14).
-- 👉 **Next:** manual validation → those tests → Phase 4 (Spanish; TODO in `docs/09-roadmap.md`, spike S4 first).
+- 👉 **Next:** manual validation → those tests → Phase 4 (Spanish; plan in `docs/15-phase-4-plan.md`).
 - Not done on purpose: CI/CD and deployment (decision D-23).
 
 ## Documents
@@ -48,13 +53,14 @@ phones are the controllers).
 | `docs/05-game-rules-and-mechanics.md`   | Champions format, ruleset presets, randomizer, **verified simulator facts**        |
 | `docs/06-i18n.md`                       | i18n: language availability in sources, per-room locale                            |
 | `docs/07-hosting-and-deployment.md`     | $0 hosting strategy and alternatives                                               |
-| `docs/08-decisions.md`                  | Decision log (D-01…D-49) + open questions                                          |
+| `docs/08-decisions.md`                  | Decision log (D-01…D-57) + open questions                                          |
 | `docs/09-roadmap.md`                    | Status, spikes, phases, risks                                                      |
 | `docs/10-development.md`                | **Setup, commands, env vars, feature recipe, testing, pitfalls**                   |
 | `docs/11-phase-1-plan.md`               | Phase 1 plan + **what was actually built** (§ Status)                              |
 | `docs/12-design-system.md`              | **UI design system** (tokens, components, screen specs) — read before any UI work  |
 | `docs/13-phase-2-plan.md`               | Battle-info iteration + Phase 2 (team builder): analysis, S3 results, status       |
-| `docs/14-phase-3-plan.md`               | Phase 3 (doubles, OwnershipLayer, item icons): S2 results, decisions, status       |
+| `docs/14-phase-3-plan.md`               | Phase 3 (doubles, OwnershipLayer, item icons) + feedback round 1: S2, decisions    |
+| `docs/15-phase-4-plan.md`               | Phase 4 (Spanish) plan: spike S4 coverage results, proposed decisions, TODO        |
 | `docs/design/ui-mockup.html`            | Interactive HTML mockup (~70 KB; open only for a specific screen, the .md wins)    |
 
 ## Commands

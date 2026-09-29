@@ -26,9 +26,13 @@ used as a library. Even Spanish names and most battle messages exist. What remai
   scene, 90 s doubles timer, minimum 2 Pokémon per doubles side, plus **item icons** in the team builder
   and the battle sheets. Plan, S2 results, decisions D-42…D-49 and manual checklist:
   `docs/14-phase-3-plan.md`. **v1 scope (D-12) is now feature-complete.**
-- 👉 **Next:** manual validation of Phases 2 and 3 (checklists in `13` and `14`) → the tests listed in
-  `13-phase-2-plan.md` and `14-phase-3-plan.md` § Tests to add → **Phase 4** (Spanish, see the TODO
-  below; spike S4 first).
+- ✅ **Phase 3 feedback round 1** (pending manual validation): phone Home (Join + Team builder, no Host),
+  standalone team builder `/teams`, editor 🎲 = new set for the same species, "choose which Pokémon to
+  keep" when a team exceeds the slots, field effect visuals on the Host, smaller lobby VS burst
+  (D-50…D-55, `14-phase-3-plan.md` § Feedback round 1).
+- ✅ **Spike S4 (i18n)** done; Phase 4 planned in `docs/15-phase-4-plan.md` (not implemented).
+- 👉 **Next:** manual validation of Phases 2–3 and the feedback round (checklists in `13` and `14`) →
+  the tests listed in `13` and `14` § Tests to add → **Phase 4** (Spanish, plan in `15`).
 
 ### Status on 2026-09-28 (Phase 2)
 
@@ -71,9 +75,9 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 - ✅ **S3 — Roster & rules** (results in `13-phase-2-plan.md` and `05`): Champions mod + `NatDex Mod`: validate learnsets for species outside the
   Champions roster, ban Z-Crystals/other gimmick items if they become legal, confirm `Min Team Size = 1`
   override and Stat Point validation (66 total / 32 max).
-- **S4 — Data & i18n:** script generating compact JSON for the Casual ruleset (legal species + learnsets +
-  items + abilities + natures) with `en` and `es-ES` tables from a pinned Showdown commit; measure gzip
-  size; audit `null` names (forms); check if `@pkmn/view`'s formatter accepts custom text tables.
+- ✅ **S4 — Data & i18n:** the compact builder JSON was done in Phase 2 (`pnpm build:data`); the i18n part
+  (Showdown `data/text/es` at a pinned commit, coverage, `null` formes, formatter choice, size) is done —
+  results in `15-phase-4-plan.md`.
 - **S5 — Scene:** Host consuming a recorded spectator log with `@pkmn/protocol` + our own reducer, animating
   switch/move/damage/mega/faint with self-hosted `gen5ani` sprites; check sprite coverage for new Megas.
 - **S6 — Mobile & hosting:** real iPhone + Android test of Wake Lock + Socket.IO reconnection after
@@ -141,28 +145,26 @@ Showdown text import/export, saved teams on the phone. Spike S3 done; S4 is redu
 OwnershipLayer, target selection, Mega per player with team parity, doubles 1v1 / 1v2 / 2v2. Also item
 icons (D-42). Known gap: Revival Blessing (picking a fainted Pokémon) is left to the turn timer.
 
-### Phase 4 — Spanish (es-ES) — next
+### Phase 4 — Spanish (es-ES) — next (planned in `docs/15-phase-4-plan.md`)
 
-Locale tables from Showdown + our overrides, localized UI and battle narration, bilingual search. Plan in
-`docs/06-i18n.md`; write `docs/15-phase-4-plan.md` after spike S4. TODO:
+Locale tables from Showdown + our overrides, localized UI and battle narration, bilingual search.
+Spike S4 done (coverage: moves / abilities / natures / types 100 %, species 81 %, items 78 %,
+descriptions 0 %). TODO:
 
-- [ ] **Spike S4 (i18n part):** fetch Showdown `data/text/es` at a pinned commit (not in the npm
-      release); measure coverage for the 1234-species roster (forme `null`s), items, abilities, moves;
-      decide our own `BattleTextFormatter` vs `@pkmn/view`; size of the per-locale JSON.
+- [x] **Spike S4 (i18n part):** Showdown `data/text/es` at a pinned commit, coverage measured, own
+      narration keys instead of a template engine (proposed D-58), names JSON ≈ 58 KB.
 - [ ] `packages/data`: `build:locales` → `names.es-ES.json` (species / moves / abilities / items / types /
-      natures by Showdown id), `battle.es-ES.json` (message templates), overrides for missing texts and
-      forme suffixes; English fallback everywhere (short descriptions stay English in v1).
+      natures / stats by Showdown id), forme suffix table + overrides, English fallback (proposed D-59).
 - [ ] `SUPPORTED_LOCALES` adds `es-ES`; the Host language selector enables it; default to the Host
       browser language; phones follow the room locale (`room:state`).
-- [ ] `apps/web`: `locales/es-ES/ui.json` (every key, typed like `en`), lazy-loaded `names` / `battle`
-      namespaces, trainer names table, type / stat / nature labels.
-- [ ] Localize by id everywhere a dex name is shown: team builder (pickers, cards, editor), phone battle
-      (moves, Pokémon, items, abilities, targets), Host (side cards, narration, battle log, field chips).
-- [ ] Host narration from templates with the documented placeholder grammar (`[POKEMON]`,
-      `{TRAINER:definite:capitalize}`…), including abilities / items / weather lines added in Phase 2.
-- [ ] Bilingual search in the pickers (localized + English name); Showdown import / export stays English.
-- [ ] `INVALID_SET` validator details stay English (D-38) — note it in the UI.
-- [ ] Docs: `06` (measured coverage, final architecture), `02`, `10`, `12`, `CLAUDE.md`.
+- [ ] `apps/web`: `locales/es-ES/ui.json` (every key, typed like `en`, narration included), trainer
+      names, lazy-loaded names per locale (`useDexNames()`).
+- [ ] Localize by id everywhere a dex name is shown: team builder (pickers, cards, editor, `/teams`),
+      phone battle (moves, Pokémon, items, abilities, targets), Host (side cards, narration, battle log,
+      field chips, results).
+- [ ] Bilingual search in the pickers (localized + English name); Showdown import / export stays English;
+      descriptions and `INVALID_SET` details stay English (proposed D-60, D-38).
+- [ ] Docs: `06` (measured coverage, final architecture), `02`, `10`, `12`, `CLAUDE.md`, `15`.
 
 ### Phase 5 — Polish
 

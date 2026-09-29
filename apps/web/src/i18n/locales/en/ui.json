@@ -27,7 +27,9 @@
     "codeLabel": "Room code",
     "codePlaceholder": "CODE",
     "joinButton": "Join",
-    "sceneTurn": "Your turn!"
+    "sceneTurn": "Your turn!",
+    "phoneLead": "Scan the QR on the big screen or type its room code. You can also build and save teams here before you play.",
+    "teamBuilder": "Team builder"
   },
   "battle": {
     "fight": "FIGHT",

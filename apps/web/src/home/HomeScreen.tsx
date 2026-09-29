@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Logo } from '../components/ui/Logo';
 import { applyLocale } from '../i18n';
-import { enterFullscreen } from '../lib/fullscreen';
+import { enterFullscreen, isTouchDevice } from '../lib/fullscreen';
 import { HeroScene } from './HeroScene';
 
 /** `/` — landing page: host a room on this screen or join one with a code. */
@@ -15,6 +15,7 @@ export function HomeScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
+  const [phone] = useState(isTouchDevice);
 
   const onJoin = (event: FormEvent) => {
     event.preventDefault();
@@ -45,19 +46,22 @@ export function HomeScreen() {
             />
           </h1>
           <p className="mb-8 max-w-[520px] text-[19px] leading-relaxed text-ink-2">
-            {t('home.lead')}
+            {phone ? t('home.phoneLead') : t('home.lead')}
           </p>
 
           <div className="flex flex-wrap items-stretch gap-4">
-            <Link
-              to="/host"
-              // The click is the user gesture fullscreen needs; it survives the SPA navigation.
-              onClick={() => void enterFullscreen()}
-              className="btn btn--primary min-h-16 px-8 text-xl max-[520px]:w-full"
-            >
-              <Icon name="play" />
-              {t('home.host')}
-            </Link>
+            {/* Phones are controllers: they join rooms and build teams, the Host is a PC / TV (D-50). */}
+            {!phone && (
+              <Link
+                to="/host"
+                // The click is the user gesture fullscreen needs; it survives the SPA navigation.
+                onClick={() => void enterFullscreen()}
+                className="btn btn--primary min-h-16 px-8 text-xl max-[520px]:w-full"
+              >
+                <Icon name="play" />
+                {t('home.host')}
+              </Link>
+            )}
             <form
               onSubmit={onJoin}
               className="flex items-center gap-2 rounded-md bg-paper p-2 shadow-lift max-[520px]:w-full"
@@ -85,6 +89,12 @@ export function HomeScreen() {
                 {t('home.joinButton')}
               </Button>
             </form>
+            {phone && (
+              <Link to="/teams" className="btn btn--ghost min-h-15 w-full px-6 text-lg">
+                <Icon name="edit" />
+                {t('home.teamBuilder')}
+              </Link>
+            )}
           </div>
         </div>
 

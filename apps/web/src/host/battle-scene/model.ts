@@ -34,6 +34,8 @@ export interface ScenePokemon {
   fainted: boolean;
   boosts: Partial<Record<BoostId, number>>;
   mega: boolean;
+  /** Behind a Substitute: the scene shows the doll instead of the sprite. */
+  substitute: boolean;
 }
 
 export interface SceneSide {
@@ -109,6 +111,9 @@ export type NarrationKey =
   | 'protected'
   | 'ability'
   | 'confused'
+  | 'substitute'
+  | 'substituteHit'
+  | 'substituteEnd'
   | 'itemEaten'
   | 'itemLost'
   | 'itemUsed'
@@ -151,6 +156,8 @@ export interface SceneEvent {
   target?: SideId;
   /** `move`: the targeted position (the first target of a spread move). */
   targetPosition?: number;
+  /** `boost` / `unboost`: the stat and the stage change (signed), for the floating badge. */
+  boost?: { stat: BoostId; amount: number };
   narration?: Narration;
 }
 
@@ -350,8 +357,12 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
       if (command !== 'replace') {
         const leavingName = side.active[position];
         const leaving = leavingName ? findPokemon(state, who.side, leavingName) : undefined;
-        if (leaving && leaving !== next) leaving.boosts = {};
+        if (leaving && leaving !== next) {
+          leaving.boosts = {};
+          leaving.substitute = false;
+        }
         next.boosts = {};
+        next.substitute = false;
       }
       side.active[position] = next.name;
       if (command === 'replace') return null;
@@ -446,6 +457,7 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
       mon.hp = 0;
       mon.fainted = true;
       mon.status = undefined;
+      mon.substitute = false;
       return { kind: 'faint', side: who.side, narration: { key: 'fainted', params: { pokemon } } };
     }
     case '-status': {
@@ -478,6 +490,7 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
       return {
         kind: up ? 'boost' : 'unboost',
         side: who.side,
+        boost: { stat, amount: up ? amount : -amount },
         narration: { key: boostKey(amount, up), params: { pokemon, stat } },
       };
     }
@@ -536,6 +549,17 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
     }
     case '-activate': {
       const effect = effectName(a2);
+      // A hit absorbed by a Substitute that holds (`[damage]`): the doll flinches, HP untouched.
+      // Without `[damage]` the doll blocked a status move (`[block]`).
+      if (who && effect === 'Substitute') {
+        return kwArgs.damage
+          ? {
+              kind: 'damage',
+              side: who.side,
+              narration: { key: 'substituteHit', params: { pokemon } },
+            }
+          : { kind: 'message', narration: { key: 'failed' } };
+      }
       // Abilities announced through `-activate` (e.g. Synchronize, Cursed Body) get the ability call-out.
       if (who && typeof a2 === 'string' && a2.startsWith('ability: ')) {
         return {
@@ -592,11 +616,30 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
       };
     }
     case '-start': {
-      if (!who || effectName(a2) !== 'confusion') return null;
+      const effect = effectName(a2);
+      if (mon && who && effect === 'Substitute') {
+        mon.substitute = true;
+        return {
+          kind: 'effect',
+          side: who.side,
+          narration: { key: 'substitute', params: { pokemon } },
+        };
+      }
+      if (!who || effect !== 'confusion') return null;
       return {
         kind: 'effect',
         side: who.side,
         narration: { key: 'confused', params: { pokemon } },
+      };
+    }
+    case '-end': {
+      // Only the Substitute ending is shown (it broke or faded); other volatiles end silently.
+      if (!mon || !who || effectName(a2) !== 'Substitute') return null;
+      mon.substitute = false;
+      return {
+        kind: 'effect',
+        side: who.side,
+        narration: { key: 'substituteEnd', params: { pokemon } },
       };
     }
     case '-weather': {
@@ -690,6 +733,7 @@ function upsertPokemon(state: SceneState, side: SideId, name: string, details: s
       fainted: false,
       boosts: {},
       mega: false,
+      substitute: false,
     };
     state.sides[side].pokemon.push(pokemon);
   }

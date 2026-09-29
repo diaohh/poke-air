@@ -7,6 +7,7 @@
  *
  * - Trainer avatars: `sprites/trainers/<id>.png`.
  * - Item icons: `sprites/itemicons-sheet.png` (one sheet; the dex `spritenum` is each item's index).
+ * - The Substitute doll: `sprites/substitutes/gen5(-back)/substitute.png`.
  * - Pokémon: front + back sprites for every species a battle can show (`battleRoster()` from core:
  *   every legal species of the team builder and the randomizer's, plus their Mega / Primal /
  *   battle-only formes; decision D-40). For each one we try
@@ -18,7 +19,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Sprites } from '@pkmn/img';
 import { battleRoster } from '@poke-air/core';
-import { ITEM_ICON_SHEET, toId, TRAINER_AVATARS } from '@poke-air/shared';
+import { ITEM_ICON_SHEET, SUBSTITUTE_SPRITES, toId, TRAINER_AVATARS } from '@poke-air/shared';
 import { download, PUBLIC_DIR, report, SHOWDOWN_HOST as HOST, stats } from './lib/download.js';
 
 const SOURCE = `https://${HOST}/sprites`;
@@ -44,6 +45,15 @@ async function fetchItemIcons(): Promise<void> {
   const file = ITEM_ICON_SHEET.url.replace(/^\/sprites\//, '');
   const url = `${SOURCE}/${file}`;
   if (!(await download(url, join(OUTPUT, file)))) stats.failed.push(`${url} (missing)`);
+}
+
+/** The Substitute doll (front for the far side, back for the near side). */
+async function fetchSubstitutes(): Promise<void> {
+  for (const path of Object.values(SUBSTITUTE_SPRITES)) {
+    const file = path.replace(/^\/sprites\//, '');
+    const url = `${SOURCE}/${file}`;
+    if (!(await download(url, join(OUTPUT, file)))) stats.failed.push(`${url} (missing)`);
+  }
 }
 
 async function fetchTrainers(): Promise<void> {
@@ -111,6 +121,7 @@ async function fetchPokemon(): Promise<void> {
 
 await fetchTrainers();
 await fetchItemIcons();
+await fetchSubstitutes();
 await fetchPokemon();
 
 report('Sprites');

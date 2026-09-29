@@ -50,6 +50,15 @@ export function dexDescriptionsUrl(locale: string): string {
 }
 
 /**
+ * Substitute doll shown instead of a Pokémon behind a Substitute (self-hosted by
+ * `pnpm fetch:sprites`, like every sprite; front = far side, back = near side).
+ */
+export const SUBSTITUTE_SPRITES = {
+  front: '/sprites/substitutes/gen5/substitute.png',
+  back: '/sprites/substitutes/gen5-back/substitute.png',
+} as const;
+
+/**
  * Showdown's item icon sheet (decision D-42): one image of 24 px icons, 16 per row, downloaded by
  * `pnpm fetch:sprites`. An item's dex `spritenum` is its index in the sheet.
  */

@@ -59,6 +59,8 @@ export interface BattleFieldSlot {
   /** Public HP percentage (0–100). */
   hp: number;
   fainted: boolean;
+  /** Behind a Substitute (public: the TV shows the doll). */
+  substitute?: boolean;
 }
 
 /** Every active position by side, indexed by position (`null` = empty). */

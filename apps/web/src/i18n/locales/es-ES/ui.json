@@ -180,11 +180,15 @@
         "spe": "la Velocidad",
         "accuracy": "la Precisión",
         "evasion": "la Evasión"
-      }
+      },
+      "substitute": "¡{{pokemon}} ha creado un sustituto!",
+      "substituteHit": "¡El sustituto ha recibido el daño en lugar de {{pokemon}}!",
+      "substituteEnd": "¡El sustituto de {{pokemon}} ha desaparecido!"
     },
     "statsTitle": "Características",
     "statPointsTitle": "Puntos",
-    "statPointsOf": "Puntos de característica en {{stat}}"
+    "statPointsOf": "Puntos de característica en {{stat}}",
+    "substitute": "Sustituto"
   },
   "formats": {
     "singles": "Individual",
@@ -264,7 +268,8 @@
         "title": "Registro del combate",
         "start": "Inicio del combate",
         "hideHint": "L · ocultar"
-      }
+      },
+      "statBadge": "{{arrow}} {{stat}} {{amount}}"
     },
     "results": {
       "rematch": "Revancha",

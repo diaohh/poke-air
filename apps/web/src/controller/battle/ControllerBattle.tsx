@@ -1,4 +1,4 @@
-import type { BattleFieldSlot, BattlePokemon, BattleRequest } from '@poke-air/shared';
+import type { BattleFieldSlot, BattlePokemon, BattleRequest, BoostId } from '@poke-air/shared';
 import { useState, type ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { PokemonSprite } from '../../components/PokemonSprite';
@@ -238,7 +238,11 @@ function Decision({ request }: { request: BattleRequest }) {
     <div className="flex min-h-0 flex-1 flex-col gap-3.5">
       {view === 'menu' && step.pokemon && (
         <>
-          <ActiveCard pokemon={step.pokemon} ally={ally ?? null} />
+          <ActiveCard
+            pokemon={step.pokemon}
+            ally={ally ?? null}
+            substitute={Boolean(request.field.own[step.position]?.substitute)}
+          />
           <p className="text-center text-[17px] font-extrabold">
             {steps.length > 1 && (
               <span className="mr-2 rounded-full bg-paper px-2.5 py-1 text-[13px] text-(color:--deep) shadow-lift">
@@ -461,10 +465,21 @@ function StatusTag({ pokemon }: { pokemon: BattlePokemon }) {
 }
 
 /** The acting Pokémon (exact HP) + in doubles the other Pokémon on the player's side (public %). */
-function ActiveCard({ pokemon, ally }: { pokemon: BattlePokemon; ally: BattleFieldSlot | null }) {
+interface ActiveCardProps {
+  pokemon: BattlePokemon;
+  ally: BattleFieldSlot | null;
+  /** The Pokémon is behind a Substitute (public field view). */
+  substitute: boolean;
+}
+
+function ActiveCard({ pokemon, ally, substitute }: ActiveCardProps) {
   const { t } = useTranslation();
   const names = useDexNames();
   const percent = pokemon.maxhp ? Math.round((pokemon.hp / pokemon.maxhp) * 100) : 0;
+  const boosts = Object.entries(pokemon.boosts ?? {}).filter(([, value]) => value) as [
+    BoostId,
+    number,
+  ][];
   return (
     <div className="phone-card flex flex-col gap-2 rounded-[22px] px-3.5 py-3">
       <div className="flex items-center gap-3">
@@ -488,6 +503,23 @@ function ActiveCard({ pokemon, ally }: { pokemon: BattlePokemon; ally: BattleFie
           </div>
         </div>
       </div>
+      {(substitute || boosts.length > 0) && (
+        // What this Pokémon has going on right now: Substitute and stat stages (▲ green / ▼ red).
+        <div className="flex flex-wrap gap-1.5">
+          {substitute && (
+            <span className="tag tag--substitute text-[11px]">{t('battle.substitute')}</span>
+          )}
+          {boosts.map(([stat, value]) => (
+            <span key={stat} className={cn('tag text-[11px]', value > 0 ? 'tag--up' : 'tag--down')}>
+              {value > 0 ? '▲' : '▼'}{' '}
+              {t('battle.boost', {
+                stat: t(`boostsShort.${stat}`),
+                amount: value > 0 ? `+${value}` : `${value}`,
+              })}
+            </span>
+          ))}
+        </div>
+      )}
       {ally && (
         <p className="flex items-center gap-2 border-t border-canvas-deep pt-2 text-[13px] font-bold text-ink-2">
           <span className="grid size-7 shrink-0 place-items-center overflow-hidden">
@@ -555,6 +587,11 @@ function TargetView({ move, choices, onBack, onPick }: TargetViewProps) {
                     {choice.side === 'own' && slot && !slot.fainted && (
                       <span className="tag text-[10px]">
                         {choice.self ? t('battle.targetSelf') : t('battle.targetAlly')}
+                      </span>
+                    )}
+                    {slot?.substitute && !slot.fainted && (
+                      <span className="tag tag--substitute text-[10px]">
+                        {t('battle.substitute')}
                       </span>
                     )}
                     {slot?.fainted && (

@@ -173,10 +173,13 @@ function MonTags({ mon }: { mon: ScenePokemon | undefined }) {
         <span className={`tag tag--${mon.status}`}>{t(`statuses.${mon.status}`)}</span>
       )}
       {mon.mega && <span className="tag tag--mega">{t('battle.megaTag')}</span>}
+      {mon.substitute && <span className="tag tag--substitute">{t('battle.substitute')}</span>}
+      {/* Stat stages: green ▲ raised / red ▼ lowered (arrow + color, never color alone). */}
       {boosts.map(([stat, value]) => (
-        <span key={stat} className="tag">
+        <span key={stat} className={cn('tag', value > 0 ? 'tag--up' : 'tag--down')}>
+          {value > 0 ? '▲' : '▼'}{' '}
           {t('host.battle.boost', {
-            stat: t(`stats.${stat}`),
+            stat: t(`boostsShort.${stat}`),
             amount: value > 0 ? `+${value}` : `${value}`,
           })}
         </span>

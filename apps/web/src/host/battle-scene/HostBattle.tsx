@@ -188,6 +188,17 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
   const layout = LAYOUTS[doubles ? 'doubles' : 'singles'][showLog ? 'compact' : 'wide'];
   const meta = event?.kind === 'move' && event.move ? battle.moves[event.move] : undefined;
   const playing = animationFor(event, meta?.category);
+  // Stat stage change: a floating "▲ Attack +2" badge on the Pokémon it happens to.
+  const badge = event?.boost
+    ? {
+        up: event.boost.amount > 0,
+        text: t('host.battle.statBadge', {
+          arrow: event.boost.amount > 0 ? '▲' : '▼',
+          stat: t(`stats.${event.boost.stat}`),
+          amount: event.boost.amount > 0 ? `+${event.boost.amount}` : `${event.boost.amount}`,
+        }),
+      }
+    : null;
   const projectile = event?.kind === 'move' && meta?.category === 'Special' ? event : null;
   const playersOf = (side: SideId) => room.players.filter((p) => p.team === SIDE_TEAM[side]);
   const weather = scene.weather ? weatherId(scene.weather.name) : null;
@@ -287,6 +298,7 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
               box={box}
               scale={layout.sprite[side]}
               platform={layout.platform[side]}
+              badge={playing?.key === slotKey(side, position) ? badge : null}
             />
           )),
         )}

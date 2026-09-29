@@ -35,6 +35,12 @@
     color: color(team-red-deep);
   }
 
+  // Behind a Substitute (the doll's green).
+  &--substitute {
+    background: color-mix(in srgb, var(--color-type-grass) 22%, var(--color-paper));
+    color: color-mix(in srgb, var(--color-type-grass) 45%, var(--color-ink));
+  }
+
   &--mega {
     background: color(mega-soft);
     color: color(mega-deep);

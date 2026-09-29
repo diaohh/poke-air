@@ -1,4 +1,4 @@
-import { SIDE_TEAM, type SideId } from '@poke-air/shared';
+import { SIDE_TEAM, SUBSTITUTE_SPRITES, type SideId } from '@poke-air/shared';
 import { useLayoutEffect, useRef } from 'react';
 import { PokemonSprite } from '../../components/PokemonSprite';
 import { cn } from '../../lib/cn';
@@ -33,6 +33,9 @@ const ANIMATIONS: MonAnimation[] = [
   'faint',
 ];
 
+/** The Substitute doll is small in its sprite: drawn this much bigger so it reads on a TV. */
+const DOLL_SCALE = 1.6;
+
 /** A slot's box on the battle field, in field pixels. */
 export interface SlotBox {
   left: number;
@@ -52,6 +55,8 @@ interface Props {
   scale: number;
   /** Platform ellipse size. */
   platform: { width: number; height: number };
+  /** Stat change to float over the Pokémon for this event ("▲ Attack +2"), if any. */
+  badge?: { text: string; up: boolean } | null;
 }
 
 /**
@@ -59,7 +64,16 @@ interface Props {
  * for blue (far). Animations are restarted imperatively on an inner element whose className React
  * never changes, so a re-render can't cut them short.
  */
-export function ActiveSlot({ side, pokemon, animation, animationId, box, scale, platform }: Props) {
+export function ActiveSlot({
+  side,
+  pokemon,
+  animation,
+  animationId,
+  box,
+  scale,
+  platform,
+  badge,
+}: Props) {
   const mon = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -81,21 +95,45 @@ export function ActiveSlot({ side, pokemon, animation, animationId, box, scale, 
       <div
         className={cn(
           'relative z-2 -mb-12',
-          pokemon?.mega && 'mon--is-mega',
+          pokemon?.mega && !pokemon.substitute && 'mon--is-mega',
           faded && 'mon--fainted',
         )}
       >
         <div ref={mon} className="mon">
-          {pokemon && (
-            <PokemonSprite
-              key={pokemon.name}
-              species={pokemon.species}
-              facing={near ? 'back' : 'front'}
-              scale={scale}
-              decorative
+          {pokemon?.substitute ? (
+            // Behind a Substitute the doll takes the Pokémon's place (like in the games).
+            <img
+              src={near ? SUBSTITUTE_SPRITES.back : SUBSTITUTE_SPRITES.front}
+              alt=""
+              width={96 * scale * DOLL_SCALE}
+              height={96 * scale * DOLL_SCALE}
+              draggable={false}
+              className="pixelated max-w-none"
+              // The doll is a 30 px figure centered in a 96 px canvas (34 px empty below): pull it
+              // down so its base sits where a Pokémon's feet would (~11 px above the canvas edge).
+              style={{ marginBottom: -34 * scale * DOLL_SCALE + 11 * scale }}
             />
+          ) : (
+            pokemon && (
+              <PokemonSprite
+                key={pokemon.name}
+                species={pokemon.species}
+                facing={near ? 'back' : 'front'}
+                scale={scale}
+                decorative
+              />
+            )
           )}
         </div>
+        {badge && (
+          <span
+            key={animationId}
+            aria-hidden="true"
+            className={cn('stat-badge', badge.up ? 'stat-badge--up' : 'stat-badge--down')}
+          >
+            {badge.text}
+          </span>
+        )}
       </div>
       <div className="field-platform" style={platform} />
     </div>

@@ -193,6 +193,7 @@ export class BattleSession {
           species: shown.species.name,
           hp: pokemon.fainted || !max ? 0 : Math.round((hp / max) * 100),
           fainted: pokemon.fainted,
+          ...(pokemon.volatiles['substitute'] ? { substitute: true } : {}),
         };
       });
     }

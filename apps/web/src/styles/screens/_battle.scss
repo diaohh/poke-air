@@ -202,7 +202,7 @@
 @keyframes mon-boost {
   40% {
     transform: translateY(-26px);
-    filter: brightness(1.4);
+    filter: brightness(1.3) drop-shadow(0 0 18px #{color(ok)});
   }
 }
 
@@ -210,11 +210,13 @@
   20%,
   60% {
     transform: translateX(-12px);
+    filter: saturate(0.6) drop-shadow(0 0 18px #{color(team-red)});
   }
 
   40%,
   80% {
     transform: translateX(12px);
+    filter: saturate(0.6) drop-shadow(0 0 18px #{color(team-red)});
   }
 }
 
@@ -611,5 +613,63 @@
 
   to {
     background-position: 400px 0;
+  }
+}
+
+// Stat stage change floating over a Pokémon ("▲ Attack +2"): readable from 3 m, green up / red
+// down (with the arrow: never color alone), rises and fades in ~1.4 s.
+.stat-badge {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 3;
+  padding: 0.25em 0.8em;
+  border-radius: 999px;
+  font-size: 30px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-lift);
+  animation: stat-badge 1.4s ease-out forwards;
+
+  &--up {
+    background: color(ok-soft);
+    color: color(ok-deep);
+    box-shadow:
+      inset 0 0 0 3px color(ok),
+      var(--shadow-lift);
+  }
+
+  &--down {
+    background: color(team-red-tint);
+    color: color(team-red-deep);
+    box-shadow:
+      inset 0 0 0 3px color(team-red),
+      var(--shadow-lift);
+  }
+}
+
+@keyframes stat-badge {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.8);
+  }
+
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+
+  25% {
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -36px);
   }
 }

@@ -180,11 +180,15 @@
         "spe": "Speed",
         "accuracy": "accuracy",
         "evasion": "evasiveness"
-      }
+      },
+      "substitute": "{{pokemon}} put in a substitute!",
+      "substituteHit": "The substitute took damage for {{pokemon}}!",
+      "substituteEnd": "{{pokemon}}'s substitute faded!"
     },
     "statsTitle": "Stats",
     "statPointsTitle": "Stat Points",
-    "statPointsOf": "Stat Points in {{stat}}"
+    "statPointsOf": "Stat Points in {{stat}}",
+    "substitute": "Substitute"
   },
   "formats": {
     "singles": "Singles",
@@ -264,7 +268,8 @@
         "title": "Battle log",
         "start": "Battle start",
         "hideHint": "L · hide"
-      }
+      },
+      "statBadge": "{{arrow}} {{stat}} {{amount}}"
     },
     "results": {
       "rematch": "Rematch",

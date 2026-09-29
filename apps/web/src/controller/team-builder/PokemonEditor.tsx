@@ -2,6 +2,8 @@ import {
   BATTLE_LEVEL,
   STAT_POINTS_TOTAL,
   toId,
+  type ErrorCode,
+  type ErrorPayload,
   type DexItem,
   type DexMove,
   type DexNature,
@@ -21,15 +23,30 @@ import { isLightType, typeStyle } from '../../lib/pokemon-types';
 import { EMPTY_POINTS, totalPoints } from '../../lib/stats';
 import { learnsetOf, useTeamDex, type TeamDex } from '../../lib/team-dex';
 import { TypeChip } from '../battle/sheets';
-import { useControllerStore } from '../controller-store';
 import { ErrorNote } from './ErrorNote';
 import { NaturePicker } from './NaturePicker';
 import { NavRow } from './NavRow';
 import { Picker } from './Picker';
 import { StatPointsEditor } from './StatPointsEditor';
 
-interface Props {
-  slot: number;
+/**
+ * What the editor needs from its container (the room's team builder or the standalone `/teams`
+ * page): both validate on the server, through the room or the stateless `builder:*` events.
+ */
+export interface EditorActions {
+  /** Validates and stores the set; `true` when accepted (the editor then closes). */
+  onSave: (set: PokemonSetData) => Promise<boolean>;
+  /** Removes the Pokémon being edited (existing ones only). */
+  onRemove?: () => Promise<unknown>;
+  /** A new set for this species (moves, ability, item, nature, SP), `null` on error (D-52). */
+  onRandomSet: (species: string) => Promise<PokemonSetData | null>;
+  busy: boolean;
+  error: ErrorCode | 'CONNECTION' | undefined;
+  errorParams: ErrorPayload['params'];
+  clearError: () => void;
+}
+
+interface Props extends EditorActions {
   /** The Pokémon in the slot, `null` for a new one. */
   initial: PokemonSetData | null;
   /**
@@ -83,10 +100,20 @@ function newSet(species: DexSpecies): PokemonSetData {
   };
 }
 
-function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex: TeamDex }) {
+function EditorForm({
+  dex,
+  initial,
+  otherSpecies,
+  onDone,
+  onSave,
+  onRemove,
+  onRandomSet,
+  busy,
+  error,
+  errorParams,
+  clearError,
+}: Props & { dex: TeamDex }) {
   const { t } = useTranslation();
-  const { saveSlot, clearSlot, randomize, busy, error, errorParams, clearError } =
-    useControllerStore();
   const [draft, setDraft] = useState<PokemonSetData | null>(initial);
   // A new Pokémon (or one whose species the data doesn't know) starts at the species list.
   const [picker, setPicker] = useState<PickerKind | null>(
@@ -144,7 +171,17 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
       setLocalError('noMoves');
       return;
     }
-    if (await saveSlot(slot, draft)) onDone();
+    if (await onSave(draft)) onDone();
+  };
+
+  /** 🎲: a new set for the same species; the draft is only stored on Save (decision D-52). */
+  const randomizeSet = async () => {
+    if (!draft) return;
+    const set = await onRandomSet(draft.species);
+    if (!set) return;
+    setLocalError(null);
+    // Keep the current item when the generated set has none.
+    setDraft({ ...set, item: set.item || draft.item });
   };
 
   const closePicker = () => {
@@ -194,7 +231,7 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
           icon="dice"
           label={t('teamBuilder.editor.random')}
           disabled={busy}
-          onClick={() => void randomize([slot]).then(onDone)}
+          onClick={() => void randomizeSet()}
           className="size-12 text-xl"
         />
       </NavRow>
@@ -336,11 +373,11 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
       <ErrorNote error={error} params={errorParams} />
 
       <div className="grid grid-cols-[auto_1fr] gap-3">
-        {initial && (
+        {initial && onRemove && (
           <Button
             variant="ghost"
             disabled={busy}
-            onClick={() => void clearSlot(slot).then(onDone)}
+            onClick={() => void onRemove().then(onDone)}
             className="min-h-15 px-4.5 text-base"
           >
             <Icon name="trash" />
@@ -351,7 +388,7 @@ function EditorForm({ dex, slot, initial, otherSpecies, onDone }: Props & { dex:
           variant="primary"
           disabled={busy || totalPoints(draft.evs) > STAT_POINTS_TOTAL}
           onClick={() => void save()}
-          className={cn('min-h-15 text-[19px]', !initial && 'col-span-2')}
+          className={cn('min-h-15 text-[19px]', !(initial && onRemove) && 'col-span-2')}
         >
           <Icon name="check" />
           {t('teamBuilder.editor.save')}

@@ -60,6 +60,8 @@ interface ControllerStore {
   saveSlot: (slot: number, set: PokemonSetData) => Promise<boolean>;
   /** Replaces the team with Showdown text; the ack's counts, or `null` on error. */
   importTeam: (text: string) => Promise<TeamImportResult | null>;
+  /** A new set for this species (the editor's 🎲, not stored until saved); `null` on error. */
+  randomSet: (species: string) => Promise<PokemonSetData | null>;
   setReady: (ready: boolean) => Promise<void>;
   choose: (choice: string) => Promise<void>;
   undo: () => Promise<void>;
@@ -225,6 +227,15 @@ export const useControllerStore = create<ControllerStore>((set, get) => {
         return result;
       });
       return counts;
+    },
+    randomSet: async (species) => {
+      let set: PokemonSetData | null = null;
+      await act(async (s) => {
+        const result = await s.emitWithAck('builder:randomSet', { species });
+        if (result.ok) set = result.set;
+        return result;
+      });
+      return set;
     },
     setReady: async (ready) => {
       await act((s) => s.emitWithAck('player:ready', { ready }));

@@ -335,7 +335,7 @@
       "pointsLeft": "{{left}} / {{total}} left",
       "lessPoints": "Fewer {{stat}} points",
       "morePoints": "More {{stat}} points",
-      "random": "Random Pokémon for this slot",
+      "random": "Random set for this Pokémon",
       "save": "Save",
       "remove": "Remove from team",
       "loading": "Loading the Pokédex…",

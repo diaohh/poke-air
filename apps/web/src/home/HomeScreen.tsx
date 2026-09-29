@@ -30,6 +30,7 @@ export function HomeScreen() {
           value={i18n.language as Locale}
           onChange={applyLocale}
           className="h-11 gap-2 rounded-full pr-3 pl-4 text-sm"
+          menuClassName="text-[15px]"
         />
       </nav>
 

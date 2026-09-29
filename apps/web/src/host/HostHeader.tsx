@@ -42,6 +42,7 @@ export function HostHeader({ room, showCode }: Props) {
         value={room.locale}
         onChange={(locale) => void setLocale(locale)}
         className="h-15 gap-3 rounded-md pr-5.5 pl-5.5 text-[22px]"
+        menuClassName="text-[22px]"
       />
       <SoundMenu />
       <IconButton

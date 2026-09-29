@@ -18,6 +18,8 @@ apps/web/public/audio/cries/
 apps/web/public/audio/cries-manifest.json
 # Generated data (packages/data output)
 apps/web/public/data/
+# Translation sources downloaded by build:locales (Showdown text tables + PokeAPI CSVs, pinned)
+packages/data/.cache/
 
 # Local-only working files (not versioned)
 context-temp.md

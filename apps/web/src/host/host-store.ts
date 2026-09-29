@@ -51,6 +51,8 @@ interface HostStore {
   startTeamBuilding: () => Promise<void>;
   backToLobby: () => Promise<void>;
   rematch: () => Promise<void>;
+  /** Ends the room for everyone and forgets it on this screen (then the Host goes home). */
+  closeRoom: () => Promise<void>;
   /** The scene has shown the log up to `upTo` lines (releases the phones' next menu). */
   animated: (upTo: number) => void;
   clearError: () => void;
@@ -167,6 +169,12 @@ export const useHostStore = create<HostStore>((set, get) => {
     },
     rematch: async () => {
       if (socket) settle(await socket.emitWithAck('host:rematch', {}));
+    },
+    closeRoom: async () => {
+      if (socket?.connected) await socket.emitWithAck('host:closeRoom', {});
+      // Even if the room is already gone: this screen must not resume it.
+      session.set(SESSION_KEY, undefined);
+      set({ room: undefined });
     },
     animated: (upTo) => {
       if (!socket || upTo <= lastAnimated) return;

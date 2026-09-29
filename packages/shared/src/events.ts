@@ -60,6 +60,8 @@ export interface HostClientToServerEvents {
   'host:kick': (payload: HostKickPayload, ack: Ack) => void;
   'host:startTeamBuilding': (payload: EmptyPayload, ack: Ack) => void;
   'host:backToLobby': (payload: EmptyPayload, ack: Ack) => void;
+  /** Ends the room for everyone (phones get `player:removed: 'roomClosed'`); the Host goes home. */
+  'host:closeRoom': (payload: EmptyPayload, ack: Ack) => void;
   /** The Host finished animating the spectator log up to `upTo` lines (releases phone menus). */
   'host:animated': (payload: HostAnimatedPayload, ack: Ack) => void;
   /** RESULTS → TEAM_BUILDING keeping every team. */

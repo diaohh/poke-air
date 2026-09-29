@@ -114,6 +114,28 @@ export function registerHostHandlers(rt: Realtime): void {
       }),
     );
 
+    socket.on(
+      'host:closeRoom',
+      on(emptyPayloadSchema, () => {
+        const room = currentRoom();
+        // Every phone is told the room is gone (it offers going home or joining another room).
+        for (const player of room.listPlayers()) {
+          const phone = rt.playerSocket(player.id);
+          rt.playerSocketById.delete(player.id);
+          if (!phone) continue;
+          phone.emit('player:removed', 'roomClosed');
+          phone.data = {};
+          phone.disconnect();
+        }
+        rt.hostSocketByRoom.delete(room.code);
+        socket.data = {};
+        void socket.leave(room.code);
+        rt.rooms.delete(room.code);
+        rt.forgetRoom(room.code);
+        log.info({ code: room.code }, 'Room closed by the Host');
+      }),
+    );
+
     registerHostBattleHandlers(rt, socket, on, currentRoom);
 
     socket.on('disconnect', () => {

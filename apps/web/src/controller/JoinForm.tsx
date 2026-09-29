@@ -12,6 +12,7 @@ import { Icon } from '../components/ui/Icon';
 import { cn } from '../lib/cn';
 import { enterFullscreen, isTouchDevice } from '../lib/fullscreen';
 import { useControllerStore } from './controller-store';
+import { HomeLink } from './HomeLink';
 
 /** Join view: name · scrollable 4-column trainer grid · dice for a random trainer · Join room. */
 export function JoinForm() {
@@ -113,6 +114,7 @@ export function JoinForm() {
       >
         {status === 'joining' ? t('controller.joining') : t('controller.join')}
       </Button>
+      <HomeLink />
     </form>
   );
 }

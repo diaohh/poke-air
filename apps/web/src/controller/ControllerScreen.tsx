@@ -17,6 +17,7 @@ import { useControllerStore } from './controller-store';
 import { ControllerLobby } from './ControllerLobby';
 import { ControllerResults } from './ControllerResults';
 import { FullscreenPrompt } from './FullscreenPrompt';
+import { HomeLink } from './HomeLink';
 import { JoinForm } from './JoinForm';
 import { TeamBuilder } from './team-builder/TeamBuilder';
 
@@ -96,6 +97,7 @@ export function ControllerScreen() {
           <Button variant="primary" onClick={rejoin} className="min-h-15 text-[19px]">
             {t('controller.joinAgain')}
           </Button>
+          <HomeLink />
         </>
       )}
 

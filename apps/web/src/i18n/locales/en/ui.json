@@ -269,6 +269,13 @@
       "cries": "Pokémon cries",
       "criesMissing": "Not downloaded (pnpm fetch:audio)",
       "musicMissing": "No music files yet (see audio/README)"
+    },
+    "close": {
+      "button": "Close room",
+      "title": "Close this room?",
+      "body": "Everyone in the room is sent back: the phones are told the room was closed and any battle in progress ends.",
+      "cancel": "Keep the room",
+      "confirm": "Close room"
     }
   },
   "controller": {
@@ -296,7 +303,8 @@
     "fullscreen": {
       "title": "Tap to continue",
       "hint": "The controller works in full screen so the browser bars don't get in the way."
-    }
+    },
+    "home": "Back to the home page"
   },
   "teamBuilder": {
     "title": "Your team",

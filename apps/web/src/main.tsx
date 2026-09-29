@@ -20,10 +20,15 @@ const ControllerScreen = lazy(() =>
   import('./controller/ControllerScreen').then((m) => ({ default: m.ControllerScreen })),
 );
 
+const TeamsScreen = lazy(() =>
+  import('./teams/TeamsScreen').then((m) => ({ default: m.TeamsScreen })),
+);
+
 const router = createBrowserRouter([
   { path: '/', element: <HomeScreen /> },
   { path: '/host', element: <HostScreen /> },
   { path: '/j/:code', element: <ControllerScreen /> },
+  { path: '/teams', element: <TeamsScreen /> },
   { path: '*', element: <HomeScreen /> },
 ]);
 

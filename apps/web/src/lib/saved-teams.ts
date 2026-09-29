@@ -22,19 +22,22 @@ export function listSavedTeams(): SavedTeam[] {
   return Array.isArray(teams) ? teams : [];
 }
 
-/** Adds a team (newest first); a team with the same name is replaced. Keeps the latest 30. */
-export function saveTeam(name: string, text: string, species: string[]): SavedTeam[] {
+/**
+ * Adds a team (newest first); a team with the same name — or the same `id` when editing one from
+ * the standalone team builder — is replaced. Keeps the latest 30.
+ */
+export function saveTeam(name: string, text: string, species: string[], id?: string): SavedTeam[] {
   const team: SavedTeam = {
-    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    id: id ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     name,
     text,
     species,
     savedAt: Date.now(),
   };
-  const teams = [team, ...listSavedTeams().filter((t) => t.name !== name)].slice(
-    0,
-    SAVED_TEAMS_MAX,
-  );
+  const teams = [
+    team,
+    ...listSavedTeams().filter((t) => t.name !== name && t.id !== team.id),
+  ].slice(0, SAVED_TEAMS_MAX);
   local.set(KEY, teams);
   return teams;
 }

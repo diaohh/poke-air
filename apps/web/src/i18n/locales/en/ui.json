@@ -465,6 +465,21 @@
     "remaining": "Pokémon left",
     "waitingHost": "Waiting for the host to pick a rematch…"
   },
+  "myTeams": {
+    "title": "My teams",
+    "hint": "Build teams before playing. In a room, load them from the Team menu (☰).",
+    "empty": "No teams yet. Create one or import a Showdown text.",
+    "new": "New team",
+    "edit": "Edit {{name}}",
+    "newTitle": "New team",
+    "editTitle": "Edit team",
+    "importHint": "Paste a team in Showdown format. It opens as a new team you can edit and save.",
+    "savedNotice": "Saved “{{name}}” on this phone.",
+    "discardTitle": "Discard changes?",
+    "discardBody": "Your changes to this team will be lost.",
+    "keepEditing": "Keep editing",
+    "discard": "Discard"
+  },
   "errors": {
     "INVALID_PAYLOAD": "Something in the request was not valid.",
     "ROOM_NOT_FOUND": "That room does not exist. Check the code on the big screen.",

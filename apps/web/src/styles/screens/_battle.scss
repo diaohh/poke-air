@@ -49,6 +49,7 @@
 
 .battle-chip {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 0.5em;
   border-radius: 999px;
@@ -339,4 +340,276 @@
   font-family: var(--font-display);
   line-height: 1;
   text-shadow: 0 8px 0 var(--soft);
+}
+
+// ── Field effects (decision D-55): own CSS, nothing from pokemon-showdown-client ──────────────────
+// Ground layer (terrain, Trick Room, hazards) sits under the Pokémon; the air layer (weather,
+// screens, Tailwind) over them and under the cards. Decorative only: chips carry the information.
+
+// Terrain: a tint over the grass (the lower 54 % of the field).
+.fx-terrain {
+  --fx: #{color(type-normal)};
+
+  position: absolute;
+  inset: 46% 0 0;
+  background:
+    radial-gradient(
+      ellipse 60% 70% at 50% 60%,
+      color-mix(in srgb, var(--fx) 34%, transparent),
+      transparent 75%
+    ),
+    color-mix(in srgb, var(--fx) 22%, transparent);
+  pointer-events: none;
+  animation: fx-glow 3s ease-in-out infinite alternate;
+
+  &--electric {
+    --fx: #{color(type-electric)};
+  }
+
+  &--grassy {
+    --fx: #{color(type-grass)};
+  }
+
+  &--misty {
+    --fx: #{color(type-fairy)};
+  }
+
+  &--psychic {
+    --fx: #{color(type-psychic)};
+  }
+}
+
+// Trick Room: a faint psychic grid over the whole field.
+.fx-room {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, #{alpha(type-psychic, 16%)} 0 2px, transparent 2px 64px),
+    repeating-linear-gradient(0deg, #{alpha(type-psychic, 16%)} 0 2px, transparent 2px 64px);
+  pointer-events: none;
+}
+
+// Entry hazards on a side's ground (positioned inline, centered on their point).
+.fx-hazard {
+  position: absolute;
+  z-index: 1;
+  width: 30px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 3px 0 #{alpha(ink, 18%)});
+
+  &--rock {
+    background: linear-gradient(
+      160deg,
+      color(type-rock),
+      color-mix(in srgb, var(--color-type-rock) 55%, var(--color-ink))
+    );
+    clip-path: polygon(18% 100%, 0 55%, 22% 12%, 58% 0, 88% 22%, 100% 70%, 78% 100%);
+  }
+
+  &--spike {
+    width: 26px;
+    background: linear-gradient(
+      180deg,
+      color(type-steel),
+      color-mix(in srgb, var(--color-type-steel) 45%, var(--color-ink))
+    );
+    clip-path: polygon(0 100%, 18% 40%, 32% 100%, 50% 0, 68% 100%, 82% 40%, 100% 100%);
+  }
+
+  &--toxic {
+    width: 24px;
+    background: linear-gradient(
+      180deg,
+      color(type-poison),
+      color-mix(in srgb, var(--color-type-poison) 50%, var(--color-ink))
+    );
+    clip-path: polygon(0 100%, 25% 30%, 50% 100%, 75% 30%, 100% 100%);
+  }
+
+  &--web {
+    transform: none;
+    border-radius: 50%;
+    background:
+      repeating-radial-gradient(
+        circle at 50% 60%,
+        transparent 0 14px,
+        #{alpha(paper, 70%)} 14px 16px
+      ),
+      repeating-conic-gradient(
+        from 0deg at 50% 60%,
+        #{alpha(paper, 70%)} 0 2deg,
+        transparent 2deg 30deg
+      );
+    opacity: 0.85;
+    mask-image: radial-gradient(ellipse at 50% 60%, #{color(ink)} 55%, transparent 72%);
+  }
+}
+
+// Screens: translucent walls in front of a side's Pokémon.
+.fx-screen {
+  --fx: #{color(type-psychic)};
+
+  position: absolute;
+  z-index: 3;
+  border: 3px solid color-mix(in srgb, var(--fx) 55%, transparent);
+  border-radius: 28px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--fx) 22%, transparent),
+    color-mix(in srgb, var(--fx) 8%, transparent) 45%,
+    color-mix(in srgb, var(--fx) 20%, transparent)
+  );
+  box-shadow: inset 0 0 30px color-mix(in srgb, var(--fx) 30%, transparent);
+  pointer-events: none;
+  animation: fx-glow 2.4s ease-in-out infinite alternate;
+
+  &--light-screen {
+    --fx: #{color(type-electric)};
+  }
+
+  &--aurora-veil {
+    --fx: #{color(type-ice)};
+  }
+}
+
+// Tailwind: streaks blowing across the side.
+.fx-tailwind {
+  position: absolute;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    -12deg,
+    transparent 0 38px,
+    #{alpha(type-flying, 40%)} 38px 41px,
+    transparent 41px 90px
+  );
+  background-size: 400px 100%;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #{color(ink)} 20%,
+    #{color(ink)} 80%,
+    transparent
+  );
+  pointer-events: none;
+  animation: fx-wind 1.2s linear infinite;
+}
+
+// Weather over the whole field.
+.fx-weather {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+
+  &--rain,
+  &--heavy-rain {
+    background: repeating-linear-gradient(
+      105deg,
+      transparent 0 22px,
+      #{alpha(type-water, 45%)} 22px 24px,
+      transparent 24px 46px
+    );
+    background-size: 100% 240px;
+    animation: fx-fall 0.5s linear infinite;
+  }
+
+  &--heavy-rain {
+    background-color: alpha(type-water, 14%);
+    animation-duration: 0.3s;
+  }
+
+  &--sun,
+  &--harsh-sun {
+    background: radial-gradient(
+      circle at 12% 0%,
+      #{alpha('gold', 55%)},
+      #{alpha(type-fire, 12%)} 45%,
+      transparent 75%
+    );
+    animation: fx-glow 2.6s ease-in-out infinite alternate;
+  }
+
+  &--harsh-sun {
+    background-color: alpha(type-fire, 12%);
+  }
+
+  &--sand {
+    background:
+      repeating-linear-gradient(
+        170deg,
+        transparent 0 30px,
+        #{alpha(type-ground, 40%)} 30px 33px,
+        transparent 33px 70px
+      ),
+      #{alpha(type-ground, 20%)};
+    background-size: 480px 100%;
+    animation: fx-wind 0.9s linear infinite;
+  }
+
+  &--snow {
+    background:
+      radial-gradient(circle, #{alpha(paper, 95%)} 0 3px, transparent 4px) 0 0 / 70px 70px,
+      radial-gradient(circle, #{alpha(paper, 80%)} 0 2px, transparent 3px) 35px 20px / 50px 50px,
+      #{alpha(type-ice, 10%)};
+    animation: fx-snow 3s linear infinite;
+  }
+
+  &--wind {
+    background: repeating-linear-gradient(
+      -8deg,
+      transparent 0 50px,
+      #{alpha(type-flying, 35%)} 50px 53px,
+      transparent 53px 120px
+    );
+    background-size: 520px 100%;
+    animation: fx-wind 0.8s linear infinite;
+  }
+}
+
+@keyframes fx-glow {
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fx-fall {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: -60px 240px;
+  }
+}
+
+@keyframes fx-snow {
+  from {
+    background-position:
+      0 0,
+      35px 20px,
+      0 0;
+  }
+
+  to {
+    background-position:
+      -30px 140px,
+      15px 120px,
+      0 0;
+  }
+}
+
+@keyframes fx-wind {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 400px 0;
+  }
 }

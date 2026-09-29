@@ -10,6 +10,7 @@ import { useBattleAudio } from '../audio/use-host-audio';
 import { useHostStore } from '../host-store';
 import { ActiveSlot, type MonAnimation, type SlotBox } from './ActiveSlot';
 import { BattleLog } from './BattleLog';
+import { FieldEffects } from './FieldEffects';
 import { activePokemon, weatherId, type SceneEvent } from './model';
 import { NarrationText } from './NarrationText';
 import type { NarrationLine } from './playback';
@@ -70,7 +71,7 @@ interface FieldLayout {
 const LAYOUTS: Record<'singles' | 'doubles', Record<'wide' | 'compact', FieldLayout>> = {
   singles: {
     wide: {
-      chips: 'top-7 left-1/2 -translate-x-1/2',
+      chips: 'top-7 left-1/2 max-w-[1100px] -translate-x-1/2 justify-center',
       slots: {
         p1: [{ left: 230, top: 300, width: 560, height: 420 }],
         p2: [{ left: 1110, top: 60, width: 440, height: 330 }],
@@ -84,7 +85,7 @@ const LAYOUTS: Record<'singles' | 'doubles', Record<'wide' | 'compact', FieldLay
       cards: { p1: 'right-12 bottom-12', p2: 'top-10 left-12' },
     },
     compact: {
-      chips: 'top-7 left-[640px]',
+      chips: 'top-7 left-[640px] max-w-[720px]',
       slots: {
         p1: [{ left: 190, top: 310, width: 500, height: 410 }],
         p2: [{ left: 790, top: 70, width: 400, height: 320 }],
@@ -100,7 +101,7 @@ const LAYOUTS: Record<'singles' | 'doubles', Record<'wide' | 'compact', FieldLay
   },
   doubles: {
     wide: {
-      chips: 'top-7 left-1/2 -translate-x-1/2',
+      chips: 'top-7 left-1/2 max-w-[1100px] -translate-x-1/2 justify-center',
       slots: {
         p1: [
           { left: 330, top: 330, width: 420, height: 380 },
@@ -120,7 +121,7 @@ const LAYOUTS: Record<'singles' | 'doubles', Record<'wide' | 'compact', FieldLay
       cards: { p1: 'right-12 bottom-12', p2: 'top-10 left-12' },
     },
     compact: {
-      chips: 'top-7 left-[640px]',
+      chips: 'top-7 left-[640px] max-w-[720px]',
       slots: {
         p1: [
           { left: 230, top: 350, width: 320, height: 360 },
@@ -226,7 +227,12 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
       )}
     >
       <div className="battle-field">
-        <div className={cn('absolute z-4 flex items-center gap-4 text-[26px]', layout.chips)}>
+        <div
+          className={cn(
+            'absolute z-4 flex w-max flex-wrap items-center gap-3 text-[26px]',
+            layout.chips,
+          )}
+        >
           {scene.turn > 0 && (
             <span className="battle-chip px-6 py-2.5">
               {t('host.battle.turn', { turn: scene.turn })}
@@ -268,6 +274,8 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
           );
         })}
 
+        <FieldEffects layer="ground" scene={scene} slots={layout.slots} />
+
         {SIDE_IDS.flatMap((side) =>
           layout.slots[side].map((box, position) => (
             <ActiveSlot
@@ -282,6 +290,8 @@ export function HostBattle({ room }: { room: PublicRoomState }) {
             />
           )),
         )}
+
+        <FieldEffects layer="air" scene={scene} slots={layout.slots} />
 
         {projectile?.side && (
           <span

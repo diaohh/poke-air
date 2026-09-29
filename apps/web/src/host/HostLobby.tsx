@@ -49,7 +49,9 @@ export function HostLobby({ room }: { room: PublicRoomState }) {
         <div className="grid min-h-0 grid-cols-[1fr_120px_1fr]">
           {panel('red')}
           <div className="grid place-items-center">
-            <span className="vs-burst size-[150px] text-[62px]">{t('host.lobby.vs')}</span>
+            <span className="vs-burst relative z-2 size-[112px] text-[46px]">
+              {t('host.lobby.vs')}
+            </span>
           </div>
           {panel('blue')}
         </div>

@@ -524,6 +524,16 @@ function reduceLine(state: SceneState, args: Args, kwArgs: KwArgs): SceneEvent |
       return { kind: 'message', narration: { key: 'failed' } };
     case 'cant':
       return { kind: 'message', narration: { key: 'cant', params: { pokemon } } };
+    case '-block': {
+      // `@pkmn/protocol` turns `-activate|<mon>|move: Protect` (and Detect, Wide Guard, Max Guard…)
+      // into `-block`: the attack hit a protection.
+      if (!who) return null;
+      return {
+        kind: 'effect',
+        side: who.side,
+        narration: { key: 'protected', params: { pokemon } },
+      };
+    }
     case '-activate': {
       const effect = effectName(a2);
       // Abilities announced through `-activate` (e.g. Synchronize, Cursed Body) get the ability call-out.

@@ -203,7 +203,14 @@ export function TeamBuilder({ room, me }: Props) {
             : ' '}
       </p>
 
-      {menuOpen && <TeamMenu sets={sets} onClose={() => setMenuOpen(false)} onNotice={setNotice} />}
+      {menuOpen && (
+        <TeamMenu
+          sets={sets}
+          quota={slots.length}
+          onClose={() => setMenuOpen(false)}
+          onNotice={setNotice}
+        />
+      )}
     </div>
   );
 }

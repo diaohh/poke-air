@@ -1,4 +1,9 @@
-import { formatTeamText, type PokemonSetData } from '@poke-air/shared';
+import {
+  formatTeamText,
+  splitTeamText,
+  type PokemonSetData,
+  type TeamTextBlock,
+} from '@poke-air/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PokemonSprite } from '../../components/PokemonSprite';
@@ -9,11 +14,14 @@ import { Sheet } from '../../components/ui/Sheet';
 import { deleteSavedTeam, listSavedTeams, saveTeam, type SavedTeam } from '../../lib/saved-teams';
 import { useControllerStore } from '../controller-store';
 import { ErrorNote } from './ErrorNote';
+import { KeepPicker } from './KeepPicker';
 
-type Mode = 'menu' | 'import' | 'export' | 'save';
+type Mode = 'menu' | 'import' | 'export' | 'save' | 'keep';
 
 interface Props {
   sets: PokemonSetData[];
+  /** Slots this player has: bigger teams ask which Pokémon to keep (D-54). */
+  quota: number;
   onClose: () => void;
   /** Result line for the team list ("Imported 6 Pokémon"). */
   onNotice: (notice: string) => void;
@@ -23,7 +31,7 @@ interface Props {
  * Team options (bottom sheet): import a Showdown text paste, export the team as text, save it on
  * this phone and load / delete saved teams (decision D-39). Loading goes through `team:import`.
  */
-export function TeamMenu({ sets, onClose, onNotice }: Props) {
+export function TeamMenu({ sets, quota, onClose, onNotice }: Props) {
   const { t } = useTranslation();
   const { importTeam, busy, error, errorParams, clearError } = useControllerStore();
   const [mode, setMode] = useState<Mode>('menu');
@@ -33,6 +41,8 @@ export function TeamMenu({ sets, onClose, onNotice }: Props) {
     t('teamBuilder.menu.defaultName', { n: saved.length + 1 }),
   );
   const [copied, setCopied] = useState(false);
+  /** A pasted / saved team bigger than the quota, waiting for the player to pick. */
+  const [keep, setKeep] = useState<TeamTextBlock[]>([]);
   const exported = sets.length > 0 ? formatTeamText(sets) : '';
 
   const go = (next: Mode) => {
@@ -41,6 +51,16 @@ export function TeamMenu({ sets, onClose, onNotice }: Props) {
   };
 
   const load = async (source: string) => {
+    const blocks = splitTeamText(source);
+    if (blocks.length > quota) {
+      setKeep(blocks);
+      go('keep');
+      return;
+    }
+    await importText(source);
+  };
+
+  const importText = async (source: string) => {
     const result = await importTeam(source);
     if (!result) return;
     onNotice(
@@ -66,6 +86,7 @@ export function TeamMenu({ sets, onClose, onNotice }: Props) {
     import: t('teamBuilder.menu.import'),
     export: t('teamBuilder.menu.export'),
     save: t('teamBuilder.menu.save'),
+    keep: t('teamBuilder.keep.title'),
   };
 
   return (
@@ -169,6 +190,19 @@ export function TeamMenu({ sets, onClose, onNotice }: Props) {
               {t('teamBuilder.menu.importButton')}
             </Button>
           </div>
+        </>
+      )}
+
+      {mode === 'keep' && (
+        <>
+          <KeepPicker
+            blocks={keep}
+            max={quota}
+            busy={busy}
+            onBack={() => go('menu')}
+            onConfirm={(chosen) => void importText(chosen)}
+          />
+          <ErrorNote error={error} params={errorParams} />
         </>
       )}
 

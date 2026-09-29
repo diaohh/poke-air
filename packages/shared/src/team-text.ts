@@ -34,3 +34,39 @@ export function formatSetText(set: PokemonSetData): string {
 export function formatTeamText(sets: readonly PokemonSetData[]): string {
   return `${sets.map(formatSetText).join('\n\n')}\n`;
 }
+
+/** One Pokémon's block of a team text and the species its first line names. */
+export interface TeamTextBlock {
+  species: string;
+  text: string;
+}
+
+/**
+ * "Nickname (Species) (M) @ Item" / "Species (F) @ Item" / "Species" → the species. A best-effort
+ * reading for previews: the server's parser (`team:import`) is the real one.
+ */
+export function teamTextSpecies(firstLine: string): string {
+  const head = (firstLine.split(' @ ')[0] ?? '').trim().replace(/ \((M|F)\)$/, '');
+  const nicknamed = /^.* \(([^()]+)\)$/.exec(head);
+  return (nicknamed?.[1] ?? head).trim();
+}
+
+/**
+ * Splits a Showdown team text into one block per Pokémon (blocks are separated by blank lines;
+ * `=== [format] Name ===` headers are skipped). Lets the phone ask which Pokémon to keep when a
+ * text has more than the slots available (decision D-54).
+ */
+export function splitTeamText(text: string): TeamTextBlock[] {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split(/\n\s*\n/)
+    .map((block) =>
+      block
+        .split('\n')
+        .filter((line) => line.trim() && !/^===.*===$/.test(line.trim()))
+        .join('\n')
+        .trim(),
+    )
+    .filter(Boolean)
+    .map((block) => ({ species: teamTextSpecies(block.split('\n')[0] ?? ''), text: block }));
+}

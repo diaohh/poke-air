@@ -387,6 +387,12 @@
       "pickBoth": "Pick one stat to raise and one to lower.",
       "confirm": "Use {{nature}}",
       "confirmEmpty": "Pick both stats"
+    },
+    "keep": {
+      "title": "Choose your Pokémon",
+      "hint": "This team has {{count}} Pokémon but you can bring {{max}}. Choose which ones to keep.",
+      "selected": "{{count}} / {{max}} chosen",
+      "confirm": "Import {{count}} Pokémon"
     }
   },
   "stats": {

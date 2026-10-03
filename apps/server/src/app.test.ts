@@ -379,3 +379,111 @@ describe('realtime abuse limits', () => {
     expect(await join('C')).toEqual({ ok: false, error: { code: 'RATE_LIMITED' } });
   });
 });
+
+describe('realtime team editing, builder and doubles', () => {
+  const GARCHOMP = {
+    name: 'Garchomp',
+    species: 'Garchomp',
+    item: 'Garchompite',
+    ability: 'Rough Skin',
+    moves: ['Dragon Claw', 'Earthquake'],
+    nature: 'Jolly',
+    evs: { hp: 2, atk: 32, def: 0, spa: 0, spd: 0, spe: 32 },
+    level: 50,
+  };
+  const TEXT = [
+    'Pikachu @ Light Ball\nAbility: Static\n- Thunderbolt',
+    'Lucario\nAbility: Justified\n- Close Combat',
+  ].join('\n\n');
+
+  /** Host + two phones in a doubles room's TEAM_BUILDING (1v1: each player alone on a side). */
+  async function doublesRoom() {
+    const host = hostClient();
+    const { code } = await createRoom(host);
+    expect((await host.emitWithAck('host:setFormat', { gameType: 'doubles' })).ok).toBe(true);
+    const ana = await joinPlayer(code, 'Ana');
+    const ben = await joinPlayer(code, 'Ben');
+    const teams = Promise.all(
+      [ana, ben].map(({ phone }) => waitFor<TeamState>(phone, 'team:state')),
+    );
+    expect((await host.emitWithAck('host:startTeamBuilding', {})).ok).toBe(true);
+    await teams;
+    return { host, ana, ben };
+  }
+
+  it('saves edited sets and imports text, with validation errors as codes', async () => {
+    const { ana, ben } = await doublesRoom();
+    const saved = waitFor<TeamState>(ana.phone, 'team:state');
+    expect(await ana.phone.emitWithAck('team:setSlot', { slot: 0, set: GARCHOMP })).toEqual({
+      ok: true,
+    });
+    expect((await saved).slots[0]).toMatchObject({ species: 'Garchomp', item: 'Garchompite' });
+
+    const illegal = await ana.phone.emitWithAck('team:setSlot', {
+      slot: 1,
+      set: { ...GARCHOMP, species: 'Pikachu', name: 'Pikachu', item: 'Light Ball' },
+    });
+    expect(illegal).toMatchObject({ ok: false, error: { code: 'INVALID_SET' } });
+    expect(!illegal.ok && String(illegal.error.params?.details)).toContain('Pikachu');
+
+    // A solo doubles player needs two Pokémon (the sim crashes with one).
+    expect(await ana.phone.emitWithAck('player:ready', { ready: true })).toEqual({
+      ok: false,
+      error: { code: 'TEAM_TOO_SMALL', params: { min: 2 } },
+    });
+
+    const imported = waitFor<TeamState>(ben.phone, 'team:state');
+    expect(await ben.phone.emitWithAck('team:import', { text: TEXT })).toEqual({
+      ok: true,
+      count: 2,
+      skipped: 0,
+    });
+    expect((await imported).slots.filter(Boolean).map((s) => s?.species)).toEqual([
+      'Pikachu',
+      'Lucario',
+    ]);
+    expect(await ben.phone.emitWithAck('team:import', { text: 'not a team' })).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it('answers the stateless builder events without a seat', async () => {
+    const phone = playerClient();
+    const valid = await phone.emitWithAck('builder:validateSet', {
+      set: { ...GARCHOMP, name: 'Chompy' },
+    });
+    expect(valid).toMatchObject({ ok: true, set: { name: 'Garchomp' } });
+    const random = await phone.emitWithAck('builder:randomSet', { species: 'Pikachu' });
+    expect(random).toMatchObject({ ok: true, set: { species: 'Pikachu' } });
+    const parsed = await phone.emitWithAck('builder:parseTeam', { text: TEXT });
+    expect(parsed.ok && parsed.sets.map((s) => s.species)).toEqual(['Pikachu', 'Lucario']);
+    expect(await phone.emitWithAck('builder:parseTeam', { text: '' })).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it('takes one action per position, with targets, in a doubles battle', async () => {
+    const { host, ana, ben } = await doublesRoom();
+    autoAnimate(host);
+    for (const { phone } of [ana, ben]) {
+      expect((await phone.emitWithAck('team:import', { text: TEXT })).ok).toBe(true);
+    }
+    const menu = waitFor<BattleRequestPayload>(ana.phone, 'battle:request', (p) => !!p.request);
+    await ana.phone.emitWithAck('player:ready', { ready: true });
+    await ben.phone.emitWithAck('player:ready', { ready: true });
+    const { request } = await menu;
+    expect(request?.active.map((a) => a.pokemon)).toEqual(['Pikachu', 'Lucario']);
+
+    const rqid = request?.rqid;
+    const noTarget = await ana.phone.emitWithAck('battle:choose', {
+      choice: 'move 1, move 1',
+      rqid,
+    });
+    expect(noTarget).toEqual({ ok: false, error: { code: 'INVALID_CHOICE' } });
+    const chosen = await ana.phone.emitWithAck('battle:choose', {
+      choice: 'move 1 2, move 1 1',
+      rqid,
+    });
+    expect(chosen).toEqual({ ok: true });
+  });
+});

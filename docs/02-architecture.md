@@ -259,8 +259,11 @@ poke-air/
 │  │  │                              effects (dex durations)
 │  │  └─ time.ts                  ✅ injectable Scheduler (fake one in testing/)
 │  └─ data/scripts/               ✅ build-dex.ts (team builder JSON), fetch-sprites.ts (trainers + Pokémon +
-│                                    manifest), fetch-audio.ts (cries), build-locales.ts (names.<locale>.json)
-├─ e2e/                          ✅ Playwright: 1 Host + 2 phones play a battle (`pnpm test:e2e`)
+│                                    manifest), fetch-audio.ts (cries), build-locales.ts (names.<locale>.json),
+│                                    asset-cache.ts (Vercel build cache), lib/ (csv, download, locale rules)
+├─ e2e/                          ✅ Playwright: singles, doubles 2v2, Spanish room, team editor (`pnpm test:e2e`)
+├─ render.yaml                   ✅ Render Blueprint: backend (docs/16-first-deploy.md)
+├─ vercel.json                   ✅ Vercel: frontend build, SPA rewrite, cache headers
 └─ docs/
 ```
 

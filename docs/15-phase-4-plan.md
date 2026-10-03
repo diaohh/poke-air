@@ -123,18 +123,23 @@ only, as JSON: **~58 KB** (≈ 20 KB gzip).
   side card stages as green ▲ / red ▼ tags with short names ("▲ ATK +2"), and the same tags on the
   phone's active card while choosing.
 
-## Tests to add (after manual validation)
+## Tests (added 2026-10-03, see `16-first-deploy.md`)
 
-- web: model `-start` / `-activate` (`[damage]`, `[block]`) / `-end` Substitute, `-block`, boost events
-  carrying the signed stage change; the substitute cleared on switch / faint.
+Added:
 
-- data: `parseCsv` (quoted commas / newlines), `flavorTexts` newest version group per language.
-- web: `LanguageSelect` keyboard / outside click, `useDexDescriptions` fallback.
+- web (`model.test.ts`): Substitute `-start` / `-activate [damage]` / `[block]` / `-end`, cleared on
+  switch and faint; `-block` (Protect); boost events with the signed change, clamped to ±6, reset on
+  switch. `i18n/locales.test.ts`: es-ES has exactly the keys of `en`, the same `{{params}}`, no empty
+  strings.
+- data (`packages/data/scripts/lib/locales.test.ts`; the pure rules moved to `lib/locales.ts`):
+  translated entries only, regional formes, Mega Stone pattern (Showdown's own name wins), newest
+  flavor text per language as one paragraph, `parseCsv` (quoted commas, quotes, newlines, CRLF).
+- E2E: `e2e/spanish.spec.ts`, the Host switches the lobby to Español, phones follow, battle log and
+  results in Spanish.
 
-- data: `build-locales` rules (regional formes, Mega Stone pattern, skip when current, offline warning).
-- web: `useDexNames` fallback and `effect()` order (move → item → ability), `browserLocale` /
-  `currentLocale`, `NarrationText` localizing params, bilingual picker search, es-ES keys = en keys.
-- E2E: a room in Spanish (the throwaway run above is a good starting point).
+Still to add: `build:locales` I/O (skip when current, offline warning), `LanguageSelect`,
+`useDexNames` / `useDexDescriptions` fallbacks and `effect()` order, `browserLocale`,
+`NarrationText`, bilingual picker search.
 
 ## Manual validation checklist
 

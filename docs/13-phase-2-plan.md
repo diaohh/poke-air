@@ -175,18 +175,25 @@ Recorded in `08-decisions.md`: D-34 (battle info data), D-35 (validator format),
 builder data), D-37 (no nicknames), D-38 (validator text in `INVALID_SET`), D-39 (saved teams as text,
 closes O-05), D-40 (sprite roster = legal roster).
 
-## Tests to add (after manual validation)
+## Tests (added 2026-10-03, see `16-first-deploy.md`)
 
-- core: `TeamService.validateSet` / `importTeam` (legal, SP over limit, Z-Crystal, nickname stripped,
-  Mega species normalized), `Room.setSlot` / `importTeam` / `clearSlot` (Species Clause across teammates, quota trim, compaction,
-  un-ready), `buildTeamBuilderData` smoke (roster size, learnset contains a known move), `enrichRequest`
-  stats/nature/Stat Points/boosts, effect durations.
-- web: model reducer over logs with weather/screens/hazards (`since`, layers, upkeep), `turnsLeft`,
-  `lib/stats.ts`, `formatTeamText` round-trip with `team:import`, `-enditem` / `-item` / `-activate`
-  ability narration, `sfxForEvent` for stat stages / abilities / items / screens vs hazards, nature
-  picker result (plus/minus → nature, same stat → neutral).
-- server: `team:setSlot` with a set, `team:import` ack and errors.
-- E2E: edit a Pokémon (change a move) before Ready.
+Added:
+
+- core (`team-service.test.ts`, `room.test.ts`, `match-controller-doubles.test.ts`): `validateSet`
+  (legal + normalized, nickname stripped, Mega species → base + stone, 0 SP → Hardy, SP over 32 / 66,
+  Z-Crystal, unlearnable move), `importTeam` (nickname / IVs / shiny dropped, illegal species named,
+  `INVALID_IMPORT`), `randomSetFor`, export → import round-trip; `Room.setSlot` / `importTeam` /
+  `clearSlot` (Species Clause across teammates and formes, compaction, un-ready, quota trim, clash
+  skipped); nature + Stat Points + stat stages in the owner's request.
+- web (`model.test.ts`): weather / terrain / field / side effects (`since` before turn 1, mid-turn and
+  after upkeep, hazard layers), `turnsLeft` (base, item-extended, expired, unknown).
+- shared: `formatSetText`, `teamTextSpecies`, `splitTeamText`.
+- server (`app.test.ts`): `team:setSlot` (saved, `INVALID_SET` with details), `team:import` (ack counts,
+  bad text), `builder:*` without a seat.
+- E2E (`e2e/team-editor.spec.ts`): change a move in the editor, survives a refresh, then Ready.
+
+Still to add: `buildTeamBuilderData` smoke, core `effectsIn` durations, `lib/stats.ts`, `-enditem` /
+`-item` / ability `-activate` narration, `sfxForEvent`, the nature picker.
 
 ## Manual validation checklist
 

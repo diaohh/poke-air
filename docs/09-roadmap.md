@@ -18,7 +18,18 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 | $0 hosting                                        | Low–Medium                                      | Render cold start handled by UX; memory limits to be measured                              |
 | Legal                                             | Low risk without monetization or mass promotion | See `03`                                                                                   |
 
-## Current status (2026-09-28, Phase 4)
+## Current status (2026-10-03, tests + first deploy prepared)
+
+- ✅ **Deferred tests of Phases 2–4 added** (lists and remaining gaps in `13`, `14`, `15` § Tests): the
+  OwnershipLayer (unit + scripted doubles battles with the real sim), HostBattleModel, TeamService / Room
+  editing, server team / builder / doubles events, `build:locales` rules, locale key parity; permanent E2E
+  for singles, doubles 2v2, a Spanish room and the team editor.
+- ✅ **First deploy prepared and rehearsed locally** (spike S6, D-64…D-67, `16-first-deploy.md`):
+  `render.yaml`, `vercel.json`, asset cache for the Vercel build, backend warm-up ping.
+- 👉 **Next:** manual validation of Phases 2–4 → deploy by hand (`16` § Step by step) → S6 checklist with
+  real phones → **Phase 5** (polish).
+
+### Status on 2026-09-28 (Phase 4)
 
 - ✅ **Phase 4 implemented** (pending manual validation): the whole UI and every Pokémon name in Spanish
   (Spain) — `pnpm build:locales` (Showdown `data/text/es` at a pinned commit), `useDexNames()`, es-ES UI
@@ -90,7 +101,8 @@ used as a library. Even Spanish names and most battle messages exist. What remai
 - **S5 — Scene:** Host consuming a recorded spectator log with `@pkmn/protocol` + our own reducer, animating
   switch/move/damage/mega/faint with self-hosted `gen5ani` sprites; check sprite coverage for new Megas.
 - **S6 — Mobile & hosting:** real iPhone + Android test of Wake Lock + Socket.IO reconnection after
-  screen lock, against a Render free deployment (including cold-start UX).
+  screen lock, against a Render free deployment (including cold-start UX). Deploy prepared and rehearsed
+  locally (`16-first-deploy.md`); the real-phone checklist there is pending.
 
 ## Phases
 

@@ -64,28 +64,28 @@ Cross-origin setup: Socket.IO CORS restricted to the frontend domain; room QR po
 problem, the same room/battle core can move into the Host browser with a thin relay, without rewriting
 game logic.
 
-## Deployment recipe (deferred — decision D-23)
+## Deployment recipe (D-64, D-65) — see `16-first-deploy.md`
 
-Nothing below exists yet; it is the intended setup when deploying.
+The recipe is versioned in the repo; the step-by-step guide, the rehearsal results and the real-phone
+checklist (spike S6) are in `16-first-deploy.md`.
 
-**Backend — Render (Web Service, free):**
+**Backend — Render (Web Service, free) — `render.yaml` Blueprint:**
 
-- Root directory: repo root. Runtime: Node 22 (set `NODE_VERSION=22.22.0`).
-- Build command: `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @poke-air/server build`
-- Start command: `pnpm --filter @poke-air/server start`
-- Env: `NODE_ENV=production`, `ALLOWED_ORIGINS=https://<vercel-domain>`, `LOG_LEVEL=info` (Render sets `PORT`).
-- Health check path: `/healthz`.
+- Region Virginia. `NODE_VERSION=22.22.0`, `NODE_ENV=production`, `LOG_LEVEL=info`,
+  `NODE_OPTIONS=--max-old-space-size=384`, `ALLOWED_ORIGINS=https://<vercel-domain>` (asked on creation).
+- Build: `corepack enable && pnpm install --frozen-lockfile --prod=false --filter "@poke-air/server..." && pnpm build:server`
+  (`--prod=false`: with `NODE_ENV=production` pnpm would skip tsup).
+- Start: `node apps/server/dist/index.js`. Health check: `/healthz`. Build filter: server-side paths only.
 
-**Frontend — Vercel (Hobby):**
+**Frontend — Vercel (Hobby) — `vercel.json` at the repo root:**
 
-- Root directory: `apps/web` (Vercel detects the pnpm workspace and installs from the root).
-- Build command: `pnpm build` · Output: `dist` · Framework preset: Vite.
-- Env: `VITE_BACKEND_URL=https://<render-service>.onrender.com`, `VITE_PUBLIC_APP_URL=https://<vercel-domain>`.
-- SPA fallback: add `apps/web/vercel.json` with a rewrite of `/(.*)` → `/index.html` (routes `/host`, `/j/:code`).
-- Sprites: `pnpm fetch:sprites` must run before the build (add it to the build command) or be
-  uploaded to Cloudflare R2; they are never in git.
-- Team builder data: run `pnpm build:data` from the repo root before the web build (the root `pnpm build`
-  does it; `apps/web`'s own `build` does not): e.g. build command `cd ../.. && pnpm build:data && pnpm --filter @poke-air/web build`.
+- Root directory: the repo root; framework "Other"; Node 22.x; env `VITE_BACKEND_URL=https://<render-service>.onrender.com`
+  and `ENABLE_EXPERIMENTAL_COREPACK=1` (pinned pnpm). `VITE_PUBLIC_APP_URL` is optional (the QR uses the page origin).
+- Build: `pnpm build:web:deploy` (asset cache restore → `fetch:sprites --lenient` → `fetch:audio --lenient` →
+  `build:data` → `build:locales` → asset cache save → web build). Output `apps/web/dist`.
+- SPA fallback: rewrite `/(.*)` → `/index.html`; long cache for `/assets`, one day for sprites and audio.
+- Sprites and cries are never in git: they are downloaded by the first build and kept in Vercel's build
+  cache (`node_modules/.cache/poke-air-assets/`). A local build + `vercel deploy --prebuilt` is not
+  possible on Hobby (CLI uploads are capped at 100 MB; `dist` is ≈ 100 MB).
 
-**Later:** GitHub Actions running `pnpm check` on every push; `packages/data` generation in the web build
-(Showdown pinned commit → JSON, cached).
+**Later:** GitHub Actions running `pnpm check` on every push.

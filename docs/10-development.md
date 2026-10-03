@@ -65,7 +65,9 @@ LAN notes:
 | `pnpm build:locales`                         | Localized names → `apps/web/public/data/names.<locale>.json` (skipped when up to date)    |
 | `pnpm fetch:sprites`                         | Download missing sprites + write `pokemon-manifest.json` (idempotent, sequential, polite) |
 | `pnpm fetch:audio`                           | Optional: Pokémon cries + `audio/cries-manifest.json` (git-ignored, ~4 MB)                |
-| `pnpm test:e2e`                              | Playwright: 1 Host + 2 phones play a battle (reuses `pnpm dev`, system Edge)              |
+| `pnpm test:e2e`                              | Playwright specs in `e2e/` (reuses `pnpm dev`, system Edge; `E2E_BASE_URL` = deployment)  |
+| `pnpm build:web:deploy`                      | Vercel build: asset cache restore, lenient sprite / cry download, data, locales, web      |
+| `pnpm build:server`                          | Server bundle only (Render build)                                                         |
 | `pnpm --filter @poke-air/core sim:smoke [n]` | Simulator benchmark: load time, RAM, ms/turn (spike S1)                                   |
 | `pnpm --filter @poke-air/server start`       | Run the built server (`node dist/index.js`)                                               |
 
@@ -164,10 +166,17 @@ Example: a new player action `player:foo`.
   sets and a fixed seed (`testing/fixtures.ts`) and a fake scheduler (`testing/fake-scheduler.ts`): no waiting.
 - **Host scene (web):** `battle-scene/model.test.ts` runs the reducer over a recorded spectator log;
   `playback.test.ts` drives the animation queue with manual timers.
-- **E2E:** `pnpm test:e2e` (`e2e/battle.spec.ts`, `@playwright/test`) opens `/host?speed=8` + two phone
-  contexts and plays a whole singles battle, then a rematch (a doubles spec is in the Phase 3 test list). Uses the system Edge (`E2E_CHANNEL=chrome` for Chrome),
-  so no browser download. `E2E_SCREENSHOTS=<dir>` saves a screenshot of every screen. Not part of
-  `pnpm check` (needs the dev servers; Playwright starts `pnpm dev` if nothing is running).
+- **OwnershipLayer (core):** `ownership.test.ts` over hand-built side requests; `match-controller-doubles.test.ts`
+  plays scripted doubles battles (Splash-only foes, fixed seed) through the MatchController.
+- **Data scripts:** pure rules live in `packages/data/scripts/lib/` and are tested there (Vitest also runs
+  `packages/data/scripts/**/*.test.ts`).
+- **E2E:** `pnpm test:e2e` (`@playwright/test`) runs `e2e/*.spec.ts`: a singles battle + rematch, a 2v2
+  doubles battle with four phones, a room switched to Spanish and the team editor. Helpers in
+  `e2e/helpers.ts` (`openHost`, `phone`, `randomTeam`, `playTurn` reads the phone's current view each pass,
+  `playToTheEnd`; `test.afterEach(closeContexts)`). Uses the system Edge (`E2E_CHANNEL=chrome` for Chrome),
+  so no browser download. `E2E_SCREENSHOTS=<dir>` saves screenshots; `E2E_BASE_URL=https://<app>` runs
+  the specs against a deployment. Not part of `pnpm check` (needs the dev servers; Playwright starts
+  `pnpm dev` if nothing is running).
 
 ## Pitfalls (learned the hard way)
 
@@ -234,6 +243,15 @@ Example: a new player action `player:foo`.
   use English names; show them through `useDexNames()` and never send a localized name back. Every
   `ui.json` key must exist in every locale (the typecheck enforces it); narration stats use
   `battle.log.stats.*` (they carry the article in Spanish).
+- **Deploy (D-64, D-65, `docs/16-first-deploy.md`):** `NODE_ENV=production` makes `pnpm install` skip
+  devDependencies (tsup), hence `--prod=false` on Render; the Vercel build parks downloaded assets in
+  `node_modules/.cache/poke-air-assets/` (`assets:restore` / `assets:save`) and downloads with `--lenient`,
+  because a failed Vercel build never saves its cache. `VITE_*` values are baked in at build time.
+- **Cries manifest:** the roster grew in Phase 2; `pnpm fetch:audio` must be re-run once to fetch the
+  new species (until then `cries-manifest.json` covers only the Phase 1 roster).
+- **E2E clicks:** an element that never becomes actionable makes `click()` wait (`actionTimeout` is 15 s
+  in `playwright.config.ts`); views that render after a tap are handled on the next `playTurn` pass, not
+  by checking right after the tap.
 - **Doubles (Phase 3):** a one-Pokémon side crashes the sim (hence `Room.minimumFor`); `default` inside a
   comma-separated choice completes every remaining position (the OwnershipLayer builds explicit actions);
   the merged side choice needs every position, `pass` included; `side.pokemon` in requests is reordered by

@@ -189,20 +189,26 @@ data the TV shows), no hardcoded data, every string an i18n key.
 - Two Megas on the same turn for one team (O-01), triples, team preview.
 - Mirroring field effects on the phones.
 
-## Tests to add (after manual validation)
+## Tests (added 2026-10-03, see `16-first-deploy.md`)
 
-- core: `Room` minimum (solo doubles 2, pair 1, singles 1), lead order; OwnershipLayer with scripted
-  doubles battles (fixed seed): 1v1 doubles (one player, two positions), 1v2 (solo 2 Megas on different
-  turns, opponent pair), 2v2 (split requests, merge, targets, forced switch to the owner, hand-over to
-  the ally when the owner has no Pokémon, `pass` holes), Mega quota and `MEGA_TAKEN`, timer defaults
-  with one player missing, undo of one part, Ally Switch ownership; `battleName` (formes named after
-  the base species) and the nature / Stat Points of a forme in its owner's request.
+Added:
+
+- core: `ownership.test.ts` (OwnershipLayer over hand-built requests: controllers, fainted /
+  commanding positions, forced switch to the owner, hand-over to the ally, one benched Pokémon
+  reserved per hole, per-player share and privacy, `wait`, Mega quota / `allyMega` / `MEGA_TAKEN`, the
+  1v2 solo player's two Megas, targets, merge order, automatic actions) and
+  `match-controller-doubles.test.ts` (scripted battles with the real sim and a fixed seed: 2v2 leads,
+  split requests + merge with targets, owner switch + hand-over + "cheer on your ally", one Mega per
+  team per turn with per-player quotas, 90 s timer filling only the missing part, undo of one part,
+  1v1 doubles with one comma-separated choice, 1v2 Megas on different turns, `battleName` and a
+  forme's nature / Stat Points); `room.test.ts` minimums (solo doubles 2, pair 1, singles 1).
 - server: `battle:choose` with two actions and targets; `TEAM_TOO_SMALL`.
-- web: model reducer over a doubles log (`p1b`, `|swap|`, spread moves), `summarize` with targets,
-  target options per move target type (shared `targetOptions`), `tvOrder`, `ItemIcon` offsets, the
-  store keeping a pending choice over a stale re-sent menu.
-- E2E: a 2v2 doubles battle with four phone contexts (the throwaway run's `playTurn` handled Mega,
-  targets and forced switches: a good starting point).
+- web: model over a doubles log (`p1b` positions, spread move target, `|swap|`); shared
+  `targetOptions` per target type.
+- E2E: `e2e/doubles.spec.ts`, a 2v2 battle with four phone contexts to the results.
+
+Still to add: Ally Switch ownership in core, `summarize`, `tvOrder`, `ItemIcon` offsets, the store
+keeping a pending choice over a stale re-sent menu.
 
 ## Manual validation checklist
 

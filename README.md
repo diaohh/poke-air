@@ -6,7 +6,8 @@
 **Status:** v1 feature-complete, pending manual validation — singles and doubles (1v1 / 1v2 / 2v2)
 battles on the big screen with private phone controls, full team builder (editor, import / export,
 saved teams, item icons, a team builder page on the phone before joining), results and rematch.
-Available in English and Spanish (Spain). Next: polish (Phase 5).
+Available in English and Spanish (Spain). Ready for its first deploy (Render + Vercel, free tiers).
+Next: polish (Phase 5).
 
 ## Quick start
 
@@ -51,6 +52,7 @@ Mechanics follow a **Pokémon Champions–style** format: level 50, no IVs, Stat
 - [Battle info + Phase 2 plan](./docs/13-phase-2-plan.md)
 - [Phase 3 plan (doubles)](./docs/14-phase-3-plan.md)
 - [Phase 4 (Spanish)](./docs/15-phase-4-plan.md)
+- [First deploy (Render + Vercel)](./docs/16-first-deploy.md)
 - [Design system](./docs/12-design-system.md)
 
 ## Legal notice

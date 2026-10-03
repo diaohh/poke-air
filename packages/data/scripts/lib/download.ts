@@ -27,8 +27,7 @@ export async function download(url: string, file: string): Promise<boolean> {
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'poke-air asset sync (fan project)' },
-    });
-    await sleep(DELAY_MS);
+    }).finally(() => sleep(DELAY_MS)); // Errors pause too: no burst of retries against the server.
     if (!response.ok) return false;
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, Buffer.from(await response.arrayBuffer()));
@@ -46,6 +45,8 @@ export function report(label: string): void {
   );
   if (stats.failed.length > 0) {
     console.error(stats.failed.join('\n'));
-    process.exitCode = 1;
+    // `--lenient` (deploy builds, docs/16-first-deploy.md): a few failed downloads must not fail
+    // the build, or its asset cache is never saved; the next build retries the missing files.
+    if (!process.argv.includes('--lenient')) process.exitCode = 1;
   }
 }

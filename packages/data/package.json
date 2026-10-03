@@ -8,7 +8,9 @@
     "fetch:sprites": "tsx scripts/fetch-sprites.ts",
     "fetch:audio": "tsx scripts/fetch-audio.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "build:locales": "tsx scripts/build-locales.ts"
+    "build:locales": "tsx scripts/build-locales.ts",
+    "assets:restore": "tsx scripts/asset-cache.ts restore",
+    "assets:save": "tsx scripts/asset-cache.ts save"
   },
   "dependencies": {
     "@poke-air/core": "workspace:*",

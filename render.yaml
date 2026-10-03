@@ -1,0 +1,42 @@
+# Render Blueprint: the game backend (Fastify + Socket.IO + the Showdown simulator) on the free plan.
+# Steps and rationale: docs/16-first-deploy.md (decision D-64). The frontend lives on Vercel (vercel.json).
+services:
+  - type: web
+    name: poke-air-server
+    runtime: node
+    plan: free
+    # Closest region to the players (UTC-5); WebSocket latency matters more than anything else.
+    region: virginia
+    branch: main
+    # Only the server and its workspace packages; `--prod=false` because NODE_ENV=production would
+    # skip the devDependencies that build it (tsup).
+    buildCommand: >-
+      corepack enable &&
+      pnpm install --frozen-lockfile --prod=false --filter "@poke-air/server..." &&
+      pnpm build:server
+    # Plain node (no pnpm wrapper process): less RAM and SIGTERM reaches the server directly.
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /healthz
+    # Changes that can't affect the server don't redeploy it.
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/core/**
+        - packages/shared/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Keep V8's heap well under the free instance's 512 MB (the sim uses ~110 MB of heap).
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+      # The Vercel URL(s), comma-separated, e.g. https://poke-air.vercel.app (asked on creation).
+      - key: ALLOWED_ORIGINS
+        sync: false

@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "pnpm build:data && pnpm build:locales && pnpm --parallel --filter @poke-air/server --filter @poke-air/web dev",
     "build": "pnpm build:data && pnpm build:locales && pnpm -r build",
+    "build:web:deploy": "pnpm --filter @poke-air/data assets:restore && pnpm fetch:sprites --lenient && pnpm fetch:audio --lenient && pnpm build:data && pnpm build:locales && pnpm --filter @poke-air/data assets:save && pnpm --filter @poke-air/web build",
+    "build:server": "pnpm --filter @poke-air/server build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "test": "vitest run",
     "test:watch": "vitest",

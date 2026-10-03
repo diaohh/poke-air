@@ -5,6 +5,15 @@ export function backendUrl(): string {
   return `${window.location.protocol}//${window.location.hostname}:3001`;
 }
 
+/**
+ * Fire-and-forget `GET /healthz` (decision D-66): the free backend sleeps after 15 idle minutes and
+ * takes about a minute to wake, so every page load nudges it before any socket opens. Opaque
+ * (`no-cors`): only the request matters, and failures are ignored.
+ */
+export function warmUpBackend(): void {
+  void fetch(`${backendUrl()}/healthz`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+}
+
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 /**

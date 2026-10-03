@@ -12,7 +12,11 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { HomeScreen } from './home/HomeScreen';
 import './i18n';
 import './index.css'; // Tailwind + tokens; declares the cascade layers used by main.scss.
+import { warmUpBackend } from './lib/backend';
 import './styles/main.scss';
+
+// A sleeping free backend starts waking while the page and its chunks load (decision D-66).
+warmUpBackend();
 
 // Each face is its own chunk: phones never download the Host screen (QR, and later the battle scene).
 const HostScreen = lazy(() => import('./host/HostScreen').then((m) => ({ default: m.HostScreen })));

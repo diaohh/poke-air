@@ -304,3 +304,101 @@ describe('Room teams and battle phases', () => {
     expect(room.toPublicState().battleCountdownMs).toBe(0);
   });
 });
+
+describe('Room team editing (Phase 2) and doubles minimums (Phase 3)', () => {
+  /** A doubles room in TEAM_BUILDING: red Ana + Cleo, blue Ben. */
+  function doubles() {
+    const { room, advance } = createRoom();
+    room.setGameType('doubles');
+    const ids = ['Ana', 'Ben', 'Cleo'].map((name) => {
+      advance(1);
+      return room.addPlayer({ name, avatar: 'red' }).id;
+    }) as [string, string, string];
+    room.startTeamBuilding();
+    return { room, ana: ids[0], ben: ids[1], cleo: ids[2] };
+  }
+
+  const set = (species: string, moves: string[], ability: string, item = '') => ({
+    name: species,
+    species,
+    item,
+    ability,
+    moves,
+    nature: 'Jolly',
+    evs: { hp: 2, atk: 32, def: 0, spa: 0, spd: 0, spe: 32 },
+    level: 50,
+  });
+  const GARCHOMP = set('Garchomp', ['Earthquake'], 'Rough Skin', 'Garchompite');
+  const PIKACHU = set('Pikachu', ['Thunderbolt'], 'Static', 'Light Ball');
+  const LUCARIO = set('Lucario', ['Close Combat'], 'Justified');
+
+  it('needs two Pokémon for a solo doubles side and one per player of a pair', () => {
+    const { room, ana, ben, cleo } = doubles();
+    expect(room.teamState(ben)).toMatchObject({ quota: 6, minimum: 2 });
+    expect(room.teamState(ana)).toMatchObject({ quota: 3, minimum: 1 });
+    room.setSlot(ben, 0, PIKACHU);
+    expectRoomError(() => room.setReady(ben, true), 'TEAM_TOO_SMALL');
+    room.setSlot(ben, 1, GARCHOMP);
+    room.setReady(ben, true);
+    room.setSlot(cleo, 0, LUCARIO);
+    room.setReady(cleo, true);
+    expect(room.getPlayer(cleo)?.ready).toBe(true);
+  });
+
+  it('keeps a singles minimum of one', () => {
+    const { room } = createRoom();
+    const a = room.addPlayer({ name: 'A', avatar: 'red' });
+    room.addPlayer({ name: 'B', avatar: 'red' });
+    room.startTeamBuilding();
+    expect(room.teamState(a.id).minimum).toBe(1);
+  });
+
+  it('saves a validated set, and enforces Species Clause across teammates', () => {
+    const { room, ana, ben, cleo } = doubles();
+    const state = room.setSlot(ana, 2, { ...GARCHOMP, name: 'Chompy' });
+    // Saved in the first empty slot (compaction) and normalized.
+    expect(state.slots[0]).toMatchObject({ name: 'Garchomp', species: 'Garchomp' });
+    expect(() => room.setSlot(cleo, 0, GARCHOMP)).toThrowError('SPECIES_CLAUSE');
+    expect(() => room.setSlot(ana, 1, { ...GARCHOMP, species: 'Garchomp-Mega' })).toThrowError(
+      'SPECIES_CLAUSE',
+    );
+    // The other team may bring the same species.
+    room.setSlot(ben, 0, GARCHOMP);
+    expect(() => room.setSlot(ana, 3, PIKACHU)).toThrowError('INVALID_SLOT');
+    expect(() => room.setSlot(ana, 1, { ...PIKACHU, moves: ['Spore'] })).toThrowError(
+      'INVALID_SET',
+    );
+  });
+
+  it('un-readies on edits and compacts the slots when a Pokémon is removed', () => {
+    const { room, ana } = doubles();
+    room.setSlot(ana, 0, GARCHOMP);
+    room.setSlot(ana, 1, PIKACHU);
+    room.setSlot(ana, 2, LUCARIO);
+    room.setReady(ana, true);
+    const state = room.setSlot(ana, 0, null);
+    expect(state.slots.map((s) => s?.species ?? null)).toEqual(['Pikachu', 'Lucario', null]);
+    expect(room.getPlayer(ana)?.ready).toBe(false);
+  });
+
+  it('imports up to the quota, leaving out species a teammate already brought', () => {
+    const { room, ana, cleo } = doubles();
+    room.setSlot(cleo, 0, PIKACHU);
+    const text = [
+      'Pikachu @ Light Ball\nAbility: Static\n- Thunderbolt',
+      'Garchomp @ Garchompite\nAbility: Rough Skin\n- Earthquake',
+      'Lucario\nAbility: Justified\n- Close Combat',
+      'Dragonite\nAbility: Multiscale\n- Extreme Speed',
+      'Gengar\nAbility: Cursed Body\n- Shadow Ball',
+    ].join('\n\n');
+    const result = room.importTeam(ana, text);
+    expect(result.state.slots.map((s) => s?.species)).toEqual(['Garchomp', 'Lucario', 'Dragonite']);
+    expect(result).toMatchObject({ count: 3, skipped: 2 });
+
+    expectRoomError(
+      () => room.importTeam(cleo, 'Garchomp\nAbility: Rough Skin\n- Earthquake'),
+      'SPECIES_CLAUSE',
+    );
+    expectRoomError(() => room.importTeam(ana, ''), 'INVALID_IMPORT');
+  });
+});
